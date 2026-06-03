@@ -13,6 +13,7 @@
     "generate-types": "wrangler types"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.100.1",
     "@astrojs/cloudflare": "^13.6.1",
     "astro": "^6.4.3",
     "wrangler": "^4.97.0"

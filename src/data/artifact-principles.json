@@ -1,0 +1,129 @@
+{
+  "meta": {
+    "domain": "archaeological",
+    "description": "Perceptual habits for artifact observation. These direct attention toward what matters when looking at archaeological and anthropological objects — not fine art mechanisms, but the observational habits that make production evidence, use history, and material relationships readable. Apply in Pass 1 alongside Tier A perceptual principles.",
+    "scope": "Object-class-agnostic within the artifact domain. Applies to ceramic vessels, carved organic objects, composite assemblages, lithics, shell artifacts, fiber and textile, and painted or incised stone."
+  },
+  "principles": [
+    {
+      "id": 1,
+      "name": "Production Trace Reading",
+      "subtitle": "every surface feature is a frozen action",
+      "description": "Read marks, lines, textures, and surface irregularities as records of specific production actions — what the maker did, not just what the surface looks like. Tool marks, coil junctures, carving grooves, grinding facets, knapping scars, and brush strokes are all production evidence. The surface is a sequence of actions frozen in material.",
+      "howToApply": "For each visible surface feature, ask: what action produced this? What tool, what motion, what stage of production? Read the object as a series of events rather than a finished state.",
+      "applicableTo": "all"
+    },
+    {
+      "id": 2,
+      "name": "Sequence Inference",
+      "subtitle": "later traces cross earlier ones",
+      "description": "Production leaves a recoverable order. Later actions modify, cross, or obscure earlier ones. Identifying which traces are primary (the blank, the base form) and which are secondary (finishing, additions, repair) reveals the production sequence. Where one mark overlaps another, the crossing relationship determines which came first.",
+      "howToApply": "Look for where traces intersect or overlap. Which line, groove, or pigment zone crosses which? What was the base form before surface treatment was applied? Where do repairs or additions override original features?",
+      "applicableTo": "all"
+    },
+    {
+      "id": 3,
+      "name": "Material Boundary Attention",
+      "subtitle": "transitions are evidence",
+      "description": "Every transition between materials is analytically significant. Slip edge against clay body, pigment zone against unpainted surface, inset element against substrate, fiber attachment against carved form, shell inlay against wood. Boundaries are where separate production decisions intersect and where distinct material procurement events meet in a single object.",
+      "howToApply": "Map all material transitions. Where does one material end and another begin? Is the boundary sharp or graduated? Does the boundary follow physical structure, anatomy, or an independent scheme? What does the boundary quality reveal about how the materials were applied or joined?",
+      "applicableTo": "all"
+    },
+    {
+      "id": 4,
+      "name": "Wear Differential",
+      "subtitle": "surfaces record use unevenly",
+      "description": "Surfaces wear differently depending on how an object was used, held, oriented, and stored. The pattern of differential wear — which surfaces are more abraded, polished, smoothed, or eroded than others — encodes use history. Wear is distinct from post-depositional damage and from ancient repair; these three must be distinguished.",
+      "howToApply": "Compare wear across all surfaces of the object. Which areas show more abrasion, polish, or smoothing? Does the wear pattern correspond to a logical use position (interior of a bowl, grip area of a tool, worn suspension point)? Is the wear consistent with use or with soil chemistry and burial conditions?",
+      "applicableTo": "all"
+    },
+    {
+      "id": 5,
+      "name": "Absence as Evidence",
+      "subtitle": "missing elements leave traces",
+      "description": "What is no longer present is as analytically significant as what remains. Missing elements leave traces: broken attachment points, adhesive residue without its attachment, pigment bed with pigment eroded, drill hole without its inset, binding channel without its cord. Taphonomic loss does not erase all evidence of what was lost.",
+      "howToApply": "Look actively for evidence of what is no longer present. Are there holes, channels, or abraded areas without their original contents? Residue traces suggesting a lost element? Areas where surface preparation indicates something was once attached? Read negative evidence as positive data.",
+      "applicableTo": "all"
+    },
+    {
+      "id": 6,
+      "name": "Composite Detection",
+      "subtitle": "unified appearance may conceal multiple production events",
+      "description": "What reads as a single unified object may be the result of multiple separate production events — a base object with later additions, a repaired and modified piece, an assemblage of separately made components. Joins, seams, adhesive traces, binding channels, and color or texture discontinuities are evidence of composite production.",
+      "howToApply": "Ask: is this one production event or multiple? Look for joins and seams that indicate where separately produced elements meet. Are there areas where material, surface treatment, or construction technique changes in ways that suggest a later addition rather than continuous production?",
+      "applicableTo": "all"
+    },
+    {
+      "id": 7,
+      "name": "Anatomical Correspondence",
+      "subtitle": "does the visual program follow the form or override it?",
+      "description": "For any figural or representational object: assess whether the visual program — pigment application, carved detail, design elements, color zones — follows the object's physical structure or the represented subject's anatomy, or whether it imposes an external conventional scheme independent of both. The relationship between represented form and physical form is a production decision.",
+      "howToApply": "Identify the subject being represented (animal, human, vessel form). Does the pigment or design follow that subject's actual anatomy — color zones where the real animal has color zones, features where the real animal has features? Or does the program impose a conventional scheme that maps onto the object's physical structure instead? Where these diverge, the divergence is significant.",
+      "applicableTo": "carved organic, composite, ceramic"
+    },
+    {
+      "id": 8,
+      "name": "Symmetry as Evidence",
+      "subtitle": "deviation from expected symmetry is information",
+      "description": "Symmetry and its violations in artifacts are evidence, not merely aesthetic observations. Assess the intended symmetry type (bilateral, radial, rotational) and where the object deviates from it. Perfect symmetry indicates specific production methods and intentions. Deviation from intended symmetry may indicate production constraints, deliberate asymmetry as a design choice, or post-depositional alteration.",
+      "howToApply": "Identify what symmetry type the object appears to be designed for. Where does it achieve that symmetry and where does it deviate? Is the deviation consistent across the object (suggesting a production method) or localized (suggesting a specific event — repair, damage, intentional asymmetry)? For figurative objects, is the represented subject naturally asymmetric and does the object reflect that?",
+      "applicableTo": "all"
+    },
+    {
+      "id": 9,
+      "name": "Proportion as Encoding",
+      "subtitle": "scale and proportions encode function and social role",
+      "description": "An artifact's proportions carry functional and social information. Scale relative to the human body, proportions relative to intended use, depth-to-width ratios, wall thickness relative to vessel size — these encode how the object was designed to operate. Schematic proportions (simplified, non-naturalistic) signal different production traditions and social registers than naturalistic proportions. Miniature scale often signals ritual function regardless of object type.",
+      "howToApply": "Assess the object's proportions against its apparent function. Are these proportions consistent with the stated or implied use? Does scale suggest personal use, communal use, or display? Where proportions are schematic rather than naturalistic, note what has been simplified and what has been emphasized — the emphasis is usually significant.",
+      "applicableTo": "all"
+    },
+    {
+      "id": 10,
+      "name": "Color Zone Logic",
+      "subtitle": "identify the organizing principle behind color distribution",
+      "description": "How color zones are organized on an object encodes a production decision. Color may follow the object's physical structure (vessel zones, construction units, anatomical regions), the represented subject's natural coloration (pelage, skin pattern), orientation (top/bottom, front/back), or a conventional scheme independent of any of these. The organizing logic — which of these principles governs — is not always obvious and must be identified before color is interpreted.",
+      "howToApply": "Map all color zones. Then test each possible organizing principle: do the zone boundaries align with physical structure? With the represented subject's anatomy? With orientation? With a geometric conventional scheme? Which alignment is most consistent? Where color zone logic is ambiguous or mixed, state that ambiguity rather than forcing an interpretation.",
+      "applicableTo": "all"
+    },
+    {
+      "id": 11,
+      "name": "Investment Gradient",
+      "subtitle": "where effort concentrates tells you what the object is for",
+      "description": "Within any object, production effort is not evenly distributed. Skill, time, and material cost concentrate in some areas and not others. The gradient from high-investment to low-investment areas encodes what the object was oriented toward — what was meant to be seen, engaged with, or used. High investment where the object faces its audience; lower investment where it faces the ground, the back, or the interior.",
+      "howToApply": "Identify where the highest production investment is concentrated — finest detail, most costly material, most precise execution. Compare this to areas of lower investment. Does the gradient correspond to a viewing orientation, a use position, or a ritual facing? Is investment concentrated on the iconographic content, the surface treatment, or the structural form?",
+      "applicableTo": "all"
+    },
+    {
+      "id": 12,
+      "name": "Attachment Point Reading",
+      "subtitle": "where things were joined reveals what they once were",
+      "description": "Attachment points — drilled suspension holes, binding channels, adhesive residue, knot wear marks, cord grooves, inset cavities — are often more analytically durable than the attachments themselves. Organic attachments (fiber, feather, hide) decompose; their attachment points survive. Reading attachment points in the absence of their original elements recovers structural and compositional information about the complete assembled object.",
+      "howToApply": "Identify all attachment points: holes, grooves, residue, wear patterns consistent with binding or suspension. For each, determine: what was attached here, how was it attached, and where on the object does this place the attachment in relation to the whole? Can the original assembled object be partially reconstructed from its surviving attachment evidence?",
+      "applicableTo": "all"
+    },
+    {
+      "id": 13,
+      "name": "Orientation Dependency",
+      "subtitle": "establish intended orientation before analyzing content",
+      "description": "Many artifacts have a primary intended orientation — they were designed to be seen from a specific angle, held in a specific position, or displayed in a specific relationship to the viewer or the context. Analyzing form, design, or iconographic content from the wrong orientation misreads it. Orientation is a production decision embedded in the object's asymmetries, weight distribution, suspension points, and design logic.",
+      "howToApply": "Before analyzing surface content or iconographic program, establish what orientation the object was designed for. Evidence: suspension or attachment points indicating how it was worn or displayed; weight distribution; which face received the most investment; how the design reads from different orientations. Analyze the visual program from the correct orientation first.",
+      "applicableTo": "all"
+    },
+    {
+      "id": 14,
+      "name": "Completion State",
+      "subtitle": "was this finished when deposited?",
+      "description": "Assess whether the object reached a completed production state at the time of deposition. Three distinct states exist: fully completed production, deliberately unfinished objects (known from cache and ritual contexts in the Southwest and beyond — intentionally incomplete objects have their own interpretive status), and interrupted production (abandoned before completion). These states have different interpretive implications and must be distinguished from post-depositional damage.",
+      "howToApply": "Assess all surfaces for evidence of incomplete production: unfinished areas, begun-but-not-completed details, abrupt terminations in surface treatment. Is incompleteness consistent with interrupted production (tool abandoned mid-task) or with deliberate truncation (a conscious decision to stop before what would conventionally be considered completion)? In cache contexts especially, consider whether incompleteness is intentional.",
+      "applicableTo": "all"
+    },
+    {
+      "id": 15,
+      "name": "Reduction vs. Construction",
+      "subtitle": "was form achieved by removing or accumulating material?",
+      "description": "The fundamental distinction in production approach: whether an object's form was produced by removing material from a larger blank (subtractive — carving, knapping, grinding, drilling) or by accumulating and shaping material into form (constructive/additive — coil building, weaving, plying, assembly). Most objects are primarily one or the other; some combine both. This distinction governs all subsequent reading of production traces, because the evidence left by each approach is categorically different.",
+      "howToApply": "Identify the primary production approach: is the object's form the result of material removed from a blank (look for tool marks, reduction scars, waste removal evidence) or material built up into form (look for joins, accumulation seams, construction units)? For objects that combine both — a coil-built vessel with carved surface decoration, a carved effigy with applied pigment — identify the sequence of subtractive and additive operations.",
+      "applicableTo": "all"
+    }
+  ]
+}
