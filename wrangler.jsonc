@@ -9,5 +9,15 @@
 	},
 	"observability": {
 		"enabled": true
-	}
+	},
+	// D1 database — create with: wrangler d1 create grammar-of-things
+	// Apply schema: wrangler d1 execute grammar-of-things --file=./src/db/migrations/0001_init.sql
+	// After creation, replace the placeholder database_id below with the real one.
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "grammar-of-things",
+			"database_id": "REPLACE_WITH_REAL_ID"
+		}
+	]
 }
