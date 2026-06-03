@@ -10,6 +10,14 @@
 	"observability": {
 		"enabled": true
 	},
+	// R2 object storage — create with: wrangler r2 bucket create grammar-of-things-images
+	// Stores original images (never modified) and normalized analysis copies.
+	"r2_buckets": [
+		{
+			"binding": "ARTIFACTS",
+			"bucket_name": "grammar-of-things-artifacts"
+		}
+	],
 	// D1 database — create with: wrangler d1 create grammar-of-things
 	// Apply schema: wrangler d1 execute grammar-of-things --file=./src/db/migrations/0001_init.sql
 	// After creation, replace the placeholder database_id below with the real one.
