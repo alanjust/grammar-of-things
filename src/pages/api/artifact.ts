@@ -5,7 +5,47 @@ import artifactPrinciplesData from '../../data/artifact-principles.json';
 
 export const prerender = false;
 
-// All Tier A — used in Pass 2 reference list
+// --- Model config (A2/A3) ---
+
+interface PassConfig {
+  provider: 'anthropic';
+  model: string;
+}
+
+interface ModelConfig {
+  pass1:      PassConfig;
+  pass2:      PassConfig;
+  pass3:      PassConfig;
+  extraction: PassConfig;
+  vector:     PassConfig;
+}
+
+const DEFAULTS: ModelConfig = {
+  pass1:      { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  pass2:      { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  pass3:      { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  extraction: { provider: 'anthropic', model: 'claude-haiku-4-5' },
+  vector:     { provider: 'anthropic', model: 'claude-haiku-4-5' },
+};
+
+function resolveModelConfig(env: Record<string, string | undefined>): ModelConfig {
+  const resolve = (pass: keyof ModelConfig): PassConfig => ({
+    provider: (env[`${pass.toUpperCase()}_PROVIDER`] as PassConfig['provider']) || DEFAULTS[pass].provider,
+    model:    env[`${pass.toUpperCase()}_MODEL`] || DEFAULTS[pass].model,
+  });
+  return { pass1: resolve('pass1'), pass2: resolve('pass2'), pass3: resolve('pass3'), extraction: resolve('extraction'), vector: resolve('vector') };
+}
+
+// Model router — seam for future provider integrations (A3).
+// All model calls go through here; add provider branching when wiring additional providers.
+function streamModel(cfg: PassConfig, params: Omit<Parameters<Anthropic['messages']['stream']>[0], 'model'>, anthropic: Anthropic) {
+  return anthropic.messages.stream({ ...params, model: cfg.model });
+}
+async function callModel(cfg: PassConfig, params: Omit<Parameters<Anthropic['messages']['create']>[0], 'model'>, anthropic: Anthropic): Promise<Anthropic.Message> {
+  return anthropic.messages.create({ ...params, model: cfg.model });
+}
+
+// --- All Tier A — used in Pass 2 reference list
 const PRINCIPLE_NAMES: string[] = (principlesData.principles as any[])
   .filter((p: any) => p.tier === 'A')
   .map((p: any) => p.name as string)
@@ -951,7 +991,9 @@ function buildImageBlocks(parsed: ParsedImage[]) {
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const apiKey = (locals as any).runtime?.env?.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
+  const env: Record<string, string | undefined> = (locals as any).runtime?.env ?? {};
+  const apiKey = env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
+  const modelConfig = resolveModelConfig(env);
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY is not set.' }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
@@ -1015,8 +1057,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       try {
         send({ type: 'status', message: 'Pass 1 — formal observation…' });
 
-        const pass1Stream = anthropic.messages.stream({
-          model: 'claude-sonnet-4-6',
+        const pass1Stream = streamModel(modelConfig.pass1, {
           max_tokens: 2048,
           system: 'You are a trained artifact observer. Report only what is directly present and physically observable. Read surface features as production evidence. No interpretation, no cultural attribution, no quality judgments.',
           messages: [{
@@ -1035,6 +1076,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
 
         const pass1Msg = await pass1Stream.finalMessage();
+        const pass1ModelUsed = pass1Msg.model;
         const pass1Text = pass1Msg.content
           .filter((b: any) => b.type === 'text')
           .map((b: any) => b.text)
@@ -1065,8 +1107,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           ? 'You are a specialist in Southwest archaeology and cultural interaction, with deep knowledge of exchange networks, contemporaneous traditions, and the broader prehistoric Southwest landscape — Mimbres/Mogollon, Hohokam, Ancestral Puebloan, Casas Grandes, and post-Classic traditions. Approach artifacts as entry points into cultural worlds: what does this object tell us about who made it, who they traded with, what they shared with neighboring peoples, and what world they inhabited. Draw on the scholarship of Linda Cordell (Southwest as mosaic of interacting traditions), Polly Schaafsma (pan-Southwest iconographic continuity), Kate Spielmann (exchange networks and craft production), Phil Weigand and Garman Harbottle (turquoise trade networks), and Patricia Crown (ideological spread through material culture). Start from what is observable in the object and expand only to what the scholarly record supports. Frame contested relationships as contested, not resolved.'
           : 'You are a specialist in Southwest archaeology and anthropological artifact analysis, with knowledge across the full Southwest tradition — Mimbres/Mogollon, Hohokam, Ancestral Puebloan, Casas Grandes, and post-Classic regional traditions. Apply the evaluative frameworks of J.J. Brody (formal and comparative iconographic analysis), Harry Shafer (production sequence and technological style as chaîne opératoire), Michelle Hegmon (material culture variability as social information), and Polly Schaafsma (iconographic continuity across traditions and media). Identify object class before applying criteria — ceramic analytical vocabulary does not apply to carved organic, composite, or shell objects. Do not apply fine art criticism, aesthetic vocabulary, or art market language. Use field vocabulary precisely: provenience not provenance, chaîne opératoire, kill hole, slip, mineral vs. carbon paint, technological style, taphonomy, cache vs. burial vs. midden. Be evidence-grounded and explicit about uncertainty — frame all interpretive claims as readings supported by specific observable evidence, not settled conclusions.';
 
-        const pass2Stream = anthropic.messages.stream({
-          model: 'claude-sonnet-4-6',
+        const pass2Stream = streamModel(modelConfig.pass2, {
           max_tokens: 8000,
           system: pass2SystemPrompt,
           messages: [{
@@ -1085,6 +1126,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
 
         const pass2Msg = await pass2Stream.finalMessage();
+        const pass2ModelUsed = pass2Msg.model;
         const pass2Text = pass2Msg.content
           .filter((b: any) => b.type === 'text')
           .map((b: any) => b.text)
@@ -1096,8 +1138,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           ? CONNECTIONS_COMPETENCY_PROMPT(pass1Text, pass2Text, audience || '')
           : COMPETENCY_PROMPT(pass1Text, pass2Text, audience || '');
 
-        const pass3Msg = await anthropic.messages.create({
-          model: 'claude-sonnet-4-6',
+        const pass3Msg = await callModel(modelConfig.pass3, {
           max_tokens: 1500,
           system: 'You are an educator writing for someone curious and smart who wants to understand how to look at artifacts. Write the way Ira Glass tells a story: open with something concrete and recognizable, move toward the insight, land it plainly. If you use a technical term, follow it immediately with plain English. The goal is to leave the reader thinking "I can do that next time." Do not use fine art vocabulary: no aesthetic, painterly, compositional tension, formal innovation, artistic achievement, or language from museum wall text or gallery criticism. Do not frame the object as made for contemplation or visual pleasure. Takeaways must be grounded in what the material evidence showed — what the production traces revealed, what the design system did, what the cultural context made legible. The habits you identify should be habits of looking at physical evidence, not habits of aesthetic appreciation.',
           messages: [{
@@ -1109,6 +1150,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           }],
         });
 
+        const pass3ModelUsed = pass3Msg.model;
         const pass3Text = pass3Msg.content
           .filter((b: any) => b.type === 'text')
           .map((b: any) => b.text)
@@ -1119,19 +1161,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         let structuredRecord: any = null;
         let vectorNote: string | null = null;
+        let extractionModelUsed: string | null = null;
+        let vectorModelUsed: string | null = null;
 
         try {
           const [extractionResult, vectorResult] = await Promise.allSettled([
-            anthropic.messages.create({
-              model: 'claude-sonnet-4-6',
+            callModel(modelConfig.extraction, {
               max_tokens: 16000,
               system: 'You are a data extraction assistant. Extract structured data from artifact analysis text and output ONLY valid JSON. No markdown fences, no commentary, no extra text. Begin your response with { and end with }.',
               messages: [
                 { role: 'user', content: [{ type: 'text', text: EXTRACTION_PROMPT(pass1Text, pass2Text, fields, isConnections ? 'connections' : 'artifact') }] },
               ],
             }),
-            anthropic.messages.create({
-              model: 'claude-sonnet-4-6',
+            callModel(modelConfig.vector, {
               max_tokens: 512,
               system: 'You are a scoring assistant. Output ONLY a flat JSON object. No markdown, no commentary, no extra text. Begin your response with { and end with }.',
               messages: [
@@ -1141,6 +1183,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
           ]);
 
           if (extractionResult.status === 'rejected') throw extractionResult.reason;
+
+          extractionModelUsed = extractionResult.value.model;
+          vectorModelUsed = vectorResult.status === 'fulfilled' ? vectorResult.value.model : null;
 
           let extractionText = extractionResult.value.content
             .filter((b: any) => b.type === 'text')
@@ -1189,6 +1234,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
           analysis: pass2Text,
           competency: pass3Text,
           mode,
+          models_used: {
+            pass1:      pass1ModelUsed,
+            pass2:      pass2ModelUsed,
+            pass3:      pass3ModelUsed,
+            extraction: extractionModelUsed ?? modelConfig.extraction.model,
+            vector:     vectorModelUsed ?? modelConfig.vector.model,
+          },
           ...(structuredRecord ? { structured: structuredRecord } : {}),
           ...(vectorNote ? { vector_note: vectorNote } : {}),
         });
