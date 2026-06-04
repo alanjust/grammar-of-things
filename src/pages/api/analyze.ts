@@ -4,6 +4,7 @@ import { env as cfEnv } from 'cloudflare:workers';
 import { VECTOR_SCORING_PROMPT } from '../../lib/principles';
 import { resolveModelConfig, streamModel, callModel } from '../../lib/model-router';
 import { VECTOR_KEY, serializeVector, type DocCanonical } from '../../db/types';
+import { buildSearchQuery, retrievePassages, formatReferences } from '../../lib/retrieval';
 import {
   EXTRACTION_PROMPT, COMPETENCY_PROMPT, CONNECTIONS_COMPETENCY_PROMPT,
   PASS2_SYSTEM_ARTIFACT, PASS2_SYSTEM_CONNECTIONS,
@@ -228,9 +229,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
           : 'Pass 2 — artifact analysis…';
         send({ type: 'status', message: pass2StatusMsg });
 
+        // Retrieve reference passages from document library (silent — empty string if library is empty)
+        const refQuery    = buildSearchQuery(object.attribution_culture as string | null, pass1Text);
+        const passages    = await retrievePassages(db, refQuery, 5);
+        const refBlock    = formatReferences(passages);
+        if (passages.length > 0) send({ type: 'status', message: `Retrieved ${passages.length} reference passage${passages.length > 1 ? 's' : ''} from library` });
+
         const pass2UserText = isConnections
-          ? buildConnectionsPass2UserText(pass1Text, docFields, audience, viewLabels)
-          : buildArtifactPass2UserText(pass1Text, docFields, audience, viewLabels);
+          ? buildConnectionsPass2UserText(pass1Text, docFields, audience, viewLabels) + refBlock
+          : buildArtifactPass2UserText(pass1Text, docFields, audience, viewLabels) + refBlock;
 
         const pass2Stream = streamModel(modelConfig.pass2, {
           max_tokens: 8000,

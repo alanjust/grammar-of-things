@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import Anthropic from '@anthropic-ai/sdk';
 import { env as cfEnv } from 'cloudflare:workers';
+import { buildSearchQuery, retrievePassages, formatReferences } from '../../lib/retrieval';
 import {
   PRINCIPLE_NAMES, APPLICABLE_TIER_A_NAMES, ARTIFACT_PRINCIPLE_NAMES,
   ARTIFACT_PRINCIPLE_REF, TIER_A_PRINCIPLE_REF,
@@ -1014,9 +1015,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
           : 'Pass 2 — artifact analysis…';
         send({ type: 'status', message: statusMsg });
 
+        // Retrieve reference passages (silent — empty if library is empty or DB not wired)
+        const refQuery   = buildSearchQuery(null, pass1Text);
+        const passages   = await retrievePassages(env.DB, refQuery, 5);
+        const refBlock   = formatReferences(passages);
+        if (passages.length > 0) send({ type: 'status', message: `Retrieved ${passages.length} reference passage${passages.length > 1 ? 's' : ''} from library` });
+
         const pass2UserText = isConnections
-          ? buildConnectionsPass2UserText(pass1Text, fields, audience || '', viewLabels)
-          : buildArtifactPass2UserText(pass1Text, fields, audience || '', viewLabels);
+          ? buildConnectionsPass2UserText(pass1Text, fields, audience || '', viewLabels) + refBlock
+          : buildArtifactPass2UserText(pass1Text, fields, audience || '', viewLabels) + refBlock;
 
         const pass2Stream = streamModel(modelConfig.pass2, {
           max_tokens: 8000,
