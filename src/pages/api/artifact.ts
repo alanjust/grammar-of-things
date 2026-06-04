@@ -12,7 +12,7 @@ import {
 
 export const prerender = false;
 
-const EXTRACTION_PROMPT = (
+export const EXTRACTION_PROMPT = (
   pass1: string,
   pass2: string,
   fields: Record<string, string>,
@@ -660,7 +660,7 @@ Universal perceptual principles: ${principleNames.join(', ')}
 Artifact observation principles: ${artifactPrincipleNames.join(', ')}`;
 };
 
-const COMPETENCY_PROMPT = (pass1: string, pass2: string, audience: string): string => {
+export const COMPETENCY_PROMPT = (pass1: string, pass2: string, audience: string): string => {
   const audienceLine = audience
     ? `This analysis was prepared for: ${audience}.\n\n`
     : '';
@@ -773,7 +773,7 @@ What came after? If this tradition underwent a collapse or reorganization, descr
 Where active scholarly debate exists — the nature of the Chaco system, the Mimbres collapse, Casas Grandes origins, Kachina cult emergence — name the debate and competing positions rather than asserting a single answer.`;
 };
 
-const CONNECTIONS_COMPETENCY_PROMPT = (pass1: string, pass2: string, audience: string): string => {
+export const CONNECTIONS_COMPETENCY_PROMPT = (pass1: string, pass2: string, audience: string): string => {
   const audienceLine = audience
     ? `This analysis was prepared for: ${audience}.\n\n`
     : '';
@@ -801,7 +801,7 @@ Identify 2–3 specific threads this analysis opened that are worth pursuing fur
 Write for someone curious and smart who doesn't already speak the vocabulary. Open with something specific from this artifact before naming the principle. Jargon only when immediately followed by plain English. Total: 300–450 words.`;
 };
 
-function buildArtifactContext(fields: Record<string, string>): string {
+export function buildArtifactContext(fields: Record<string, string>): string {
   const labels: Record<string, string> = {
     culture:    'Culture / People',
     period:     'Period / Date',
@@ -870,22 +870,22 @@ const CONNECTIONS_STATIC_BODY: string = (() => {
 const PASS2_ROLE_ARTIFACT = 'You are a specialist in Southwest archaeology and anthropological artifact analysis, with knowledge across the full Southwest tradition — Mimbres/Mogollon, Hohokam, Ancestral Puebloan, Casas Grandes, and post-Classic regional traditions. Apply the evaluative frameworks of J.J. Brody (formal and comparative iconographic analysis), Harry Shafer (production sequence and technological style as chaîne opératoire), Michelle Hegmon (material culture variability as social information), and Polly Schaafsma (iconographic continuity across traditions and media). Identify object class before applying criteria — ceramic analytical vocabulary does not apply to carved organic, composite, or shell objects. Do not apply fine art criticism, aesthetic vocabulary, or art market language. Use field vocabulary precisely: provenience not provenance, chaîne opératoire, kill hole, slip, mineral vs. carbon paint, technological style, taphonomy, cache vs. burial vs. midden. Be evidence-grounded and explicit about uncertainty — frame all interpretive claims as readings supported by specific observable evidence, not settled conclusions.';
 const PASS2_ROLE_CONNECTIONS = 'You are a specialist in Southwest archaeology and cultural interaction, with deep knowledge of exchange networks, contemporaneous traditions, and the broader prehistoric Southwest landscape — Mimbres/Mogollon, Hohokam, Ancestral Puebloan, Casas Grandes, and post-Classic traditions. Approach artifacts as entry points into cultural worlds: what does this object tell us about who made it, who they traded with, what they shared with neighboring peoples, and what world they inhabited. Draw on the scholarship of Linda Cordell (Southwest as mosaic of interacting traditions), Polly Schaafsma (pan-Southwest iconographic continuity), Kate Spielmann (exchange networks and craft production), Phil Weigand and Garman Harbottle (turquoise trade networks), and Patricia Crown (ideological spread through material culture). Start from what is observable in the object and expand only to what the scholarly record supports. Frame contested relationships as contested, not resolved.';
 
-type CachedBlock = { type: 'text'; text: string; cache_control?: { type: 'ephemeral' } };
+export type CachedBlock = { type: 'text'; text: string; cache_control?: { type: 'ephemeral' } };
 
 // Cached system arrays — byte-identical across all requests in the same mode.
 // The cache_control breakpoint sits at the end of STATIC_BODY so Anthropic stores
 // role + entire analysis framework as one prefix.
-const PASS2_SYSTEM_ARTIFACT: CachedBlock[] = [
+export const PASS2_SYSTEM_ARTIFACT: CachedBlock[] = [
   { type: 'text', text: PASS2_ROLE_ARTIFACT },
   { type: 'text', text: ARTIFACT_STATIC_BODY, cache_control: { type: 'ephemeral' } },
 ];
-const PASS2_SYSTEM_CONNECTIONS: CachedBlock[] = [
+export const PASS2_SYSTEM_CONNECTIONS: CachedBlock[] = [
   { type: 'text', text: PASS2_ROLE_CONNECTIONS },
   { type: 'text', text: CONNECTIONS_STATIC_BODY, cache_control: { type: 'ephemeral' } },
 ];
 
 // Dynamic preamble builders — only what actually varies between requests.
-function buildArtifactPass2UserText(pass1: string, fields: Record<string, string>, audience: string, views: string[]): string {
+export function buildArtifactPass2UserText(pass1: string, fields: Record<string, string>, audience: string, views: string[]): string {
   const audienceFrame = audience.includes('curator')
     ? 'You are analyzing this artifact for a museum curator. Address: typological placement and what it establishes, condition and what it affects interpretively, cultural significance and what tradition this object represents, and what comparable documented examples exist. Use field vocabulary precisely.'
     : audience.includes('educator')
@@ -896,7 +896,7 @@ function buildArtifactPass2UserText(pass1: string, fields: Record<string, string
   return `${audienceFrame}${viewLine}\n${ctx ? ctx + '\n---\n\n' : ''}FORMAL OBSERVATIONS FROM PASS 1:\n${pass1}`;
 }
 
-function buildConnectionsPass2UserText(pass1: string, fields: Record<string, string>, audience: string, views: string[]): string {
+export function buildConnectionsPass2UserText(pass1: string, fields: Record<string, string>, audience: string, views: string[]): string {
   const audienceFrame = audience.includes('curator')
     ? "You are analyzing this artifact's cultural connections for a museum curator. Address what tradition and period this object represents, what exchange networks it participated in, what comparable cultures were doing at the same time, and how this object connects to the broader cultural landscape. Use field vocabulary precisely."
     : audience.includes('educator')
