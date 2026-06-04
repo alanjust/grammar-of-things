@@ -1,14 +1,39 @@
 ---
 export const prerender = true;
+
+import SiteNav from '../components/SiteNav.astro';
+import Hero from '../components/Hero.astro';
+import Problem from '../components/Problem.astro';
+import Proof from '../components/Proof.astro';
+import HowItWorks from '../components/HowItWorks.astro';
+import Roadmap from '../components/Roadmap.astro';
+import Credibility from '../components/Credibility.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+
+import { hero } from '../data/hero-imls';
+import { credibility } from '../data/credibility';
 ---
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<title>The Grammar of Things</title>
-	</head>
-	<body>
-		<p>The Grammar of Things—coming soon</p>
-	</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="A visual-forensic cataloging instrument for Southwest archaeological objects. Computes a perceptual fingerprint from the image alone, separate from what the documentation claims." />
+    <title>The Grammar of Things — Visual-Forensic Cataloging for Archaeological Objects</title>
+    <style is:global>
+      @import url('/src/styles/base.css');
+    </style>
+  </head>
+  <body>
+    <SiteNav />
+    <main>
+      <Hero content={hero} />
+      <Problem />
+      <Proof />
+      <HowItWorks />
+      <Roadmap />
+      <Credibility content={credibility} />
+    </main>
+    <SiteFooter />
+  </body>
 </html>

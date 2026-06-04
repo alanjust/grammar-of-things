@@ -1,0 +1,61 @@
+---
+const year = new Date().getFullYear();
+---
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="identity">
+        <p class="name">The Grammar of Things</p>
+        <p class="mission">A visual-forensic cataloging instrument for archaeological objects.</p>
+      </div>
+      <div class="footer-links">
+        <a href="mailto:contact@thegrammarofthings.com">Contact</a>
+        <span class="sep">·</span>
+        <span>thegrammarofthings.com</span>
+      </div>
+    </div>
+    <p class="copy">© {year} The Grammar of Things. Prototype stage — not for attribution claims.</p>
+  </div>
+</footer>
+
+<style>
+  footer {
+    background: var(--bg-dark);
+    padding-block: var(--space-12);
+  }
+  .footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-8);
+    margin-bottom: var(--space-8);
+    flex-wrap: wrap;
+  }
+  .name {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    color: var(--text-invert);
+    margin-bottom: var(--space-2);
+    max-width: none;
+  }
+  .mission { font-size: var(--text-sm); color: #8a8079; max-width: 40ch; }
+  .footer-links {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    color: #8a8079;
+    max-width: none;
+  }
+  .footer-links a { color: #8a8079; text-decoration: none; }
+  .footer-links a:hover { color: var(--accent-light); }
+  .sep { color: #4a4540; }
+  .copy {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: #4a4540;
+    border-top: 1px solid #2c2824;
+    padding-top: var(--space-6);
+    max-width: none;
+  }
+</style>

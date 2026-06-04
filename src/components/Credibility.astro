@@ -1,0 +1,67 @@
+---
+import type { CredibilityContent } from '../data/credibility';
+interface Props { content: CredibilityContent }
+const { content } = Astro.props;
+---
+
+<section id="credibility">
+  <div class="container">
+    <div class="section-head">
+      <h2>{content.headline}</h2>
+      <p class="subhead">{content.subhead}</p>
+    </div>
+    <div class="items">
+      {content.items.map(item => (
+        <div class="item">
+          <h3>{item.title}</h3>
+          <p>{item.body}</p>
+        </div>
+      ))}
+    </div>
+    <div class="transfer">
+      <p>{content.transfer}</p>
+    </div>
+  </div>
+</section>
+
+<style>
+  section { background: var(--bg-alt); border-bottom: 1px solid var(--border); }
+  .section-head { margin-bottom: var(--space-12); max-width: 56ch; }
+  h2 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: -0.015em; margin-bottom: var(--space-4); }
+  .subhead { font-size: var(--text-lg); color: var(--text-muted); line-height: 1.7; }
+
+  .items {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+    margin-bottom: var(--space-12);
+  }
+  .item {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: var(--space-8);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  h3 { font-size: var(--text-lg); }
+  .item p { font-size: var(--text-base); color: var(--text-muted); line-height: 1.7; }
+
+  .transfer {
+    border-top: 1px solid var(--border-strong);
+    padding-top: var(--space-8);
+  }
+  .transfer p {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-style: italic;
+    color: var(--text-muted);
+    line-height: 1.7;
+    max-width: 80ch;
+  }
+
+  @media (max-width: 900px) {
+    .items { grid-template-columns: 1fr; }
+  }
+</style>

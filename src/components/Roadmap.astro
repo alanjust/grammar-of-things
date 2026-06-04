@@ -1,0 +1,173 @@
+---
+const today = [
+  { label: 'Single-object analysis', body: 'Upload an image, paste the documentation record, run Passes 1–4. The fingerprint is computed blind and compared against the attribution claim.' },
+  { label: 'Epistemic labeling', body: 'Every claim in the analysis is marked [OBS], [INTERP], [CONS], or [THEORY]. Interpretive claims require two independent observations.' },
+  { label: 'RAP Protocol', body: 'The Rigorous Attribution Protocol flags claims with insufficient anchors as hypotheses. It cannot be turned off — it is structural.' },
+  { label: 'Three-layer documentation', body: 'Raw paste → AI-structured JSON → canonical mapped fields. EZID/ARK, catalog number, accession number, and culture attribution are promoted to first-class fields.' },
+  { label: '27-principle fingerprint vector', body: 'Stored per object in canonical order. Ready for vector similarity search when the reference corpus exists.' },
+];
+
+const funded = [
+  {
+    label: 'Reference corpus',
+    body: 'Documented benchmark objects from excavated contexts — Swarts Ruin, NAN Ranch, Pueblo Bonito. Objects with known provenience, primary-source-supported tradition attribution, and physical analysis data. This is what the fingerprint comparison will be measured against.',
+    priority: 'critical',
+  },
+  {
+    label: 'Vector similarity search',
+    body: 'Once the corpus exceeds ~500 objects, query by fingerprint pattern: "show me the 20 objects whose Pass 1 scores most resemble this one." The schema is shaped for it today; the pgvector migration runs with the corpus.',
+    priority: 'high',
+  },
+  {
+    label: 'Outlier detection',
+    body: 'Flag objects whose perceptual fingerprint diverges significantly from the fingerprint distribution of their documented tradition. Candidates for closer physical examination. The embryonic misattribution instrument — presented as a research flag, not a conclusion.',
+    priority: 'high',
+  },
+  {
+    label: 'NAGPRA support layer',
+    body: 'Surface repatriation candidates systematically: objects whose fingerprint aligns with a different tradition than their documented attribution become priority cases for provenience research. The tool produces evidence for the conversation; it does not resolve it.',
+    priority: 'high',
+  },
+  {
+    label: 'Multi-institution open corpus',
+    body: 'A publicly queryable fingerprint database. Museums contribute objects; the corpus becomes a shared resource. Deaccession and repatriation workflows can pull from it. Long-term stewardship by a museum or research consortium.',
+    priority: 'longer-term',
+  },
+];
+---
+
+<section id="roadmap">
+  <div class="container">
+    <div class="section-head">
+      <p class="section-label">The roadmap</p>
+      <h2>What exists today, and what funding builds</h2>
+      <p class="section-sub">
+        The prototype demonstrates the method. The grant funds the corpus.
+        Without a documented reference collection to compare against, the fingerprint is
+        a vector without a baseline. That is what the next phase builds.
+      </p>
+    </div>
+
+    <div class="roadmap-grid">
+      <div class="roadmap-col">
+        <p class="col-head today-head">Prototype today</p>
+        <div class="items">
+          {today.map(item => (
+            <div class="item today-item">
+              <p class="item-label">{item.label}</p>
+              <p class="item-body">{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div class="roadmap-col">
+        <p class="col-head funded-head">With funding</p>
+        <div class="items">
+          {funded.map(item => (
+            <div class={`item funded-item priority-${item.priority}`}>
+              <div class="item-head">
+                <p class="item-label">{item.label}</p>
+                <span class={`priority-tag p-${item.priority}`}>{item.priority.replace('-', ' ')}</span>
+              </div>
+              <p class="item-body">{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      <p>
+        The misattribution instrument is not presented as working today.
+        It is presented as the rigorous path from a proof of concept to a validated instrument —
+        one that requires a documented reference corpus before it can make meaningful comparisons.
+        That corpus is what the grant builds.
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  section { background: var(--bg-surface); border-bottom: 1px solid var(--border); }
+  .section-head { margin-bottom: var(--space-12); }
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: var(--space-3);
+    max-width: none;
+  }
+  h2 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: -0.015em; margin-bottom: var(--space-4); }
+  .section-sub { font-size: var(--text-lg); color: var(--text-muted); line-height: 1.7; }
+
+  .roadmap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+    margin-bottom: var(--space-12);
+  }
+  .roadmap-col { display: flex; flex-direction: column; gap: var(--space-4); }
+  .col-head {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: var(--space-2) var(--space-4);
+    border-radius: 2px;
+    max-width: none;
+    margin-bottom: var(--space-2);
+  }
+  .today-head  { background: var(--cons-bg);  color: var(--cons);   }
+  .funded-head { background: var(--obs-bg);   color: var(--obs);    }
+
+  .items { display: flex; flex-direction: column; gap: var(--space-3); }
+  .item {
+    padding: var(--space-5);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  .today-item  { background: var(--bg); }
+  .funded-item { background: var(--bg); }
+  .item-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+    flex-wrap: wrap;
+  }
+  .item-label { font-weight: 600; font-size: var(--text-base); }
+  .item-body { font-size: var(--text-sm); color: var(--text-muted); line-height: 1.6; }
+
+  .priority-tag {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.04em;
+    padding: 0.1em 0.5em;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .p-critical      { background: var(--accent-dim);   color: var(--accent); }
+  .p-high          { background: var(--obs-bg);        color: var(--obs);    }
+  .p-longer-term   { background: var(--bg-alt);        color: var(--text-muted); }
+
+  .disclaimer {
+    border-top: 2px solid var(--border-strong);
+    padding-top: var(--space-8);
+  }
+  .disclaimer p {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-style: italic;
+    color: var(--text-muted);
+    line-height: 1.7;
+    max-width: 80ch;
+  }
+
+  @media (max-width: 900px) {
+    .roadmap-grid { grid-template-columns: 1fr; }
+  }
+</style>

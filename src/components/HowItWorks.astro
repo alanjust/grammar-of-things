@@ -1,0 +1,210 @@
+---
+const passes = [
+  {
+    num: '01',
+    name: 'Observe',
+    tag: 'Blind fingerprint',
+    body: 'The tool reads the image as pure physical evidence: surface marks, color zones, construction traces, wear patterns. No cultural assumption enters at this stage. The documentation is deliberately excluded. This is the blind fingerprint — what the object shows before the paperwork is consulted.',
+    note: 'Output: 27-principle perceptual vector stored against the object record.',
+  },
+  {
+    num: '02',
+    name: 'Interpret',
+    tag: 'Analysis with context',
+    body: 'With documentation now available, the tool applies Southwest archaeological frameworks — Brody on Mimbres iconography, Shafer on production sequence, Hegmon on social organization — to name what the evidence means. Interpretive claims require two independent observations. Claims with fewer are labeled hypotheses, not readings.',
+    note: 'Epistemic labels [OBS] [INTERP] [CONS] [THEORY] mark every claim throughout.',
+  },
+  {
+    num: '03',
+    name: 'Take forward',
+    tag: 'Competency transfer',
+    body: 'What did this analysis make visible? What habits of looking did it demonstrate? This pass translates the analytical moves into a form that applies to the next object encountered — not this object specifically, but the class of things this object taught you to see.',
+    note: 'Written for the person who received the analysis, not for the object.',
+  },
+  {
+    num: '04',
+    name: 'Extract',
+    tag: 'Structured record',
+    body: 'The analysis output is mapped to a structured record: tradition identification, confidence level, function category, RAP flags, and the full scored vector. This feeds the growing fingerprint database and enables future cross-object comparison.',
+    note: 'The fingerprint from Pass 1 is compared against the documented attribution claim here. A significant mismatch is surfaced as a research flag — not a conclusion.',
+  },
+];
+
+const canDetermine = [
+  'Object class and approximate form',
+  'Surface treatment and design program',
+  'Cultural tradition and approximate temporal placement',
+  'Probable function category',
+  'Kill hole presence and method',
+  'Line quality and brush discipline',
+  'Construction technique indicators',
+];
+
+const cannotDetermine = [
+  'Actual dimensions (no scale reference)',
+  'Wall thickness or temper type (requires laboratory analysis)',
+  'Paint chemistry — mineral vs. carbon (requires physical examination)',
+  'Absolute age (requires radiocarbon or thermoluminescence dating)',
+  'Residue identity — what the vessel held (requires organic residue analysis)',
+  'Site association or provenience (requires documentation)',
+  'Associated assemblage (requires documentation)',
+];
+---
+
+<section id="how-it-works">
+  <div class="container">
+    <div class="section-head">
+      <p class="section-label">How it works</p>
+      <h2>Four passes, one object</h2>
+      <p class="section-sub">
+        The key idea: separate what the eye can see from what the paperwork claims.
+        The fingerprint is computed before the documentation is consulted.
+        The comparison happens after.
+      </p>
+    </div>
+
+    <div class="passes">
+      {passes.map(p => (
+        <div class="pass">
+          <div class="pass-num">{p.num}</div>
+          <div class="pass-body">
+            <div class="pass-head">
+              <h3>{p.name}</h3>
+              <span class="pass-tag">{p.tag}</span>
+            </div>
+            <p class="pass-text">{p.body}</p>
+            <p class="pass-note">{p.note}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <div class="limits">
+      <h3>What photography can and cannot determine</h3>
+      <p class="limits-note">Honesty about limits builds more trust than polish. The tool states its evidentiary ceiling explicitly in every analysis.</p>
+      <div class="limits-grid">
+        <div class="limits-col">
+          <p class="limits-head can">Image analysis can determine</p>
+          <ul>
+            {canDetermine.map(item => <li>{item}</li>)}
+          </ul>
+        </div>
+        <div class="limits-col">
+          <p class="limits-head cannot">Image analysis cannot determine</p>
+          <ul>
+            {cannotDetermine.map(item => <li>{item}</li>)}
+          </ul>
+        </div>
+      </div>
+      <p class="limits-close">
+        When analysis reaches the ceiling, the tool says: <em>"Visible evidence suggests X. Confirmation would require physical examination / laboratory analysis / provenience documentation."</em> It does not hedge everything — it marks the specific limits where they exist.
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  section { background: var(--bg-alt); border-bottom: 1px solid var(--border); }
+  .section-head { margin-bottom: var(--space-12); }
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: var(--space-3);
+    max-width: none;
+  }
+  h2 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: -0.015em; margin-bottom: var(--space-4); }
+  .section-sub { font-size: var(--text-lg); color: var(--text-muted); }
+
+  .passes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-6);
+    margin-bottom: var(--space-16);
+  }
+  .pass {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: var(--space-8);
+    display: flex;
+    gap: var(--space-6);
+  }
+  .pass-num {
+    font-family: var(--font-display);
+    font-size: var(--text-4xl);
+    color: var(--border-strong);
+    line-height: 1;
+    flex-shrink: 0;
+    width: 48px;
+  }
+  .pass-body { display: flex; flex-direction: column; gap: var(--space-3); }
+  .pass-head { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
+  h3 { font-size: var(--text-xl); }
+  .pass-tag {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    border: 1px solid var(--accent-light);
+    padding: 0.1em 0.5em;
+    border-radius: 2px;
+  }
+  .pass-text { font-size: var(--text-base); color: var(--text); line-height: 1.7; }
+  .pass-note { font-size: var(--text-sm); color: var(--text-muted); font-style: italic; }
+
+  /* Limits */
+  .limits {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: var(--space-8);
+  }
+  .limits h3 { font-size: var(--text-xl); margin-bottom: var(--space-3); }
+  .limits-note { font-size: var(--text-base); color: var(--text-muted); margin-bottom: var(--space-8); }
+  .limits-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+    margin-bottom: var(--space-6);
+  }
+  .limits-head {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: var(--space-4);
+    max-width: none;
+  }
+  .can    { color: var(--cons); }
+  .cannot { color: var(--accent); }
+  ul { list-style: none; display: flex; flex-direction: column; gap: var(--space-2); }
+  li {
+    font-size: var(--text-sm);
+    color: var(--text);
+    padding-left: var(--space-4);
+    position: relative;
+    line-height: 1.5;
+  }
+  li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--border-strong);
+  }
+  .limits-close {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    padding-top: var(--space-6);
+    line-height: 1.7;
+  }
+  .limits-close em { font-style: italic; color: var(--text); }
+
+  @media (max-width: 900px) {
+    .passes { grid-template-columns: 1fr; }
+    .limits-grid { grid-template-columns: 1fr; }
+  }
+</style>

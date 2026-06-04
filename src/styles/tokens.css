@@ -1,0 +1,66 @@
+:root {
+  /* Background */
+  --bg:           #f4f1ec;
+  --bg-surface:   #fffefb;
+  --bg-alt:       #ede9e2;
+  --bg-dark:      #1c1917;
+
+  /* Text */
+  --text:         #1c1917;
+  --text-muted:   #6b6055;
+  --text-invert:  #f4f1ec;
+
+  /* Accent */
+  --accent:       #9b4f19;
+  --accent-light: #c4742a;
+  --accent-dim:   #f2e6da;
+
+  /* Borders */
+  --border:       #d4cdc4;
+  --border-strong:#a09487;
+
+  /* Epistemic label colors */
+  --obs:          #1d5fa8;
+  --obs-bg:       #e8f0fa;
+  --interp:       #6d28d9;
+  --interp-bg:    #f0ebfd;
+  --cons:         #166534;
+  --cons-bg:      #e8f5ed;
+  --theory:       #92500a;
+  --theory-bg:    #fdf0e3;
+
+  /* Typography */
+  --font-display: Georgia, "Palatino Linotype", Palatino, serif;
+  --font-body:    system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:    ui-monospace, "Cascadia Code", "Source Code Pro", "Courier New", monospace;
+
+  /* Scale */
+  --text-xs:   0.75rem;
+  --text-sm:   0.875rem;
+  --text-base: 1rem;
+  --text-lg:   1.125rem;
+  --text-xl:   1.25rem;
+  --text-2xl:  1.5rem;
+  --text-3xl:  1.875rem;
+  --text-4xl:  2.25rem;
+  --text-5xl:  3rem;
+
+  /* Spacing */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* Container */
+  --max-w:        1200px;
+  --max-w-prose:  70ch;
+
+  /* Transitions */
+  --ease: 0.2s ease;
+}
