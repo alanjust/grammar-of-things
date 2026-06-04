@@ -38,6 +38,66 @@ function scoreColor(s: number) {
 }
 const ap = fingerprint.slice(0, 15);
 const ta = fingerprint.slice(15);
+
+// Radar chart — adapted from AAJ corpus page.
+// Two color tracks: artifact principles (terracotta) and Tier A universals (sage).
+function buildRadar(data: typeof fingerprint): string {
+  const cx = 200, cy = 200, r = 155;
+  const n = data.length;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+  function spoke(i: number, radius: number) {
+    const angle = toRad((360 / n) * i - 90);
+    return { x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle) };
+  }
+
+  const ring = (frac: number) =>
+    Array.from({ length: n }, (_, i) => spoke(i, r * frac))
+      .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+      .join(' ') + ' Z';
+
+  const polyPoints = data.map((p, i) => {
+    const pos = spoke(i, p.score === 0 ? 4 : r * (p.score / 3));
+    return `${i === 0 ? 'M' : 'L'}${pos.x.toFixed(1)},${pos.y.toFixed(1)}`;
+  });
+  const polyPath = polyPoints.join(' ') + ' Z';
+
+  const spokeLines = data.map((_, i) => {
+    const o = spoke(i, r);
+    return `<line x1="${cx}" y1="${cy}" x2="${o.x.toFixed(1)}" y2="${o.y.toFixed(1)}" stroke="#d4cdc4" stroke-width="1"/>`;
+  }).join('');
+
+  const labelR = r + 20;
+  const labels = data.map((p, i) => {
+    const pos = spoke(i, labelR);
+    const anchor = pos.x < cx - 5 ? 'end' : pos.x > cx + 5 ? 'start' : 'middle';
+    const short = p.name.length > 18 ? p.name.slice(0, 16) + '…' : p.name;
+    const color = p.code.startsWith('ap') ? '#9b4f19' : '#4a6741';
+    return `<text x="${pos.x.toFixed(1)}" y="${pos.y.toFixed(1)}" text-anchor="${anchor}" font-size="7.5" fill="${color}" font-family="system-ui,sans-serif" dominant-baseline="middle">${short}</text>`;
+  }).join('');
+
+  const dots = data.map((p, i) => {
+    if (p.score === 0) return '';
+    const pos = spoke(i, r * (p.score / 3));
+    const fill = p.code.startsWith('ap') ? '#9b4f19' : '#4a6741';
+    return `<circle cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="3.5" fill="${fill}"/>`;
+  }).join('');
+
+  return `<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Perceptual fingerprint radar chart" style="width:100%;height:auto;">
+    <path d="${ring(1/3)}" fill="none" stroke="#ede9e2" stroke-width="1"/>
+    <path d="${ring(2/3)}" fill="none" stroke="#d4cdc4" stroke-width="1"/>
+    <path d="${ring(1)}"   fill="none" stroke="#a09487" stroke-width="1"/>
+    ${spokeLines}
+    <path d="${polyPath}" fill="rgba(155,79,25,0.10)" stroke="#9b4f19" stroke-width="1.5" stroke-linejoin="round"/>
+    ${dots}
+    ${labels}
+    <text x="${cx}" y="${(cy - r - 8).toFixed(1)}" text-anchor="middle" font-size="7" fill="#a09487" font-family="system-ui,sans-serif">3</text>
+    <text x="${cx}" y="${(cy - r * (2/3) - 5).toFixed(1)}" text-anchor="middle" font-size="7" fill="#a09487" font-family="system-ui,sans-serif">2</text>
+    <text x="${cx}" y="${(cy - r * (1/3) - 4).toFixed(1)}" text-anchor="middle" font-size="7" fill="#a09487" font-family="system-ui,sans-serif">1</text>
+  </svg>`;
+}
+
+const radarSvg = buildRadar(fingerprint);
 ---
 <!doctype html>
 <html lang="en">
@@ -161,6 +221,23 @@ const ta = fingerprint.slice(15);
           <span class="pass-note">Computed from Pass 1 observation alone. Stored against the object record.</span>
         </div>
         <div class="fp-body">
+
+          <!-- Radar chart -->
+          <div class="radar-wrap">
+            <div class="radar-svg" set:html={radarSvg} />
+            <div class="radar-legend">
+              <div class="radar-key">
+                <span class="radar-dot ap-dot"></span>
+                <span>Artifact-domain principles (ap_)</span>
+              </div>
+              <div class="radar-key">
+                <span class="radar-dot ta-dot"></span>
+                <span>Universal Tier A principles (ta_)</span>
+              </div>
+              <p class="radar-note">Each axis is one principle, scored 0–3 from Pass 1 observation alone. The shaded polygon is the perceptual fingerprint of this object.</p>
+            </div>
+          </div>
+
           <div class="fp-group">
             <p class="fp-group-title">Artifact-domain principles (ap_1–ap_15)</p>
             {ap.map(p => (
@@ -493,6 +570,44 @@ const ta = fingerprint.slice(15);
     font-size: var(--text-xl);
     margin-top: var(--space-6);
     margin-bottom: var(--space-3);
+  }
+
+  /* Radar */
+  .radar-wrap {
+    display: grid;
+    grid-template-columns: 1fr 240px;
+    gap: var(--space-10);
+    align-items: center;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: var(--space-8);
+    margin-bottom: var(--space-4);
+  }
+  .radar-svg { width: 100%; max-width: 380px; }
+  .radar-legend { display: flex; flex-direction: column; gap: var(--space-4); }
+  .radar-key {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+  .radar-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .ap-dot { background: #9b4f19; }
+  .ta-dot { background: #4a6741; }
+  .radar-note {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    line-height: 1.6;
+    border-top: 1px solid var(--border);
+    padding-top: var(--space-4);
+    max-width: none;
   }
 
   /* Fingerprint */
