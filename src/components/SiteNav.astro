@@ -7,6 +7,8 @@
       <li><a href="#proof">Proof</a></li>
       <li><a href="#how-it-works">How it works</a></li>
       <li><a href="#roadmap">Roadmap</a></li>
+      <li class="nav-divider" aria-hidden="true">|</li>
+      <li><a href="/corpus" class="nav-app">Artifact Collection</a></li>
     </ul>
   </div>
 </nav>
@@ -46,5 +48,8 @@
     letter-spacing: 0.02em;
   }
   .nav-links a:hover { color: var(--accent); }
+  .nav-divider { color: var(--border-strong); user-select: none; }
+  .nav-app { color: var(--text) !important; }
+  .nav-app:hover { color: var(--accent) !important; }
   @media (max-width: 640px) { .nav-links { display: none; } }
 </style>
