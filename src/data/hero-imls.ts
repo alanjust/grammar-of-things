@@ -26,8 +26,9 @@ export const hero: HeroContent = {
     + 'institutional stewardship.',
   ctaText:  'See the proof',
   ctaHref:  '#proof',
-  imageAlt: 'Epistemic analysis of a Mimbres bowl — showing observation, interpretation, and the 27-principle fingerprint',
+  imageAlt: 'Interior view of Mimbres Black-on-white bowl A326247, National Museum of Natural History, Smithsonian Institution. Collected by J.W. Fewkes, Mimbres Valley, New Mexico, 1923.',
   imageCaption:
-    'Mimbres Black-on-white bowl, NMNH A326247 / 070367. '
-    + 'Analysis output with epistemic labels and perceptual fingerprint.',
+    'Bowl A326247 · Interior. Mimbres Valley, Luna County, NM. '
+    + 'Collected J.W. Fewkes, 1923. NMNH Accession 070367. '
+    + 'Courtesy Smithsonian Institution.',
 };

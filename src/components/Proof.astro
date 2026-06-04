@@ -76,10 +76,23 @@ const universalPrinciples = fingerprint.slice(15);
     <div class="section-head">
       <p class="section-label">The proof</p>
       <h2>One real object, read all the way through</h2>
-      <p class="section-sub">
-        Mimbres Black-on-white bowl — NMNH catalog 070367 / accession A326247.<br>
-        National Museum of Natural History, Smithsonian Institution.
-      </p>
+      <div class="object-meta">
+        <div class="meta-images">
+          <img src="/images/bowl-interior.jpg" alt="Bowl A326247 — interior view" class="meta-img meta-img--primary" />
+          <img src="/images/bowl-exterior.jpg" alt="Bowl A326247 — exterior/profile view" class="meta-img" />
+        </div>
+        <dl class="meta-fields">
+          <div><dt>Object</dt><dd>Bowl — ceramic vessel</dd></div>
+          <div><dt>Culture</dt><dd>Mimbres</dd></div>
+          <div><dt>Location</dt><dd>Mimbres Valley, Luna County, New Mexico</dd></div>
+          <div><dt>Collector</dt><dd>J.W. Fewkes, 1923</dd></div>
+          <div><dt>Catalog no.</dt><dd>A326247-0</dd></div>
+          <div><dt>Accession</dt><dd>070367 · Bureau of American Ethnology donation, 1 Aug 1923</dd></div>
+          <div><dt>Institution</dt><dd>National Museum of Natural History, Smithsonian Institution</dd></div>
+          <div><dt>EZID / ARK</dt><dd><a href="http://n2t.net/ark:/65665/3510387fe-08a1-4a08-9876-b3829fc74186" target="_blank" rel="noopener">n2t.net/ark:/65665/3510387fe-08a1-4a08-9876-b3829fc74186</a></dd></div>
+          <div><dt>Manufacturing</dt><dd>Painted</dd></div>
+        </dl>
+      </div>
     </div>
 
     <!-- Epistemic label legend -->
@@ -225,7 +238,54 @@ const universalPrinciples = fingerprint.slice(15);
 
 <style>
   section { background: var(--bg); border-bottom: 1px solid var(--border); }
-  .section-head { margin-bottom: var(--space-12); }
+  .section-head { margin-bottom: var(--space-8); }
+
+  /* Real object metadata */
+  .object-meta {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: var(--space-8);
+    margin-bottom: var(--space-12);
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: var(--space-6);
+    align-items: start;
+  }
+  .meta-images {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .meta-img {
+    width: 100%;
+    height: auto;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    display: block;
+  }
+  .meta-img--primary { aspect-ratio: 1; object-fit: cover; object-position: center top; }
+  .meta-fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .meta-fields div {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: var(--space-4);
+    font-size: var(--text-sm);
+    padding-block: var(--space-1);
+    border-bottom: 1px solid var(--bg-alt);
+  }
+  dt { color: var(--text-muted); font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.03em; padding-top: 2px; }
+  dd { color: var(--text); line-height: 1.5; word-break: break-word; }
+  dd a { color: var(--accent); font-family: var(--font-mono); font-size: var(--text-xs); }
+  @media (max-width: 768px) {
+    .object-meta { grid-template-columns: 1fr; }
+    .meta-images { flex-direction: row; }
+    .meta-img--primary { aspect-ratio: auto; }
+  }
   .section-label {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
