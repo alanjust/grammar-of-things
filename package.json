@@ -10,7 +10,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "generate-types": "wrangler types"
+    "generate-types": "wrangler types",
+    "deploy": "astro build && wrangler deploy --cwd dist/server --config wrangler.json"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
