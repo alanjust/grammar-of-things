@@ -1,0 +1,815 @@
+---
+export const prerender = true;
+import SiteNav from '../components/SiteNav.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Catalog — The Grammar of Things</title>
+  <style is:global>
+    @import url('/src/styles/base.css');
+  </style>
+</head>
+<body>
+  <SiteNav />
+
+  <div class="page">
+    <div class="container">
+
+      <div class="page-head">
+        <h1>Catalog an object</h1>
+        <p class="page-sub">Upload image(s) and paste the raw catalog record. Track A computes the blind fingerprint from the image alone. Track B extracts and maps the documentation. No Pass 2/3/4 runs here.</p>
+        <div id="wrongHostBanner" class="host-banner" style="display:none">
+          ⚠ API not available at this URL. Use <strong>grammar-of-things.alan-66a.workers.dev/catalog</strong> to run ingestion.
+        </div>
+      </div>
+
+      <form id="catalogForm" novalidate>
+
+        <!-- Images -->
+        <section class="form-section">
+          <div class="section-label-row">
+            <p class="form-label">Images <span class="required">required</span></p>
+            <p class="form-hint">Up to 6 views. Label each view — the label appears in the Pass 1 observation.</p>
+          </div>
+
+          <div id="dropZone" class="drop-zone">
+            <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" multiple hidden />
+            <p class="drop-icon">↑</p>
+            <p class="drop-text">Click to upload or drag images here</p>
+            <p class="drop-hint">JPEG, PNG, or WebP · Up to 6 images</p>
+          </div>
+
+          <div id="imageSlots" class="image-slots" style="display:none"></div>
+        </section>
+
+        <!-- Documentation -->
+        <section class="form-section">
+          <div class="section-label-row">
+            <p class="form-label">Raw catalog record <span class="optional">optional</span></p>
+            <p class="form-hint">Paste exactly what the source shows — field names and values verbatim. Leave empty to catalog on fingerprint alone.</p>
+          </div>
+          <textarea id="docRaw" class="doc-textarea" placeholder="Catalog Number:    A326247-0&#10;Culture:    Mimbres&#10;Country:    United States&#10;Collector(s):    Fewkes, J. W.&#10;…" rows="10"></textarea>
+        </section>
+
+        <!-- Submit -->
+        <div class="submit-row">
+          <button type="submit" id="submitBtn" class="submit-btn" disabled>
+            Catalog object
+          </button>
+          <p id="submitHint" class="submit-hint">Add at least one image to continue</p>
+        </div>
+
+      </form>
+
+      <!-- Progress -->
+      <div id="progressSection" class="progress-section" style="display:none">
+        <div id="statusLog" class="status-log"></div>
+        <div id="pass1Block" class="pass1-block" style="display:none">
+          <p class="block-label">Pass 1 — blind observation</p>
+          <div id="pass1Text" class="pass1-text"></div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="resultsSection" class="results-section" style="display:none">
+
+        <div class="result-header">
+          <p class="result-label">Cataloged</p>
+          <p id="objectIdLine" class="object-id-line"></p>
+        </div>
+
+        <div class="results-grid">
+
+          <!-- Fingerprint -->
+          <div class="result-card">
+            <p class="card-title">Perceptual fingerprint</p>
+            <p class="card-sub">27 principles scored 0–3 from Pass 1 alone</p>
+            <div id="radarWrap" class="radar-wrap"></div>
+            <div id="fpBars" class="fp-bars"></div>
+          </div>
+
+          <!-- Documentation -->
+          <div class="result-card">
+            <p class="card-title">Documentation layers</p>
+
+            <div id="docSection" class="doc-section">
+              <div class="doc-layer">
+                <p class="layer-label layer-raw">Layer 1 — Raw paste</p>
+                <pre id="docRawOut" class="layer-content"></pre>
+              </div>
+              <div class="doc-layer">
+                <p class="layer-label layer-structured">Layer 2 — Structured JSON</p>
+                <pre id="docStructuredOut" class="layer-content"></pre>
+              </div>
+              <div class="doc-layer">
+                <p class="layer-label layer-canonical">Layer 3 — Canonical fields</p>
+                <dl id="docCanonicalOut" class="canonical-list"></dl>
+              </div>
+            </div>
+
+            <div id="noDocNote" class="no-doc-note" style="display:none">
+              No documentation provided — object cataloged on fingerprint alone.
+            </div>
+          </div>
+
+        </div><!-- results-grid -->
+
+        <div class="next-step">
+          <p>Object is cataloged. To run the full analysis (Pass 2/3/4):</p>
+          <code id="analyzeCmd" class="analyze-cmd"></code>
+        </div>
+
+      </div><!-- resultsSection -->
+
+    </div><!-- container -->
+  </div><!-- page -->
+
+  <SiteFooter />
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────
+
+const LABEL_OPTIONS = ['Interior', 'Exterior', 'Profile', 'Bottom', 'Detail', 'Context'];
+const MAX_IMAGES = 6;
+
+const VECTOR_KEY = [
+  'ap_1','ap_2','ap_3','ap_4','ap_5','ap_6','ap_7','ap_8','ap_9','ap_10',
+  'ap_11','ap_12','ap_13','ap_14','ap_15',
+  'ta_1','ta_2','ta_4','ta_5','ta_13','ta_15','ta_20','ta_28',
+  'ta_47','ta_48','ta_49','ta_51',
+];
+
+const PRINCIPLE_NAMES = {
+  ap_1:'Production Trace Reading', ap_2:'Sequence Inference', ap_3:'Material Boundary Attention',
+  ap_4:'Wear Differential', ap_5:'Absence as Evidence', ap_6:'Composite Detection',
+  ap_7:'Anatomical Correspondence', ap_8:'Symmetry as Evidence', ap_9:'Proportion as Encoding',
+  ap_10:'Color Zone Logic', ap_11:'Investment Gradient', ap_12:'Attachment Point Reading',
+  ap_13:'Orientation Dependency', ap_14:'Completion State', ap_15:'Reduction vs. Construction',
+  ta_1:'Edge Detection', ta_2:'Color Opponent Channels', ta_4:'Figure-Ground Relationships',
+  ta_5:'Grouping', ta_13:'Overlap / Occlusion', ta_15:'Closure / Negative Space',
+  ta_20:'Simultaneous Contrast', ta_28:'Specularity / Reflection',
+  ta_47:'Face Detection', ta_48:'Biological Motion', ta_49:'Gaze Direction', ta_51:'Visual Pop-out',
+};
+
+// ── State ──────────────────────────────────────────────────────────────────
+
+/** @type {{ data: string; label: string }[]} */
+let images = [];
+
+// ── Wrong-host banner ──────────────────────────────────────────────────────
+
+if (!location.hostname.includes('workers.dev') && !location.hostname.includes('localhost')) {
+  document.getElementById('wrongHostBanner').style.display = '';
+}
+
+// ── DOM refs ───────────────────────────────────────────────────────────────
+
+const dropZone    = /** @type {HTMLElement} */ (document.getElementById('dropZone'));
+const fileInput   = /** @type {HTMLInputElement} */ (document.getElementById('fileInput'));
+const imageSlots  = /** @type {HTMLElement} */ (document.getElementById('imageSlots'));
+const submitBtn   = /** @type {HTMLButtonElement} */ (document.getElementById('submitBtn'));
+const submitHint  = /** @type {HTMLElement} */ (document.getElementById('submitHint'));
+const docRaw      = /** @type {HTMLTextAreaElement} */ (document.getElementById('docRaw'));
+const form        = /** @type {HTMLFormElement} */ (document.getElementById('catalogForm'));
+
+// ── Image upload ───────────────────────────────────────────────────────────
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  handleFiles(Array.from(e.dataTransfer?.files ?? []));
+});
+fileInput.addEventListener('change', () => handleFiles(Array.from(fileInput.files ?? [])));
+
+/** @param {File[]} files */
+function handleFiles(files) {
+  for (const file of files) {
+    if (images.length >= MAX_IMAGES) break;
+    if (!file.type.startsWith('image/')) continue;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const data = /** @type {string} */ (e.target?.result ?? '');
+      const defaultLabel = LABEL_OPTIONS[images.length] ?? 'View';
+      images.push({ data, label: defaultLabel });
+      renderSlots();
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function renderSlots() {
+  if (images.length === 0) {
+    dropZone.style.display = '';
+    imageSlots.style.display = 'none';
+    updateSubmit();
+    return;
+  }
+  dropZone.style.display = 'none';
+  imageSlots.style.display = '';
+
+  imageSlots.innerHTML = images.map((img, i) => `
+    <div class="img-slot" data-index="${i}">
+      <button type="button" class="slot-remove" data-index="${i}" aria-label="Remove">×</button>
+      <img class="slot-thumb" src="${img.data}" alt="${img.label}">
+      <select class="slot-label" data-index="${i}">
+        ${LABEL_OPTIONS.map(opt => `<option value="${opt}"${opt === img.label ? ' selected' : ''}>${opt}</option>`).join('')}
+      </select>
+    </div>
+  `).join('') + (images.length < MAX_IMAGES ? `
+    <div class="slot-add">
+      <label for="fileInput">
+        <span class="add-icon">+</span>
+        <span>Add view</span>
+      </label>
+    </div>
+  ` : '');
+
+  imageSlots.querySelectorAll('.slot-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = Number(/** @type {HTMLElement} */ (btn).dataset.index);
+      images.splice(i, 1);
+      renderSlots();
+    });
+  });
+  imageSlots.querySelectorAll('.slot-label').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const i = Number(/** @type {HTMLSelectElement} */ (sel).dataset.index);
+      images[i].label = /** @type {HTMLSelectElement} */ (sel).value;
+    });
+  });
+
+  fileInput.value = '';
+  updateSubmit();
+}
+
+function updateSubmit() {
+  const hasImages = images.length > 0;
+  submitBtn.disabled = !hasImages;
+  submitHint.textContent = hasImages ? '' : 'Add at least one image to continue';
+}
+
+// ── Form submit ─────────────────────────────────────────────────────────────
+
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (images.length === 0) return;
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Running…';
+
+  const progress = /** @type {HTMLElement} */ (document.getElementById('progressSection'));
+  const statusLog = /** @type {HTMLElement} */ (document.getElementById('statusLog'));
+  const pass1Block = /** @type {HTMLElement} */ (document.getElementById('pass1Block'));
+  const pass1TextEl = /** @type {HTMLElement} */ (document.getElementById('pass1Text'));
+  const results = /** @type {HTMLElement} */ (document.getElementById('resultsSection'));
+
+  progress.style.display = '';
+  results.style.display = 'none';
+  statusLog.innerHTML = '';
+  pass1Block.style.display = 'none';
+  pass1TextEl.textContent = '';
+
+  const addStatus = (msg, isError = false) => {
+    const p = document.createElement('p');
+    p.className = 'status-line' + (isError ? ' status-error' : '');
+    p.textContent = msg;
+    statusLog.appendChild(p);
+    statusLog.scrollTop = statusLog.scrollHeight;
+  };
+
+  try {
+    const res = await fetch('/api/ingest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        images: images.map(img => ({ data: img.data, label: img.label })),
+        doc_raw: docRaw.value.trim(),
+      }),
+    });
+
+    if (!res.ok || !res.body) {
+      addStatus(`Error ${res.status} — check console`, true);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Catalog object';
+      return;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let pass1Acc = '';
+    let completeData = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let evt;
+        try { evt = JSON.parse(line.slice(6)); } catch { continue; }
+
+        if (evt.type === 'status') {
+          addStatus(evt.message, evt.message.startsWith('⚠'));
+        } else if (evt.type === 'pass1_delta') {
+          pass1Block.style.display = '';
+          pass1Acc += evt.text;
+          pass1TextEl.textContent = pass1Acc;
+        } else if (evt.type === 'pass1_complete') {
+          pass1Acc = evt.pass1;
+          pass1TextEl.textContent = pass1Acc;
+        } else if (evt.type === 'error') {
+          addStatus(evt.error, true);
+        } else if (evt.type === 'complete') {
+          completeData = evt;
+        }
+      }
+    }
+
+    if (completeData) {
+      renderResults(completeData);
+    }
+
+  } catch (err) {
+    addStatus(`Fetch error: ${err instanceof Error ? err.message : String(err)}`, true);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Catalog object';
+  }
+});
+
+// ── Results ─────────────────────────────────────────────────────────────────
+
+/** @param {any} data */
+function renderResults(data) {
+  const results = /** @type {HTMLElement} */ (document.getElementById('resultsSection'));
+  results.style.display = '';
+  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Object ID
+  const idLine = document.getElementById('objectIdLine');
+  if (idLine) {
+    idLine.textContent = data.object_id
+      ? `Object ID: ${data.object_id}`
+      : 'Saved (DB binding not configured — object_id unavailable)';
+  }
+
+  // Analyze command hint
+  const cmd = document.getElementById('analyzeCmd');
+  if (cmd && data.object_id) {
+    cmd.textContent = `POST /api/analyze  { "object_id": ${data.object_id}, "mode": "artifact", "audience": "researcher" }`;
+  }
+
+  // Fingerprint
+  const vec = data.fingerprint_vector;
+  if (vec && Array.isArray(vec)) {
+    const scores = Object.fromEntries(VECTOR_KEY.map((k, i) => [k, vec[i] ?? 0]));
+    document.getElementById('radarWrap').innerHTML = buildRadar(scores);
+    document.getElementById('fpBars').innerHTML = buildBars(scores);
+  }
+
+  // Documentation
+  const layers = data.doc_layers;
+  const noDoc = document.getElementById('noDocNote');
+  const docSec = document.getElementById('docSection');
+
+  if (!layers || !layers.raw) {
+    if (noDoc) noDoc.style.display = '';
+    if (docSec) docSec.style.display = 'none';
+  } else {
+    if (noDoc) noDoc.style.display = 'none';
+    if (docSec) docSec.style.display = '';
+    const rawEl = document.getElementById('docRawOut');
+    if (rawEl) rawEl.textContent = layers.raw ?? '';
+    const structEl = document.getElementById('docStructuredOut');
+    if (structEl) structEl.textContent = layers.structured ? JSON.stringify(layers.structured, null, 2) : '—';
+    const canonEl = document.getElementById('docCanonicalOut');
+    if (canonEl && layers.canonical) {
+      const can = layers.canonical;
+      const rows = [
+        ['Culture', can.culture],
+        ['Confidence', can.culture_confidence],
+        ['Period', can.period],
+        ['Object type', can.object_type],
+        ['Material', can.material],
+        ['Site', can.site],
+        ['Collection', can.collection],
+        ['Institution', can.source_institution],
+        ['EZID / ARK', can.ezid_ark],
+        ['Catalog no.', can.catalog_number],
+        ['Accession no.', can.accession_number],
+        ['Condition', can.condition],
+        ['Notes', can.notes],
+      ].filter(([, v]) => v);
+      canonEl.innerHTML = rows.map(([k, v]) =>
+        `<div><dt>${k}</dt><dd>${v}</dd></div>`
+      ).join('');
+      if (can.mapping_flags?.length) {
+        canonEl.innerHTML += `<div class="flag-row"><dt>Mapping flags</dt><dd>${can.mapping_flags.join('; ')}</dd></div>`;
+      }
+    }
+  }
+}
+
+// ── Radar (client-side SVG) ─────────────────────────────────────────────────
+
+/** @param {Record<string, number>} scores */
+function buildRadar(scores) {
+  const cx = 200, cy = 200, r = 155, n = VECTOR_KEY.length;
+  const toRad = d => (d * Math.PI) / 180;
+  const spoke = (i, radius) => {
+    const a = toRad((360 / n) * i - 90);
+    return { x: cx + radius * Math.cos(a), y: cy + radius * Math.sin(a) };
+  };
+  const ring = frac => VECTOR_KEY.map((_, i) => spoke(i, r * frac))
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z';
+
+  const poly = VECTOR_KEY.map((k, i) => {
+    const s = scores[k] ?? 0;
+    const p = spoke(i, s === 0 ? 4 : r * (s / 3));
+    return `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+  }).join(' ') + ' Z';
+
+  const spokes = VECTOR_KEY.map((_, i) => {
+    const o = spoke(i, r);
+    return `<line x1="${cx}" y1="${cy}" x2="${o.x.toFixed(1)}" y2="${o.y.toFixed(1)}" stroke="#d4cdc4" stroke-width="1"/>`;
+  }).join('');
+
+  const labels = VECTOR_KEY.map((k, i) => {
+    const pos = spoke(i, r + 20);
+    const anchor = pos.x < cx - 5 ? 'end' : pos.x > cx + 5 ? 'start' : 'middle';
+    const name = PRINCIPLE_NAMES[k] ?? k;
+    const short = name.length > 16 ? name.slice(0, 14) + '…' : name;
+    const color = k.startsWith('ap') ? '#9b4f19' : '#4a6741';
+    return `<text x="${pos.x.toFixed(1)}" y="${pos.y.toFixed(1)}" text-anchor="${anchor}" font-size="7.5" fill="${color}" font-family="system-ui,sans-serif" dominant-baseline="middle">${short}</text>`;
+  }).join('');
+
+  const dots = VECTOR_KEY.map((k, i) => {
+    const s = scores[k] ?? 0;
+    if (s === 0) return '';
+    const pos = spoke(i, r * (s / 3));
+    return `<circle cx="${pos.x.toFixed(1)}" cy="${pos.y.toFixed(1)}" r="3.5" fill="${k.startsWith('ap') ? '#9b4f19' : '#4a6741'}"/>`;
+  }).join('');
+
+  return `<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+    <path d="${ring(1/3)}" fill="none" stroke="#ede9e2" stroke-width="1"/>
+    <path d="${ring(2/3)}" fill="none" stroke="#d4cdc4" stroke-width="1"/>
+    <path d="${ring(1)}"   fill="none" stroke="#a09487" stroke-width="1"/>
+    ${spokes}
+    <path d="${poly}" fill="rgba(155,79,25,0.10)" stroke="#9b4f19" stroke-width="1.5" stroke-linejoin="round"/>
+    ${dots}${labels}
+    <text x="${cx}" y="${(cy - r - 8).toFixed(1)}" text-anchor="middle" font-size="7" fill="#a09487" font-family="system-ui,sans-serif">3</text>
+    <text x="${cx}" y="${(cy - r * 2/3 - 5).toFixed(1)}" text-anchor="middle" font-size="7" fill="#a09487" font-family="system-ui,sans-serif">2</text>
+    <text x="${cx}" y="${(cy - r / 3 - 4).toFixed(1)}" text-anchor="middle" font-size="7" fill="#a09487" font-family="system-ui,sans-serif">1</text>
+  </svg>`;
+}
+
+/** @param {Record<string, number>} scores */
+function buildBars(scores) {
+  return VECTOR_KEY.map(k => {
+    const s = scores[k] ?? 0;
+    const name = PRINCIPLE_NAMES[k] ?? k;
+    const color = s === 0 ? '#d4cdc4' : s === 1 ? '#c8a882' : s === 2 ? '#c4742a' : '#9b4f19';
+    return `<div class="fp-bar-row">
+      <span class="fp-code">${k}</span>
+      <div class="fp-bar-track"><div class="fp-bar-fill" style="width:${(s/3)*100}%;background:${color}"></div></div>
+      <span class="fp-score">${s}</span>
+      <span class="fp-name">${name}</span>
+    </div>`;
+  }).join('');
+}
+</script>
+
+<style>
+  .page {
+    padding-block: var(--space-16) var(--space-24);
+    background: var(--bg);
+    min-height: 80vh;
+  }
+  .container { max-width: 900px; }
+
+  /* Page head */
+  .page-head { margin-bottom: var(--space-12); }
+  h1 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); margin-bottom: var(--space-4); letter-spacing: -0.015em; }
+  .page-sub { font-size: var(--text-base); color: var(--text-muted); line-height: 1.7; max-width: 68ch; }
+  .host-banner {
+    margin-top: var(--space-4);
+    background: var(--theory-bg);
+    color: var(--theory);
+    border: 1px solid #e5c68a;
+    border-radius: 3px;
+    padding: var(--space-4) var(--space-6);
+    font-size: var(--text-sm);
+    max-width: none;
+  }
+
+  /* Form sections */
+  .form-section { margin-bottom: var(--space-10); }
+  .section-label-row { margin-bottom: var(--space-4); }
+  .form-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text);
+    max-width: none;
+    margin-bottom: var(--space-1);
+  }
+  .required { color: var(--accent); font-weight: normal; margin-left: var(--space-2); }
+  .optional  { color: var(--text-muted); font-weight: normal; margin-left: var(--space-2); }
+  .form-hint { font-size: var(--text-sm); color: var(--text-muted); max-width: 60ch; }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 4px;
+    padding: var(--space-12) var(--space-8);
+    text-align: center;
+    cursor: pointer;
+    background: var(--bg-surface);
+    transition: border-color var(--ease), background var(--ease);
+  }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: var(--accent-dim); }
+  .drop-icon { font-size: var(--text-3xl); color: var(--border-strong); margin-bottom: var(--space-2); }
+  .drop-text { font-size: var(--text-base); color: var(--text); margin-bottom: var(--space-1); max-width: none; }
+  .drop-hint { font-size: var(--text-sm); color: var(--text-muted); max-width: none; }
+
+  /* Image slots */
+  .image-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    align-items: flex-start;
+  }
+  .img-slot {
+    position: relative;
+    width: 140px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .slot-remove {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    background: rgba(28,25,23,0.7);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    z-index: 1;
+  }
+  .slot-thumb {
+    width: 140px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    display: block;
+  }
+  .slot-label {
+    width: 100%;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: var(--space-1) var(--space-2);
+    background: var(--bg-surface);
+    color: var(--text);
+  }
+  .slot-add {
+    width: 140px;
+    height: 140px;
+    border: 2px dashed var(--border);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .slot-add label {
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+  .slot-add label:hover { color: var(--accent); }
+  .add-icon { font-size: var(--text-2xl); line-height: 1; }
+
+  /* Textarea */
+  .doc-textarea {
+    width: 100%;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: var(--space-4) var(--space-5);
+    resize: vertical;
+    min-height: 180px;
+  }
+  .doc-textarea:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+
+  /* Submit */
+  .submit-row { display: flex; align-items: center; gap: var(--space-6); }
+  .submit-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    padding: var(--space-4) var(--space-8);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: background var(--ease);
+  }
+  .submit-btn:hover:not(:disabled) { background: var(--accent-light); }
+  .submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .submit-hint { font-size: var(--text-sm); color: var(--text-muted); }
+
+  /* Progress */
+  .progress-section {
+    margin-top: var(--space-12);
+    border-top: 1px solid var(--border);
+    padding-top: var(--space-8);
+  }
+  .status-log {
+    background: var(--bg-dark);
+    border-radius: 4px;
+    padding: var(--space-5) var(--space-6);
+    margin-bottom: var(--space-6);
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .status-line {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: #8a8079;
+    line-height: 1.8;
+    max-width: none;
+  }
+  .status-error { color: #e07070; }
+  .block-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: var(--space-3);
+    max-width: none;
+  }
+  .pass1-text {
+    font-size: var(--text-sm);
+    line-height: 1.8;
+    color: var(--text-muted);
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: var(--space-5) var(--space-6);
+    white-space: pre-wrap;
+  }
+
+  /* Results */
+  .results-section {
+    margin-top: var(--space-12);
+    border-top: 2px solid var(--border-strong);
+    padding-top: var(--space-10);
+  }
+  .result-header { margin-bottom: var(--space-8); }
+  .result-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--cons);
+    background: var(--cons-bg);
+    display: inline-block;
+    padding: 0.1em 0.6em;
+    border-radius: 2px;
+    margin-bottom: var(--space-2);
+  }
+  .object-id-line {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    max-width: none;
+  }
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8);
+    margin-bottom: var(--space-10);
+  }
+  .result-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: var(--space-6);
+  }
+  .card-title { font-size: var(--text-lg); font-family: var(--font-display); margin-bottom: var(--space-1); }
+  .card-sub { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-5); font-family: var(--font-mono); max-width: none; }
+  .radar-wrap { margin-bottom: var(--space-4); }
+  .fp-bars { display: flex; flex-direction: column; gap: var(--space-1); }
+  .fp-bar-row {
+    display: grid;
+    grid-template-columns: 42px 60px 16px 1fr;
+    gap: var(--space-2);
+    align-items: center;
+  }
+  .fp-code { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); }
+  .fp-bar-track { height: 6px; background: var(--bg-alt); border-radius: 2px; overflow: hidden; }
+  .fp-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s ease; }
+  .fp-score { font-family: var(--font-mono); font-size: 0.65rem; font-weight: 700; color: var(--text); text-align: center; }
+  .fp-name { font-size: 0.7rem; color: var(--text-muted); }
+
+  /* Doc layers */
+  .doc-layer { margin-bottom: var(--space-6); }
+  .layer-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.1em 0.5em;
+    border-radius: 2px;
+    display: inline-block;
+    margin-bottom: var(--space-3);
+  }
+  .layer-raw        { background: var(--bg-alt);    color: var(--text-muted); }
+  .layer-structured { background: var(--obs-bg);    color: var(--obs);        }
+  .layer-canonical  { background: var(--cons-bg);   color: var(--cons);       }
+  .layer-content {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: var(--space-3) var(--space-4);
+    overflow-x: auto;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .canonical-list { display: flex; flex-direction: column; gap: var(--space-1); }
+  .canonical-list div {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    padding-block: var(--space-1);
+    border-bottom: 1px solid var(--bg-alt);
+  }
+  .canonical-list dt { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); padding-top: 2px; }
+  .canonical-list dd { color: var(--text); line-height: 1.5; }
+  .flag-row dt, .flag-row dd { color: var(--theory) !important; }
+  .no-doc-note { font-size: var(--text-sm); color: var(--text-muted); font-style: italic; }
+
+  /* Next step */
+  .next-step {
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: var(--space-6);
+  }
+  .next-step p { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-3); max-width: none; }
+  .analyze-cmd {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text);
+    background: var(--bg-dark);
+    color: #ede9e2;
+    padding: var(--space-4) var(--space-5);
+    border-radius: 3px;
+    word-break: break-all;
+  }
+
+  @media (max-width: 768px) {
+    .results-grid { grid-template-columns: 1fr; }
+  }
+</style>
