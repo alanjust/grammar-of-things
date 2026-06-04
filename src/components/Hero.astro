@@ -97,11 +97,11 @@ const { content } = Astro.props;
   .object-panel {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: var(--space-5);
     background: var(--bg-surface);
     border: 1px solid var(--border);
     border-radius: 4px;
-    padding: var(--space-5);
+    padding: var(--space-7);
     text-decoration: none;
     transition: border-color var(--ease), box-shadow var(--ease);
   }
@@ -111,7 +111,7 @@ const { content } = Astro.props;
   }
   .panel-images {
     display: grid;
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: var(--space-3);
   }
   .img-wrap {
@@ -142,7 +142,7 @@ const { content } = Astro.props;
     padding: 0.1em 0.4em;
     border-radius: 2px;
   }
-  .panel-meta { display: flex; flex-direction: column; gap: var(--space-1); }
+  .panel-meta { display: flex; flex-direction: column; gap: var(--space-2); padding-inline: var(--space-1); }
   .meta-title {
     font-family: var(--font-display);
     font-size: var(--text-lg);
