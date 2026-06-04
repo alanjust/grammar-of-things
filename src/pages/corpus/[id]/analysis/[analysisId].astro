@@ -1,0 +1,253 @@
+---
+export const prerender = false;
+import { env as cfEnv } from 'cloudflare:workers';
+import SiteNav from '../../../../components/SiteNav.astro';
+import SiteFooter from '../../../../components/SiteFooter.astro';
+
+const { id, analysisId } = Astro.params;
+const env = cfEnv as unknown as Record<string, any>;
+const db  = env.DB;
+
+let analysis: any = null;
+let object: any   = null;
+let notFound      = false;
+
+if (!db || !id || !analysisId) {
+  notFound = true;
+} else {
+  analysis = await db
+    .prepare('SELECT * FROM analyses WHERE id = ? AND object_id = ?')
+    .bind(Number(analysisId), Number(id))
+    .first();
+  if (!analysis) {
+    notFound = true;
+  } else {
+    object = await db.prepare('SELECT * FROM objects WHERE id = ?').bind(Number(id)).first();
+  }
+}
+
+let canonical: any = null;
+if (object?.doc_canonical) { try { canonical = JSON.parse(object.doc_canonical); } catch {} }
+
+let fingerprintFlag: any = null;
+if (analysis?.fingerprint_flag) { try { fingerprintFlag = JSON.parse(analysis.fingerprint_flag); } catch {} }
+
+const VECTOR_KEY = [
+  'ap_1','ap_2','ap_3','ap_4','ap_5','ap_6','ap_7','ap_8','ap_9','ap_10',
+  'ap_11','ap_12','ap_13','ap_14','ap_15',
+  'ta_1','ta_2','ta_4','ta_5','ta_13','ta_15','ta_20','ta_28',
+  'ta_47','ta_48','ta_49','ta_51',
+];
+const PRINCIPLE_NAMES: Record<string, string> = {
+  ap_1:'Production Trace Reading', ap_2:'Sequence Inference', ap_3:'Material Boundary Attention',
+  ap_4:'Wear Differential', ap_5:'Absence as Evidence', ap_6:'Composite Detection',
+  ap_7:'Anatomical Correspondence', ap_8:'Symmetry as Evidence', ap_9:'Proportion as Encoding',
+  ap_10:'Color Zone Logic', ap_11:'Investment Gradient', ap_12:'Attachment Point Reading',
+  ap_13:'Orientation Dependency', ap_14:'Completion State', ap_15:'Reduction vs. Construction',
+  ta_1:'Edge Detection', ta_2:'Color Opponent Channels', ta_4:'Figure-Ground Relationships',
+  ta_5:'Grouping', ta_13:'Overlap / Occlusion', ta_15:'Closure / Negative Space',
+  ta_20:'Simultaneous Contrast', ta_28:'Specularity / Reflection',
+  ta_47:'Face Detection', ta_48:'Biological Motion', ta_49:'Gaze Direction', ta_51:'Visual Pop-out',
+};
+function scoreColor(s: number) {
+  return s === 0 ? '#d4cdc4' : s === 1 ? '#c8a882' : s === 2 ? '#c4742a' : '#9b4f19';
+}
+
+const vec: number[] = analysis?.analysis_vector ? JSON.parse(analysis.analysis_vector) : [];
+const imgKeys = object?.image_analysis_key?.split(',').map((k: string) => k.trim()).filter(Boolean) ?? [];
+const accession = object?.accession_number ?? object?.catalog_number ?? `Object ${id}`;
+const date = analysis ? new Date(analysis.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{notFound ? 'Not found' : `Analysis — ${accession}`} · The Grammar of Things</title>
+  <style is:global>
+    @import url('/src/styles/base.css');
+  </style>
+</head>
+<body>
+  <SiteNav />
+
+  <div class="page">
+    <div class="container">
+
+      {notFound ? (
+        <p class="not-found">Analysis not found.</p>
+      ) : (
+        <>
+          <div class="top-bar">
+            <a href={`/corpus/${id}`} class="back-link">← {accession}</a>
+            <a href={`/api/analysis/${analysisId}?format=md`} download class="download-link">↓ Download .md</a>
+          </div>
+
+          <header class="analysis-header">
+            <div class="header-images">
+              {imgKeys.slice(0, 2).map((key: string, i: number) => (
+                <img src={`/api/image/${key}`} alt={`View ${i + 1}`} />
+              ))}
+            </div>
+            <div class="header-info">
+              <p class="eyebrow">{analysis.mode} · {analysis.audience}</p>
+              <h1>{accession}</h1>
+              <p class="date">{date} · Analysis #{analysisId}</p>
+              {analysis.model_pass2 && <p class="model">Model: {analysis.model_pass2}</p>}
+
+              {object && (
+                <dl class="meta">
+                  {object.attribution_culture && <div><dt>Culture</dt><dd>{object.attribution_culture}</dd></div>}
+                  {canonical?.period           && <div><dt>Period</dt><dd>{canonical.period}</dd></div>}
+                  {object.source_institution   && <div><dt>Institution</dt><dd>{object.source_institution}</dd></div>}
+                </dl>
+              )}
+
+              {fingerprintFlag && (
+                <div class={`fp-flag flag-${fingerprintFlag.alignment}`}>
+                  <span class="flag-badge">{fingerprintFlag.alignment}</span>
+                  <span class="flag-strength">{fingerprintFlag.flag_strength}</span>
+                  <p class="flag-reason">{fingerprintFlag.reasoning}</p>
+                </div>
+              )}
+            </div>
+          </header>
+
+          {/* Pass 1 */}
+          {analysis.pass1_text && (
+            <section class="pass-section">
+              <div class="pass-label">
+                <span class="pass-num">Pass 1</span>
+                <span class="pass-name">Blind observation</span>
+                <span class="pass-note">Documentation excluded — image only</span>
+              </div>
+              <div class="pass-body">
+                <p>{analysis.pass1_text}</p>
+              </div>
+            </section>
+          )}
+
+          {/* Fingerprint */}
+          {vec.length > 0 && (
+            <section class="pass-section">
+              <div class="pass-label">
+                <span class="pass-num">Fingerprint</span>
+                <span class="pass-name">27-principle perceptual vector</span>
+              </div>
+              <div class="fp-grid">
+                {VECTOR_KEY.map((k, i) => {
+                  const s = vec[i] ?? 0;
+                  return (
+                    <div class="fp-row">
+                      <span class="fp-code">{k}</span>
+                      <div class="fp-track"><div class="fp-fill" style={`width:${(s/3)*100}%;background:${scoreColor(s)}`}></div></div>
+                      <span class="fp-score">{s}</span>
+                      <span class="fp-name">{PRINCIPLE_NAMES[k] ?? k}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* Pass 2 */}
+          {analysis.pass2_text && (
+            <section class="pass-section">
+              <div class="pass-label">
+                <span class="pass-num">Pass 2</span>
+                <span class="pass-name">{analysis.mode === 'connections' ? 'Cultural connections' : 'Artifact analysis'}</span>
+              </div>
+              <div class="pass-body">
+                <p>{analysis.pass2_text}</p>
+              </div>
+            </section>
+          )}
+
+          {/* Pass 3 */}
+          {analysis.pass3_text && (
+            <section class="pass-section">
+              <div class="pass-label">
+                <span class="pass-num">Pass 3</span>
+                <span class="pass-name">What to take forward</span>
+              </div>
+              <div class="pass-body">
+                <p>{analysis.pass3_text}</p>
+              </div>
+            </section>
+          )}
+        </>
+      )}
+    </div>
+  </div>
+
+  <SiteFooter />
+</body>
+</html>
+
+<style>
+  .page { padding-block: var(--space-16) var(--space-24); background: var(--bg); }
+  .container { max-width: 860px; }
+  .not-found { color: var(--text-muted); padding: var(--space-16) 0; }
+
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-10); }
+  .back-link { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); text-decoration: none; letter-spacing: 0.04em; }
+  .back-link:hover { color: var(--accent); }
+  .download-link {
+    font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent);
+    text-decoration: none; border: 1px solid var(--accent);
+    padding: var(--space-1) var(--space-4); border-radius: 2px; letter-spacing: 0.03em;
+  }
+  .download-link:hover { background: var(--accent-dim); }
+
+  /* Header */
+  .analysis-header {
+    display: grid; grid-template-columns: 200px 1fr; gap: var(--space-10);
+    align-items: start; margin-bottom: var(--space-16);
+    padding-bottom: var(--space-12); border-bottom: 2px solid var(--border-strong);
+  }
+  .header-images { display: flex; flex-direction: column; gap: var(--space-3); }
+  .header-images img { width: 100%; aspect-ratio: 1; object-fit: cover; object-position: center top; border: 1px solid var(--border); border-radius: 3px; display: block; }
+  .eyebrow { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: var(--space-2); max-width: none; }
+  h1 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: -0.015em; margin-bottom: var(--space-2); }
+  .date, .model { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-1); max-width: none; }
+  .meta { display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-4); margin-bottom: var(--space-4); }
+  .meta div { display: grid; grid-template-columns: 80px 1fr; gap: var(--space-3); font-size: var(--text-sm); padding-block: 2px; border-bottom: 1px solid var(--bg-alt); }
+  dt { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); padding-top: 2px; }
+  dd { color: var(--text); }
+
+  /* Fingerprint flag */
+  .fp-flag { padding: var(--space-4); border-radius: 3px; border: 1px solid var(--border); margin-top: var(--space-4); }
+  .flag-aligned   { background: var(--cons-bg); }
+  .flag-divergent { background: var(--theory-bg); }
+  .flag-inconclusive { background: var(--bg-alt); }
+  .flag-badge { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.1em 0.5em; border-radius: 2px; margin-right: var(--space-2); }
+  .flag-aligned   .flag-badge { background: var(--cons-bg);   color: var(--cons); }
+  .flag-divergent .flag-badge { background: var(--theory-bg); color: var(--theory); }
+  .flag-inconclusive .flag-badge { background: var(--bg-alt); color: var(--text-muted); }
+  .flag-strength { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
+  .flag-reason { font-size: var(--text-sm); color: var(--text); line-height: 1.6; margin-top: var(--space-2); max-width: 60ch; }
+
+  /* Pass sections */
+  .pass-section { margin-bottom: var(--space-16); padding-bottom: var(--space-12); border-bottom: 1px solid var(--border); }
+  .pass-label { display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-8); }
+  .pass-num  { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 700; color: var(--accent); letter-spacing: 0.04em; text-transform: uppercase; }
+  .pass-name { font-family: var(--font-display); font-size: var(--text-xl); color: var(--text); }
+  .pass-note { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); margin-left: auto; }
+  .pass-body p { font-size: var(--text-lg); line-height: 1.9; color: var(--text); white-space: pre-wrap; max-width: 74ch; }
+
+  /* Fingerprint bars */
+  .fp-grid { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-2); }
+  .fp-row { display: grid; grid-template-columns: 44px 80px 22px 1fr; gap: var(--space-3); align-items: center; padding-block: var(--space-2); border-bottom: 1px solid var(--bg-alt); }
+  .fp-row:last-child { border-bottom: none; }
+  .fp-code  { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
+  .fp-track { height: 7px; background: var(--bg-alt); border-radius: 2px; overflow: hidden; }
+  .fp-fill  { height: 100%; border-radius: 2px; }
+  .fp-score { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 700; color: var(--text); text-align: center; }
+  .fp-name  { font-size: var(--text-sm); color: var(--text); }
+
+  @media (max-width: 640px) {
+    .analysis-header { grid-template-columns: 1fr; }
+    .header-images { flex-direction: row; }
+    .header-images img { aspect-ratio: auto; max-height: 160px; }
+  }
+</style>

@@ -222,6 +222,10 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
                       {a.tradition && <span class="analysis-tradition">{a.tradition}</span>}
                       {a.tradition_confidence && <span class="conf">({a.tradition_confidence})</span>}
                       <span class="analysis-date">{new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      <div class="analysis-actions">
+                        <a href={`/corpus/${object.id}/analysis/${a.id}`} class="analysis-action-link">View full →</a>
+                        <a href={`/api/analysis/${a.id}?format=md`} download class="analysis-action-link">↓ .md</a>
+                      </div>
                     </div>
                     {a.pass2_text && (
                       <p class="analysis-excerpt">{a.pass2_text.slice(0, 300)}{a.pass2_text.length > 300 ? '…' : ''}</p>
@@ -513,15 +517,15 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
   .fp-section { margin-bottom: var(--space-16); padding-bottom: var(--space-12); border-bottom: 1px solid var(--border); }
   .fp-layout { display: grid; grid-template-columns: 380px 1fr; gap: var(--space-8); align-items: start; margin-bottom: var(--space-8); }
   .fp-radar-wrap { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: var(--space-4); }
-  .fp-body { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: var(--space-5); }
-  .fp-bars { display: flex; flex-direction: column; gap: var(--space-1); }
-  .fp-row { display: grid; grid-template-columns: 40px 60px 18px 1fr; gap: var(--space-2); align-items: center; padding-block: 2px; border-bottom: 1px solid var(--bg-alt); }
+  .fp-body { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: var(--space-7); }
+  .fp-bars { display: flex; flex-direction: column; gap: var(--space-2); }
+  .fp-row { display: grid; grid-template-columns: 44px 72px 20px 1fr; gap: var(--space-4); align-items: center; padding-block: var(--space-2); border-bottom: 1px solid var(--bg-alt); }
   .fp-row:last-child { border-bottom: none; }
-  .fp-code { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); }
-  .fp-track { height: 6px; background: var(--bg-alt); border-radius: 2px; overflow: hidden; }
+  .fp-code { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
+  .fp-track { height: 7px; background: var(--bg-alt); border-radius: 2px; overflow: hidden; }
   .fp-fill  { height: 100%; border-radius: 2px; }
-  .fp-score { font-family: var(--font-mono); font-size: 0.65rem; font-weight: 700; color: var(--text); text-align: center; }
-  .fp-name  { font-size: var(--text-xs); color: var(--text); }
+  .fp-score { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 700; color: var(--text); text-align: center; }
+  .fp-name  { font-size: var(--text-sm); color: var(--text); }
   .fp-pass1 { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: var(--space-6); }
   .fp-pass1-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: var(--space-4); max-width: none; }
   .fp-pass1-text { font-size: var(--text-base); line-height: 1.8; color: var(--text-muted); white-space: pre-wrap; max-height: 320px; overflow-y: auto; }
@@ -538,7 +542,10 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
     background: var(--bg-alt); color: var(--text-muted);
   }
   .analysis-tradition { font-size: var(--text-sm); color: var(--text); }
-  .analysis-date { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); margin-left: auto; }
+  .analysis-date { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
+  .analysis-actions { display: flex; gap: var(--space-3); margin-left: auto; }
+  .analysis-action-link { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent); text-decoration: none; letter-spacing: 0.02em; }
+  .analysis-action-link:hover { color: var(--accent-light); }
   .analysis-excerpt { font-size: var(--text-sm); color: var(--text-muted); line-height: 1.7; max-width: 72ch; }
 
   /* Fingerprint flag */
