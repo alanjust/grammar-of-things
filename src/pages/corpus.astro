@@ -16,16 +16,16 @@ import SiteFooter from '../components/SiteFooter.astro';
 <body>
   <SiteNav />
 
-  <div class="page">
+  <div class="corpus-page">
     <div class="container">
-      <div class="page-head">
-        <a href="/catalog" class="action-link">+ Catalog new object</a>
-        <h1>Corpus</h1>
-        <p class="page-sub">All cataloged objects. Click any object to view its fingerprint and run an analysis.</p>
+      <div class="corpus-head">
+        <h1 class="corpus-title">Corpus</h1>
+        <a href="/catalog" class="corpus-action-link">+ Catalog new object</a>
+        <p class="corpus-sub">All cataloged objects. Click any object to view its fingerprint and run an analysis.</p>
       </div>
 
-      <div id="loading" class="loading">Loading objects…</div>
-      <div id="empty" class="empty" style="display:none">
+      <div id="loading" class="corpus-loading">Loading objects…</div>
+      <div id="empty" class="corpus-empty" style="display:none">
         No objects cataloged yet. <a href="/catalog">Catalog the first one →</a>
       </div>
       <div id="grid" class="object-grid" style="display:none"></div>
@@ -65,16 +65,14 @@ async function load() {
 
       return `
         <a href="/corpus/${obj.id}" class="object-card">
-          <div class="card-image">
-            ${imgSrc
-              ? `<img src="${imgSrc}" alt="${accession}" loading="lazy" />`
-              : `<div class="no-image">No image</div>`}
-          </div>
+          ${imgSrc
+            ? `<div class="card-image"><img src="${imgSrc}" alt="${accession}" loading="lazy" /></div>`
+            : `<div class="card-no-image">No image</div>`}
           <div class="card-body">
             <p class="card-accession">${accession}</p>
             <p class="card-culture">${culture}</p>
             <div class="card-meta">
-              <span class="fp-badge ${hasFingerprint ? 'fp-yes' : 'fp-no'}">
+              <span class="${hasFingerprint ? 'card-fp-yes' : 'card-fp-no'}">
                 ${hasFingerprint ? '● Fingerprinted' : '○ No fingerprint'}
               </span>
               <span class="card-date">${date}</span>
@@ -91,12 +89,12 @@ async function load() {
 load();
 </script>
 
-<style>
-  .page { padding-block: var(--space-16) var(--space-24); background: var(--bg); min-height: 80vh; }
-  .page-head { display: flex; align-items: baseline; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-10); }
-  h1 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: -0.015em; }
-  .page-sub { font-size: var(--text-base); color: var(--text-muted); flex-basis: 100%; margin-top: calc(-1 * var(--space-6)); }
-  .action-link {
+<style is:global>
+  .corpus-page { padding-block: var(--space-16) var(--space-24); background: var(--bg); min-height: 80vh; }
+  .corpus-head { display: flex; align-items: baseline; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-10); }
+  .corpus-title { font-family: var(--font-display); font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: -0.015em; font-weight: normal; }
+  .corpus-sub { font-size: var(--text-base); color: var(--text-muted); flex-basis: 100%; margin-top: calc(-1 * var(--space-6)); max-width: none; }
+  .corpus-action-link {
     margin-left: auto;
     font-family: var(--font-mono);
     font-size: var(--text-sm);
@@ -107,20 +105,24 @@ load();
     border-radius: 3px;
     white-space: nowrap;
   }
-  .action-link:hover { background: var(--accent-dim); }
+  .corpus-action-link:hover { background: var(--accent-dim); }
 
-  .loading, .empty {
+  .corpus-loading, .corpus-empty {
     font-size: var(--text-base);
     color: var(--text-muted);
     padding: var(--space-16) 0;
+    max-width: none;
   }
-  .empty a { color: var(--accent); }
+  .corpus-empty a { color: var(--accent); }
 
   .object-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: var(--space-6);
   }
+  @media (max-width: 1024px) { .object-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 640px)  { .object-grid { grid-template-columns: repeat(2, 1fr); } }
+
   .object-card {
     display: block;
     text-decoration: none;
@@ -128,16 +130,19 @@ load();
     border: 1px solid var(--border);
     border-radius: 4px;
     overflow: hidden;
-    transition: border-color var(--ease), box-shadow var(--ease);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    min-width: 0;
   }
   .object-card:hover {
     border-color: var(--accent);
     box-shadow: 0 2px 10px rgba(155, 79, 25, 0.1);
   }
   .card-image {
+    width: 100%;
     aspect-ratio: 1;
     overflow: hidden;
     background: var(--bg-alt);
+    display: block;
   }
   .card-image img {
     width: 100%;
@@ -146,26 +151,22 @@ load();
     object-position: center top;
     display: block;
   }
-  .no-image {
+  .card-no-image {
     width: 100%;
-    height: 100%;
+    aspect-ratio: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: var(--text-xs);
+    font-size: 0.7rem;
     color: var(--text-muted);
     font-family: var(--font-mono);
+    background: var(--bg-alt);
   }
-  .card-body { padding: var(--space-4) var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
-  .card-accession { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--text); font-weight: 600; max-width: none; }
+  .card-body { padding: var(--space-3) var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+  .card-accession { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--text); font-weight: 600; max-width: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card-culture { font-size: var(--text-sm); color: var(--text-muted); max-width: none; }
-  .card-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
-  .fp-badge {
-    font-family: var(--font-mono);
-    font-size: 0.65rem;
-    letter-spacing: 0.03em;
-  }
-  .fp-yes { color: var(--cons); }
-  .fp-no  { color: var(--text-muted); }
-  .card-date { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); }
+  .card-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-1); }
+  .card-fp-yes { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.03em; color: var(--cons); }
+  .card-fp-no  { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.03em; color: var(--text-muted); }
+  .card-date   { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); }
 </style>
