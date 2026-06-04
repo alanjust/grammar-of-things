@@ -81,7 +81,12 @@ function scoreColor(s: number) {
 
   <div class="page">
     <div class="container">
-      <a href="/corpus" class="back-link">← Corpus</a>
+      <div class="top-bar">
+        <a href="/corpus" class="back-link">← Corpus</a>
+        {!notFound && (
+          <button id="deleteBtn" class="delete-btn" data-id={object.id}>Delete object</button>
+        )}
+      </div>
 
       {notFound ? (
         <p class="not-found">Object not found.</p>
@@ -226,6 +231,31 @@ function scoreColor(s: number) {
   <SiteFooter />
 
 <script define:vars={{ objectId: object?.id }}>
+// ── Delete object ──────────────────────────────────────────────────────────
+
+document.getElementById('deleteBtn')?.addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  const id = btn.dataset.id;
+  if (!confirm(`Delete object #${id} and all its analyses? This cannot be undone.`)) return;
+  btn.textContent = 'Deleting…';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`/api/objects/${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      window.location.href = '/corpus';
+    } else {
+      const err = await res.json();
+      alert(`Delete failed: ${err.error ?? res.status}`);
+      btn.textContent = 'Delete object';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+    btn.textContent = 'Delete object';
+    btn.disabled = false;
+  }
+});
+
 // ── Mode / audience toggles ────────────────────────────────────────────────
 
 let selectedMode = 'artifact';
@@ -351,16 +381,33 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
 <style>
   .page { padding-block: var(--space-16) var(--space-24); background: var(--bg); }
   .container { max-width: 960px; }
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-10);
+  }
   .back-link {
-    display: inline-block;
     font-family: var(--font-mono);
     font-size: var(--text-xs);
     color: var(--text-muted);
     text-decoration: none;
     letter-spacing: 0.04em;
-    margin-bottom: var(--space-10);
   }
   .back-link:hover { color: var(--accent); }
+  .delete-btn {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: var(--space-1) var(--space-3);
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .delete-btn:hover { color: #c0392b; border-color: #c0392b; }
   .not-found { font-size: var(--text-lg); color: var(--text-muted); padding: var(--space-16) 0; }
 
   /* Object header */
