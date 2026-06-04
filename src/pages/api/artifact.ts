@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import Anthropic from '@anthropic-ai/sdk';
+import { env as cfEnv } from 'cloudflare:workers';
 import {
   PRINCIPLE_NAMES, APPLICABLE_TIER_A_NAMES, ARTIFACT_PRINCIPLE_NAMES,
   ARTIFACT_PRINCIPLE_REF, TIER_A_PRINCIPLE_REF,
@@ -908,7 +909,7 @@ export function buildConnectionsPass2UserText(pass1: string, fields: Record<stri
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env: Record<string, string | undefined> = (locals as any).runtime?.env ?? {};
+  const env = cfEnv as unknown as Record<string, any>;
   const apiKey = env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
   const modelConfig = resolveModelConfig(env);
   if (!apiKey) {

@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import Anthropic from '@anthropic-ai/sdk';
+import { env as cfEnv } from 'cloudflare:workers';
 import { VECTOR_SCORING_PROMPT } from '../../lib/principles';
 import { resolveModelConfig, streamModel, callModel } from '../../lib/model-router';
 import { VECTOR_KEY, serializeVector, type DocCanonical } from '../../db/types';
@@ -97,7 +98,7 @@ async function loadImageFromR2(r2: any, key: string): Promise<string | null> {
 // ---------------------------------------------------------------------------
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env: Record<string, string | undefined> = (locals as any).runtime?.env ?? {};
+  const env = cfEnv as unknown as Record<string, any>;
   const apiKey = env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY is not set.' }), {
@@ -120,8 +121,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   }
 
-  const db   = (locals as any).runtime?.env?.DB;
-  const r2   = (locals as any).runtime?.env?.ARTIFACTS;
+  const db = env.DB;
+  const r2 = env.ARTIFACTS;
   const modelConfig = resolveModelConfig(env);
   const anthropic   = new Anthropic({ apiKey });
   const encoder     = new TextEncoder();

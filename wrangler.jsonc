@@ -10,6 +10,13 @@
 	"observability": {
 		"enabled": true
 	},
+	// KV namespace for session storage — auto-created by adapter, pre-provisioned here
+	"kv_namespaces": [
+		{
+			"binding": "SESSION",
+			"id": "0ecf4aaa49b94d5c8f152ba279c3f0c3"
+		}
+	],
 	// R2 object storage — create with: wrangler r2 bucket create grammar-of-things-images
 	// Stores original images (never modified) and normalized analysis copies.
 	"r2_buckets": [

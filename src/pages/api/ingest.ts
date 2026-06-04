@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import Anthropic from '@anthropic-ai/sdk';
+import { env as cfEnv } from 'cloudflare:workers';
 import {
   ARTIFACT_PRINCIPLE_NAMES, APPLICABLE_TIER_A_NAMES,
   PASS1_PROMPT_SINGLE, PASS1_PROMPT_MULTI, VECTOR_SCORING_PROMPT,
@@ -30,8 +31,8 @@ const PASS1_SYSTEM = 'You are a trained artifact observer. Report only what is d
 // ---------------------------------------------------------------------------
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env: Record<string, string | undefined> = (locals as any).runtime?.env ?? {};
-  const apiKey = env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
+  const env = cfEnv as unknown as Record<string, any>;
+  const apiKey = (env.ANTHROPIC_API_KEY as string | undefined) || process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY is not set.' }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
@@ -79,8 +80,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const modelConfig  = resolveModelConfig(env);
   const anthropic    = new Anthropic({ apiKey });
-  const db           = (env as any).DB   ?? (locals as any).runtime?.env?.DB;
-  const r2           = (env as any).ARTIFACTS ?? (locals as any).runtime?.env?.ARTIFACTS;
+  const db = env.DB;
+  const r2 = env.ARTIFACTS;
   const encoder      = new TextEncoder();
 
   const stream = new ReadableStream({
