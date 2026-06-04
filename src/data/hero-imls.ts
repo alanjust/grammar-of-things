@@ -25,7 +25,7 @@ export const hero: HeroContent = {
     + 'Designed to be built and transferred to a museum or consortium for long-term '
     + 'institutional stewardship.',
   ctaText:  'See the complete analysis',
-  ctaHref:  '/analysis',
+  ctaHref:  '/corpus/2',
   imageAlt: 'Interior view of Mimbres Black-on-white bowl A326247, National Museum of Natural History, Smithsonian Institution. Collected by J.W. Fewkes, Mimbres Valley, New Mexico, 1923.',
   imageCaption:
     'Bowl A326247 · Interior. Mimbres Valley, Luna County, NM. '
