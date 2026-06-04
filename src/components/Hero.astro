@@ -5,6 +5,7 @@ const { content } = Astro.props;
 ---
 <section id="hero">
   <div class="container">
+
     <div class="hero-body">
       <p class="eyebrow">{content.eyebrow}</p>
       <h1>{content.headline}</h1>
@@ -12,31 +13,32 @@ const { content } = Astro.props;
       <a href={content.ctaHref} class="cta">{content.ctaText} →</a>
       <p class="note">{content.note}</p>
     </div>
-    <div class="hero-image">
-      <div class="image-wrap">
-        <img
-          src="/images/bowl-interior.jpg"
-          alt={content.imageAlt}
-          class="bowl-photo"
-        />
-        <div class="analysis-overlay">
-          <p class="overlay-pass">Pass 1 — blind observation</p>
-          <p class="overlay-line">
-            Oblique striations on exterior: coil-and-scrape construction.
-            <span class="chip obs">[OBS]</span>
-          </p>
-          <p class="overlay-line">
-            Two-zone interior: framing band + central geometric field.
-            <span class="chip obs">[OBS]</span>
-          </p>
-          <p class="overlay-line">
-            Positive-negative capacity: deliberate compositional property.
-            <span class="chip interp">[INTERP]</span>
-          </p>
+
+    <!-- Right panel: the real object, above the fold -->
+    <a href="/analysis" class="object-panel" aria-label="View complete analysis of Bowl A326247">
+      <div class="panel-images">
+        <div class="img-wrap img-primary">
+          <img src="/images/bowl-interior.jpg" alt="Bowl A326247 — interior" />
+          <span class="view-label">Interior</span>
+        </div>
+        <div class="img-wrap">
+          <img src="/images/bowl-exterior.jpg" alt="Bowl A326247 — exterior" />
+          <span class="view-label">Exterior</span>
         </div>
       </div>
-      <p class="image-caption">{content.imageCaption}</p>
-    </div>
+      <div class="panel-meta">
+        <p class="meta-title">Bowl A326247</p>
+        <p class="meta-line">Mimbres · Luna County, NM · 1923</p>
+        <p class="meta-line">NMNH, Smithsonian Institution</p>
+        <p class="meta-line meta-cta">Read complete analysis →</p>
+      </div>
+      <div class="panel-tags">
+        <span class="tag tag-obs">[OBS] 7 direct observations</span>
+        <span class="tag tag-cons">[CONS] 5 scholarly anchors</span>
+        <span class="tag tag-fp">27-principle fingerprint</span>
+      </div>
+    </a>
+
   </div>
 </section>
 
@@ -47,14 +49,14 @@ const { content } = Astro.props;
   }
   .container {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 420px;
     gap: var(--space-16);
     align-items: center;
   }
   .hero-body { display: flex; flex-direction: column; gap: var(--space-6); }
   .eyebrow {
-    font-size: var(--text-xs);
     font-family: var(--font-mono);
+    font-size: var(--text-xs);
     letter-spacing: 0.08em;
     color: var(--accent);
     text-transform: uppercase;
@@ -90,77 +92,94 @@ const { content } = Astro.props;
     background: var(--bg-alt);
     max-width: none;
   }
-  .hero-image {
+
+  /* Object panel */
+  .object-panel {
     display: flex;
     flex-direction: column;
+    gap: var(--space-4);
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: var(--space-5);
+    text-decoration: none;
+    transition: border-color var(--ease), box-shadow var(--ease);
+  }
+  .object-panel:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 12px rgba(155, 79, 25, 0.12);
+  }
+  .panel-images {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
     gap: var(--space-3);
   }
-  .image-wrap {
+  .img-wrap {
     position: relative;
-    border-radius: 4px;
     overflow: hidden;
+    border-radius: 2px;
     border: 1px solid var(--border);
   }
-  .bowl-photo {
-    display: block;
+  .img-wrap img {
     width: 100%;
-    height: auto;
-    aspect-ratio: 4/3;
+    height: 100%;
     object-fit: cover;
     object-position: center top;
+    display: block;
   }
-  .analysis-overlay {
+  .img-primary { aspect-ratio: 1; }
+  .img-wrap:not(.img-primary) { aspect-ratio: 1; }
+  .view-label {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(transparent, rgba(28, 25, 23, 0.92));
-    padding: var(--space-8) var(--space-6) var(--space-5);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-  }
-  .overlay-pass {
+    bottom: var(--space-2);
+    left: var(--space-2);
     font-family: var(--font-mono);
-    font-size: var(--text-xs);
-    letter-spacing: 0.06em;
+    font-size: 0.6rem;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.5);
-    margin-bottom: var(--space-1);
-    max-width: none;
-  }
-  .overlay-line {
-    font-size: var(--text-sm);
-    color: rgba(255,255,255,0.88);
-    line-height: 1.5;
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-    max-width: none;
-  }
-  .chip {
-    display: inline-block;
-    font-family: var(--font-mono);
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.03em;
+    color: rgba(255,255,255,0.8);
+    background: rgba(28,25,23,0.6);
     padding: 0.1em 0.4em;
     border-radius: 2px;
-    flex-shrink: 0;
-    vertical-align: middle;
   }
-  .chip.obs    { background: var(--obs-bg);    color: var(--obs);    }
-  .chip.interp { background: var(--interp-bg); color: var(--interp); }
-  .image-caption {
-    font-family: var(--font-mono);
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-    line-height: 1.5;
+  .panel-meta { display: flex; flex-direction: column; gap: var(--space-1); }
+  .meta-title {
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    color: var(--text);
     max-width: none;
   }
-  @media (max-width: 900px) {
+  .meta-line { font-size: var(--text-sm); color: var(--text-muted); max-width: none; }
+  .meta-cta {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.03em;
+    margin-top: var(--space-1);
+  }
+  .panel-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border);
+  }
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.03em;
+    padding: 0.15em 0.5em;
+    border-radius: 2px;
+  }
+  .tag-obs    { background: var(--obs-bg);   color: var(--obs);   }
+  .tag-cons   { background: var(--cons-bg);  color: var(--cons);  }
+  .tag-fp     { background: var(--bg-alt);   color: var(--text-muted); border: 1px solid var(--border); }
+
+  @media (max-width: 1024px) {
+    .container { grid-template-columns: 1fr 360px; gap: var(--space-10); }
+  }
+  @media (max-width: 768px) {
     .container { grid-template-columns: 1fr; }
-    .hero-image { display: none; }
+    .object-panel { display: none; }
   }
 </style>
