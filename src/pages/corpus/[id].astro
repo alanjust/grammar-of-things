@@ -1,0 +1,488 @@
+---
+export const prerender = false;
+import { env as cfEnv } from 'cloudflare:workers';
+import SiteNav from '../../components/SiteNav.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+
+const { id } = Astro.params;
+const env = cfEnv as unknown as Record<string, any>;
+const db  = env.DB;
+
+let object: any   = null;
+let analyses: any[] = [];
+let notFound      = false;
+
+if (!db) {
+  notFound = true;
+} else {
+  const numId = Number(id);
+  if (!numId || isNaN(numId)) {
+    notFound = true;
+  } else {
+    object = await db.prepare('SELECT * FROM objects WHERE id = ?').bind(numId).first();
+    if (!object) {
+      notFound = true;
+    } else {
+      const r = await db.prepare(
+        'SELECT * FROM analyses WHERE object_id = ? ORDER BY created_at DESC LIMIT 20'
+      ).bind(numId).all();
+      analyses = r.results ?? [];
+    }
+  }
+}
+
+// Parse doc_canonical for display
+let canonical: any = null;
+if (object?.doc_canonical) {
+  try { canonical = JSON.parse(object.doc_canonical); } catch {}
+}
+
+// First analysis image key
+const firstImgKey = object?.image_analysis_key?.split(',')[0]?.trim() ?? null;
+const imgKeys = object?.image_analysis_key?.split(',').map((k: string) => k.trim()).filter(Boolean) ?? [];
+
+// Parse fingerprint vector
+const fpVec: number[] = object?.fingerprint_vector ? JSON.parse(object.fingerprint_vector) : [];
+
+const VECTOR_KEY = [
+  'ap_1','ap_2','ap_3','ap_4','ap_5','ap_6','ap_7','ap_8','ap_9','ap_10',
+  'ap_11','ap_12','ap_13','ap_14','ap_15',
+  'ta_1','ta_2','ta_4','ta_5','ta_13','ta_15','ta_20','ta_28',
+  'ta_47','ta_48','ta_49','ta_51',
+];
+const PRINCIPLE_NAMES: Record<string, string> = {
+  ap_1:'Production Trace Reading', ap_2:'Sequence Inference', ap_3:'Material Boundary Attention',
+  ap_4:'Wear Differential', ap_5:'Absence as Evidence', ap_6:'Composite Detection',
+  ap_7:'Anatomical Correspondence', ap_8:'Symmetry as Evidence', ap_9:'Proportion as Encoding',
+  ap_10:'Color Zone Logic', ap_11:'Investment Gradient', ap_12:'Attachment Point Reading',
+  ap_13:'Orientation Dependency', ap_14:'Completion State', ap_15:'Reduction vs. Construction',
+  ta_1:'Edge Detection', ta_2:'Color Opponent Channels', ta_4:'Figure-Ground Relationships',
+  ta_5:'Grouping', ta_13:'Overlap / Occlusion', ta_15:'Closure / Negative Space',
+  ta_20:'Simultaneous Contrast', ta_28:'Specularity / Reflection',
+  ta_47:'Face Detection', ta_48:'Biological Motion', ta_49:'Gaze Direction', ta_51:'Visual Pop-out',
+};
+
+function scoreColor(s: number) {
+  return s === 0 ? '#d4cdc4' : s === 1 ? '#c8a882' : s === 2 ? '#c4742a' : '#9b4f19';
+}
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{notFound ? 'Not found' : `Object ${object?.accession_number ?? id} — Corpus`} · The Grammar of Things</title>
+  <style is:global>
+    @import url('/src/styles/base.css');
+  </style>
+</head>
+<body>
+  <SiteNav />
+
+  <div class="page">
+    <div class="container">
+      <a href="/corpus" class="back-link">← Corpus</a>
+
+      {notFound ? (
+        <p class="not-found">Object not found.</p>
+      ) : (
+        <>
+          <!-- Object header -->
+          <div class="object-header">
+            <div class="object-images">
+              {imgKeys.map((key: string, i: number) => (
+                <figure>
+                  <img src={`/api/image/${key}`} alt={`View ${i + 1}`} />
+                  <figcaption>{key.split('/').pop()?.replace(/-analysis\.jpg$/, '').replace(/^\d+-/, '') ?? `View ${i + 1}`}</figcaption>
+                </figure>
+              ))}
+              {imgKeys.length === 0 && (
+                <div class="no-image">No image stored</div>
+              )}
+            </div>
+
+            <div class="object-info">
+              <p class="object-eyebrow">Object #{object.id}{object.fingerprinted_at ? ' · Fingerprinted' : ' · No fingerprint'}</p>
+              <h1>{object.accession_number ?? object.catalog_number ?? `Object ${object.id}`}</h1>
+
+              <dl class="catalog">
+                {object.attribution_culture && <div><dt>Culture</dt><dd>{object.attribution_culture} {object.attribution_confidence && <span class="conf">({object.attribution_confidence})</span>}</dd></div>}
+                {object.catalog_number     && <div><dt>Catalog no.</dt><dd>{object.catalog_number}</dd></div>}
+                {object.accession_number   && <div><dt>Accession</dt><dd>{object.accession_number}</dd></div>}
+                {object.source_institution && <div><dt>Institution</dt><dd>{object.source_institution}</dd></div>}
+                {canonical?.period         && <div><dt>Period</dt><dd>{canonical.period}</dd></div>}
+                {canonical?.material       && <div><dt>Material</dt><dd>{canonical.material}</dd></div>}
+                {canonical?.site           && <div><dt>Site</dt><dd>{canonical.site}</dd></div>}
+                {object.ezid_ark           && <div><dt>EZID / ARK</dt><dd><a href={`http://${object.ezid_ark}`} target="_blank" rel="noopener">{object.ezid_ark.slice(0, 40)}…</a></dd></div>}
+                <div><dt>Cataloged</dt><dd>{new Date(object.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</dd></div>
+              </dl>
+            </div>
+          </div>
+
+          <!-- Fingerprint -->
+          {fpVec.length > 0 && (
+            <section class="fp-section">
+              <h2>Perceptual fingerprint</h2>
+              <p class="section-sub">Scored blind from Pass 1 — no documentation in context. Model: {object.fingerprint_model ?? '—'}</p>
+              <div class="fp-body">
+                <div class="fp-bars">
+                  {VECTOR_KEY.map((k, i) => {
+                    const s = fpVec[i] ?? 0;
+                    return (
+                      <div class="fp-row">
+                        <span class="fp-code">{k}</span>
+                        <div class="fp-track"><div class="fp-fill" style={`width:${(s/3)*100}%;background:${scoreColor(s)}`}></div></div>
+                        <span class="fp-score">{s}</span>
+                        <span class="fp-name">{PRINCIPLE_NAMES[k] ?? k}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          )}
+
+          <!-- Past analyses -->
+          {analyses.length > 0 && (
+            <section class="analyses-section">
+              <h2>Past analyses <span class="count">({analyses.length})</span></h2>
+              <div class="analyses-list">
+                {analyses.map((a: any) => (
+                  <div class="analysis-row">
+                    <div class="analysis-meta">
+                      <span class="analysis-mode">{a.mode}</span>
+                      <span class="analysis-audience">{a.audience}</span>
+                      {a.tradition && <span class="analysis-tradition">{a.tradition}</span>}
+                      {a.tradition_confidence && <span class="conf">({a.tradition_confidence})</span>}
+                      <span class="analysis-date">{new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </div>
+                    {a.pass2_text && (
+                      <p class="analysis-excerpt">{a.pass2_text.slice(0, 300)}{a.pass2_text.length > 300 ? '…' : ''}</p>
+                    )}
+                    {a.fingerprint_flag && (() => {
+                      let flag: any = null;
+                      try { flag = JSON.parse(a.fingerprint_flag); } catch {}
+                      return flag ? (
+                        <div class={`fp-flag flag-${flag.alignment}`}>
+                          <span class="flag-badge">{flag.alignment}</span>
+                          <span class="flag-strength">{flag.flag_strength}</span>
+                          <p class="flag-reason">{flag.reasoning}</p>
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <!-- Run analysis form -->
+          <section class="run-section">
+            <h2>Run analysis</h2>
+            <p class="section-sub">Passes 2, 3, and 4. Documentation is available as context. Results are stored against this object.</p>
+
+            <div class="run-form">
+              <div class="run-controls">
+                <div class="control-group">
+                  <label class="control-label">Mode</label>
+                  <div class="btn-group" id="modeGroup">
+                    <button type="button" class="mode-btn active" data-value="artifact">Artifact</button>
+                    <button type="button" class="mode-btn" data-value="connections">Connections</button>
+                  </div>
+                </div>
+                <div class="control-group">
+                  <label class="control-label">Audience</label>
+                  <div class="btn-group" id="audienceGroup">
+                    <button type="button" class="aud-btn active" data-value="researcher">Researcher</button>
+                    <button type="button" class="aud-btn" data-value="curator">Curator</button>
+                    <button type="button" class="aud-btn" data-value="educator">Educator</button>
+                  </div>
+                </div>
+              </div>
+              <button type="button" id="runBtn" class="run-btn">Run analysis</button>
+            </div>
+
+            <div id="runProgress" style="display:none">
+              <div id="runStatus" class="status-log"></div>
+              <div id="runPass2Block" style="display:none">
+                <p class="block-label">Pass 2 — analysis</p>
+                <div id="runPass2Text" class="pass2-text"></div>
+              </div>
+              <div id="runPass3Block" style="display:none">
+                <p class="block-label">Pass 3 — what to take forward</p>
+                <div id="runPass3Text" class="pass3-text"></div>
+              </div>
+              <div id="runFpFlag" style="display:none">
+                <p class="block-label">Fingerprint vs. attribution</p>
+                <div id="runFpFlagContent" class="fp-flag-block"></div>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
+    </div>
+  </div>
+
+  <SiteFooter />
+
+<script define:vars={{ objectId: object?.id }}>
+// ── Mode / audience toggles ────────────────────────────────────────────────
+
+let selectedMode = 'artifact';
+let selectedAudience = 'researcher';
+
+document.getElementById('modeGroup')?.addEventListener('click', e => {
+  const btn = e.target.closest('.mode-btn');
+  if (!btn) return;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedMode = btn.dataset.value;
+});
+
+document.getElementById('audienceGroup')?.addEventListener('click', e => {
+  const btn = e.target.closest('.aud-btn');
+  if (!btn) return;
+  document.querySelectorAll('.aud-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedAudience = btn.dataset.value;
+});
+
+// ── Run analysis ───────────────────────────────────────────────────────────
+
+document.getElementById('runBtn')?.addEventListener('click', async () => {
+  const runBtn      = document.getElementById('runBtn');
+  const progress    = document.getElementById('runProgress');
+  const statusLog   = document.getElementById('runStatus');
+  const pass2Block  = document.getElementById('runPass2Block');
+  const pass2Text   = document.getElementById('runPass2Text');
+  const pass3Block  = document.getElementById('runPass3Block');
+  const pass3Text   = document.getElementById('runPass3Text');
+  const fpFlagDiv   = document.getElementById('runFpFlag');
+  const fpFlagContent = document.getElementById('runFpFlagContent');
+
+  runBtn.disabled = true;
+  runBtn.textContent = 'Running…';
+  progress.style.display = '';
+  statusLog.innerHTML = '';
+  pass2Block.style.display = 'none';
+  pass2Text.textContent = '';
+  pass3Block.style.display = 'none';
+  pass3Text.textContent = '';
+  fpFlagDiv.style.display = 'none';
+
+  const addStatus = (msg, isError = false) => {
+    const p = document.createElement('p');
+    p.className = 'status-line' + (isError ? ' status-error' : '');
+    p.textContent = msg;
+    statusLog.appendChild(p);
+    statusLog.scrollTop = statusLog.scrollHeight;
+  };
+
+  try {
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ object_id: objectId, mode: selectedMode, audience: selectedAudience }),
+    });
+
+    if (!res.ok || !res.body) {
+      addStatus(`Error ${res.status}`, true);
+      runBtn.disabled = false;
+      runBtn.textContent = 'Run analysis';
+      return;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let pass2Acc = '', pass3Acc = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let evt;
+        try { evt = JSON.parse(line.slice(6)); } catch { continue; }
+
+        if (evt.type === 'status') {
+          addStatus(evt.message, evt.message.startsWith('⚠'));
+        } else if (evt.type === 'delta') {
+          pass2Block.style.display = '';
+          pass2Acc += evt.text;
+          pass2Text.textContent = pass2Acc;
+        } else if (evt.type === 'error') {
+          addStatus(evt.error, true);
+        } else if (evt.type === 'complete') {
+          if (evt.pass3_text) {
+            pass3Block.style.display = '';
+            pass3Text.textContent = evt.pass3_text;
+          }
+          if (evt.fingerprint_flag) {
+            const flag = evt.fingerprint_flag;
+            fpFlagDiv.style.display = '';
+            fpFlagContent.innerHTML = `
+              <div class="flag-${flag.alignment}" style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;">
+                <span class="flag-badge">${flag.alignment}</span>
+                <span style="font-size:0.75rem;color:var(--text-muted);font-family:var(--font-mono)">${flag.flag_strength}</span>
+              </div>
+              <p style="font-size:0.875rem;line-height:1.7;color:var(--text)">${flag.reasoning}</p>
+              <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;font-style:italic">${flag.caveats}</p>`;
+          }
+          if (evt.analysis_id) {
+            addStatus(`Saved — analysis #${evt.analysis_id}`);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    addStatus(`Error: ${err.message}`, true);
+  } finally {
+    runBtn.disabled = false;
+    runBtn.textContent = 'Run analysis';
+  }
+});
+</script>
+
+<style>
+  .page { padding-block: var(--space-16) var(--space-24); background: var(--bg); }
+  .container { max-width: 960px; }
+  .back-link {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    margin-bottom: var(--space-10);
+  }
+  .back-link:hover { color: var(--accent); }
+  .not-found { font-size: var(--text-lg); color: var(--text-muted); padding: var(--space-16) 0; }
+
+  /* Object header */
+  .object-header {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: var(--space-12);
+    align-items: start;
+    margin-bottom: var(--space-16);
+    padding-bottom: var(--space-12);
+    border-bottom: 2px solid var(--border-strong);
+  }
+  .object-images { display: flex; flex-direction: column; gap: var(--space-3); }
+  .object-images figure { margin: 0; }
+  .object-images img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    object-position: center top;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    display: block;
+  }
+  figcaption { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); text-align: center; margin-top: var(--space-1); letter-spacing: 0.04em; }
+  .no-image { height: 200px; background: var(--bg-alt); border: 1px solid var(--border); border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: var(--text-sm); color: var(--text-muted); }
+  .object-eyebrow { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: var(--space-3); max-width: none; }
+  h1 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: -0.015em; margin-bottom: var(--space-6); }
+  .catalog { display: flex; flex-direction: column; gap: var(--space-1); }
+  .catalog div { display: grid; grid-template-columns: 100px 1fr; gap: var(--space-4); font-size: var(--text-sm); padding-block: var(--space-1); border-bottom: 1px solid var(--bg-alt); }
+  dt { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); letter-spacing: 0.03em; padding-top: 2px; }
+  dd { color: var(--text); line-height: 1.5; }
+  dd a { color: var(--accent); font-size: var(--text-xs); }
+  .conf { color: var(--text-muted); font-size: var(--text-xs); }
+
+  /* Section headings */
+  h2 { font-size: var(--text-2xl); letter-spacing: -0.01em; margin-bottom: var(--space-2); }
+  .section-sub { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-6); max-width: 60ch; }
+  .count { font-size: var(--text-lg); color: var(--text-muted); }
+
+  /* Fingerprint bars */
+  .fp-section { margin-bottom: var(--space-16); padding-bottom: var(--space-12); border-bottom: 1px solid var(--border); }
+  .fp-body { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: var(--space-6); }
+  .fp-bars { display: flex; flex-direction: column; gap: var(--space-2); }
+  .fp-row { display: grid; grid-template-columns: 44px 80px 20px 1fr; gap: var(--space-3); align-items: center; padding-block: var(--space-1); border-bottom: 1px solid var(--bg-alt); }
+  .fp-row:last-child { border-bottom: none; }
+  .fp-code { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
+  .fp-track { height: 7px; background: var(--bg-alt); border-radius: 2px; overflow: hidden; }
+  .fp-fill  { height: 100%; border-radius: 2px; }
+  .fp-score { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 700; color: var(--text); text-align: center; }
+  .fp-name  { font-size: var(--text-sm); color: var(--text); }
+
+  /* Past analyses */
+  .analyses-section { margin-bottom: var(--space-16); padding-bottom: var(--space-12); border-bottom: 1px solid var(--border); }
+  .analyses-list { display: flex; flex-direction: column; gap: var(--space-5); }
+  .analysis-row { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: var(--space-6); }
+  .analysis-meta { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3); }
+  .analysis-mode, .analysis-audience {
+    font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 600;
+    padding: 0.1em 0.5em; border-radius: 2px;
+    background: var(--bg-alt); color: var(--text-muted);
+  }
+  .analysis-tradition { font-size: var(--text-sm); color: var(--text); }
+  .analysis-date { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); margin-left: auto; }
+  .analysis-excerpt { font-size: var(--text-sm); color: var(--text-muted); line-height: 1.7; max-width: 72ch; }
+
+  /* Fingerprint flag */
+  .fp-flag { margin-top: var(--space-4); padding: var(--space-4); border-radius: 3px; border: 1px solid var(--border); }
+  .flag-aligned   { background: var(--cons-bg); }
+  .flag-divergent { background: var(--theory-bg); }
+  .flag-inconclusive { background: var(--bg-alt); }
+  .flag-badge { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.1em 0.5em; border-radius: 2px; }
+  .flag-aligned   .flag-badge { background: var(--cons-bg);   color: var(--cons);   }
+  .flag-divergent .flag-badge { background: var(--theory-bg); color: var(--theory); }
+  .flag-inconclusive .flag-badge { background: var(--bg-alt); color: var(--text-muted); }
+  .flag-strength { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
+  .flag-reason { font-size: var(--text-sm); color: var(--text); line-height: 1.6; margin-top: var(--space-2); max-width: 70ch; }
+
+  /* Run analysis */
+  .run-section { margin-bottom: var(--space-16); }
+  .run-form { display: flex; align-items: flex-end; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8); }
+  .run-controls { display: flex; gap: var(--space-8); flex-wrap: wrap; }
+  .control-group { display: flex; flex-direction: column; gap: var(--space-2); }
+  .control-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; }
+  .btn-group { display: flex; gap: var(--space-2); }
+  .mode-btn, .aud-btn {
+    font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: 0.03em;
+    border: 1px solid var(--border); border-radius: 2px;
+    padding: var(--space-2) var(--space-4); cursor: pointer;
+    background: var(--bg-surface); color: var(--text-muted);
+    transition: all var(--ease);
+  }
+  .mode-btn.active, .aud-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .run-btn {
+    background: var(--accent); color: #fff; border: none; border-radius: 3px;
+    padding: var(--space-3) var(--space-8); font-family: var(--font-mono);
+    font-size: var(--text-sm); letter-spacing: 0.03em; cursor: pointer;
+    transition: background var(--ease);
+  }
+  .run-btn:hover:not(:disabled) { background: var(--accent-light); }
+  .run-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* Run progress */
+  .status-log {
+    background: var(--bg-dark); border-radius: 4px;
+    padding: var(--space-4) var(--space-6);
+    margin-bottom: var(--space-6);
+    max-height: 160px; overflow-y: auto;
+  }
+  .status-line { font-family: var(--font-mono); font-size: var(--text-xs); color: #8a8079; line-height: 1.8; max-width: none; }
+  .status-error { color: #e07070; }
+  .block-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: var(--space-3); max-width: none; }
+  .pass2-text, .pass3-text {
+    font-size: var(--text-base); line-height: 1.8; color: var(--text);
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 3px; padding: var(--space-6);
+    max-height: 400px; overflow-y: auto;
+    white-space: pre-wrap; margin-bottom: var(--space-6);
+  }
+  .fp-flag-block { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: var(--space-5); }
+
+  @media (max-width: 768px) {
+    .object-header { grid-template-columns: 1fr; }
+    .fp-row { grid-template-columns: 38px 56px 18px 1fr; }
+  }
+</style>

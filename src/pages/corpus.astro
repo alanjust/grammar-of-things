@@ -1,0 +1,171 @@
+---
+export const prerender = true;
+import SiteNav from '../components/SiteNav.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Corpus — The Grammar of Things</title>
+  <style is:global>
+    @import url('/src/styles/base.css');
+  </style>
+</head>
+<body>
+  <SiteNav />
+
+  <div class="page">
+    <div class="container">
+      <div class="page-head">
+        <a href="/catalog" class="action-link">+ Catalog new object</a>
+        <h1>Corpus</h1>
+        <p class="page-sub">All cataloged objects. Click any object to view its fingerprint and run an analysis.</p>
+      </div>
+
+      <div id="loading" class="loading">Loading objects…</div>
+      <div id="empty" class="empty" style="display:none">
+        No objects cataloged yet. <a href="/catalog">Catalog the first one →</a>
+      </div>
+      <div id="grid" class="object-grid" style="display:none"></div>
+    </div>
+  </div>
+
+  <SiteFooter />
+
+<script>
+async function load() {
+  const loading = document.getElementById('loading');
+  const empty   = document.getElementById('empty');
+  const grid    = document.getElementById('grid');
+
+  try {
+    const res = await fetch('/api/objects');
+    if (!res.ok) throw new Error(`${res.status}`);
+    const objects = await res.json();
+
+    loading.style.display = 'none';
+
+    if (!objects.length) {
+      empty.style.display = '';
+      return;
+    }
+
+    grid.style.display = '';
+    grid.innerHTML = objects.map(obj => {
+      const imgKey = obj.image_analysis_key?.split(',')[0]?.trim();
+      const imgSrc = imgKey ? `/api/image/${imgKey}` : null;
+      const culture = obj.attribution_culture ?? '—';
+      const accession = obj.accession_number ?? obj.catalog_number ?? `#${obj.id}`;
+      const hasFingerprint = !!obj.fingerprinted_at;
+      const date = obj.created_at
+        ? new Date(obj.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : '';
+
+      return `
+        <a href="/corpus/${obj.id}" class="object-card">
+          <div class="card-image">
+            ${imgSrc
+              ? `<img src="${imgSrc}" alt="${accession}" loading="lazy" />`
+              : `<div class="no-image">No image</div>`}
+          </div>
+          <div class="card-body">
+            <p class="card-accession">${accession}</p>
+            <p class="card-culture">${culture}</p>
+            <div class="card-meta">
+              <span class="fp-badge ${hasFingerprint ? 'fp-yes' : 'fp-no'}">
+                ${hasFingerprint ? '● Fingerprinted' : '○ No fingerprint'}
+              </span>
+              <span class="card-date">${date}</span>
+            </div>
+          </div>
+        </a>`;
+    }).join('');
+
+  } catch (err) {
+    loading.textContent = `Error loading objects: ${err.message}`;
+  }
+}
+
+load();
+</script>
+
+<style>
+  .page { padding-block: var(--space-16) var(--space-24); background: var(--bg); min-height: 80vh; }
+  .page-head { display: flex; align-items: baseline; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-10); }
+  h1 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: -0.015em; }
+  .page-sub { font-size: var(--text-base); color: var(--text-muted); flex-basis: 100%; margin-top: calc(-1 * var(--space-6)); }
+  .action-link {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--accent);
+    text-decoration: none;
+    border: 1px solid var(--accent);
+    padding: var(--space-2) var(--space-4);
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .action-link:hover { background: var(--accent-dim); }
+
+  .loading, .empty {
+    font-size: var(--text-base);
+    color: var(--text-muted);
+    padding: var(--space-16) 0;
+  }
+  .empty a { color: var(--accent); }
+
+  .object-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-6);
+  }
+  .object-card {
+    display: block;
+    text-decoration: none;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: border-color var(--ease), box-shadow var(--ease);
+  }
+  .object-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 10px rgba(155, 79, 25, 0.1);
+  }
+  .card-image {
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: var(--bg-alt);
+  }
+  .card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+  }
+  .no-image {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+  .card-body { padding: var(--space-4) var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
+  .card-accession { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--text); font-weight: 600; max-width: none; }
+  .card-culture { font-size: var(--text-sm); color: var(--text-muted); max-width: none; }
+  .card-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-2); }
+  .fp-badge {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.03em;
+  }
+  .fp-yes { color: var(--cons); }
+  .fp-no  { color: var(--text-muted); }
+  .card-date { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); }
+</style>
