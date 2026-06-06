@@ -53,6 +53,7 @@ import SiteFooter from '../components/SiteFooter.astro';
 
         <div class="results-body">
           <div class="results-left">
+            <div id="selectedImages" class="selected-images"></div>
             <p class="panel-label">Fingerprint</p>
             <div id="selectedRadar" class="radar-wrap"></div>
             <div id="selectedBars" class="mini-bars"></div>
@@ -288,6 +289,12 @@ function selectObject(id) {
     <p class="sel-trad" style="color:${tradColor}">${tradLabel}${selected.attribution_confidence ? ` <span class="sel-conf">(${selected.attribution_confidence})</span>` : ''}</p>
     <p class="sel-model">Fingerprinted${selected.fingerprint_model ? ' · ' + selected.fingerprint_model : ''}</p>`;
 
+  // Images
+  const imgKeys = selected.image_analysis_key?.split(',').map(k => k.trim()).filter(Boolean) ?? [];
+  document.getElementById('selectedImages').innerHTML = imgKeys.length > 0
+    ? `<div class="sel-imgs">${imgKeys.map((k, i) => `<img src="/api/image/${k}" alt="View ${i+1}" class="sel-img" />`).join('')}</div>`
+    : '';
+
   document.getElementById('selectedRadar').innerHTML = buildRadar(selected.vec);
   document.getElementById('selectedBars').innerHTML  = buildMiniBars(selected.vec);
 
@@ -460,6 +467,13 @@ loadData();
     font-family: var(--font-mono); font-size: var(--text-xs);
     color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase;
     margin-bottom: var(--space-4); max-width: none;
+  }
+  .selected-images { margin-bottom: var(--space-4); }
+  .sel-imgs { display: flex; gap: var(--space-3); }
+  .sel-img {
+    flex: 1; aspect-ratio: 1; object-fit: cover; object-position: center top;
+    border: 1px solid var(--border); border-radius: 3px; display: block;
+    min-width: 0;
   }
   .radar-wrap { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: var(--space-4); margin-bottom: var(--space-4); }
 
