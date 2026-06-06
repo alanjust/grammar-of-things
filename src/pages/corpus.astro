@@ -20,7 +20,10 @@ import SiteFooter from '../components/SiteFooter.astro';
     <div class="container">
       <div class="corpus-head">
         <h1 class="corpus-title">Corpus</h1>
-        <a href="/catalog" class="corpus-action-link">+ Catalog new object</a>
+        <div class="corpus-actions">
+          <button id="selectToggle" class="corpus-select-btn">Select to compare</button>
+          <a href="/catalog" class="corpus-action-link">+ Catalog new object</a>
+        </div>
         <p class="corpus-sub">All cataloged objects. Click any object to view its fingerprint and run an analysis.</p>
       </div>
 
@@ -29,42 +32,76 @@ import SiteFooter from '../components/SiteFooter.astro';
         No objects cataloged yet. <a href="/catalog">Catalog the first one →</a>
       </div>
       <div id="grid" class="object-grid" style="display:none"></div>
+
+      <!-- Sticky selection bar -->
+      <div id="selectionBar" class="selection-bar" style="display:none">
+        <span id="selCount" class="sel-count">0 selected</span>
+        <div class="sel-actions">
+          <button id="clearSelBtn" class="sel-clear">Clear</button>
+          <a id="compareLink" href="/compare" class="sel-compare">Compare →</a>
+        </div>
+      </div>
     </div>
   </div>
 
   <SiteFooter />
 
 <script>
-async function load() {
-  const loading = document.getElementById('loading');
-  const empty   = document.getElementById('empty');
-  const grid    = document.getElementById('grid');
+// ── State ───────────────────────────────────────────────────────────────────
+let allObjects = [];
+let selectMode = false;
+const selectedIds = new Set();
 
-  try {
-    const res = await fetch('/api/objects');
-    if (!res.ok) throw new Error(`${res.status}`);
-    const objects = await res.json();
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+const loading      = document.getElementById('loading');
+const empty        = document.getElementById('empty');
+const grid         = document.getElementById('grid');
+const selBar       = document.getElementById('selectionBar');
+const selCount     = document.getElementById('selCount');
+const compareLink  = document.getElementById('compareLink');
+const clearSelBtn  = document.getElementById('clearSelBtn');
+const selectToggle = document.getElementById('selectToggle');
 
-    loading.style.display = 'none';
+// ── Toggle select mode ───────────────────────────────────────────────────────
+selectToggle.addEventListener('click', () => {
+  selectMode = !selectMode;
+  if (!selectMode) { selectedIds.clear(); updateBar(); }
+  selectToggle.textContent = selectMode ? '✕ Cancel selection' : 'Select to compare';
+  selectToggle.classList.toggle('select-active', selectMode);
+  renderGrid();
+});
 
-    if (!objects.length) {
-      empty.style.display = '';
-      return;
-    }
+clearSelBtn.addEventListener('click', () => {
+  selectedIds.clear();
+  updateBar();
+  renderGrid();
+});
 
-    grid.style.display = '';
-    grid.innerHTML = objects.map(obj => {
-      const imgKey = obj.image_analysis_key?.split(',')[0]?.trim();
-      const imgSrc = imgKey ? `/api/image/${imgKey}` : null;
-      const culture = obj.attribution_culture ?? '—';
-      const accession = obj.accession_number ?? obj.catalog_number ?? `#${obj.id}`;
-      const hasFingerprint = !!obj.fingerprinted_at;
-      const date = obj.created_at
-        ? new Date(obj.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        : '';
+function updateBar() {
+  const n = selectedIds.size;
+  selBar.style.display = n > 0 ? '' : 'none';
+  selCount.textContent = `${n} object${n !== 1 ? 's' : ''} selected`;
+  compareLink.href = `/compare?ids=${[...selectedIds].join(',')}`;
+}
 
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderGrid() {
+  if (!allObjects.length) return;
+  grid.innerHTML = allObjects.map(obj => {
+    const imgKey  = obj.image_analysis_key?.split(',')[0]?.trim();
+    const imgSrc  = imgKey ? `/api/image/${imgKey}` : null;
+    const culture = obj.attribution_culture ?? '—';
+    const accession = obj.accession_number ?? obj.catalog_number ?? `#${obj.id}`;
+    const hasFingerprint = !!obj.fingerprinted_at;
+    const date = obj.created_at
+      ? new Date(obj.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : '';
+    const isSelected = selectedIds.has(obj.id);
+
+    if (selectMode) {
       return `
-        <a href="/corpus/${obj.id}" class="object-card">
+        <button type="button" class="object-card card-selectable ${isSelected ? 'card-checked' : ''}" data-id="${obj.id}">
+          <div class="card-check-overlay">${isSelected ? '✓' : ''}</div>
           ${imgSrc
             ? `<div class="card-image"><img src="${imgSrc}" alt="${accession}" loading="lazy" /></div>`
             : `<div class="card-no-image">No image</div>`}
@@ -75,12 +112,53 @@ async function load() {
               <span class="${hasFingerprint ? 'card-fp-yes' : 'card-fp-no'}">
                 ${hasFingerprint ? '● Fingerprinted' : '○ No fingerprint'}
               </span>
-              <span class="card-date">${date}</span>
             </div>
           </div>
-        </a>`;
-    }).join('');
+        </button>`;
+    }
 
+    return `
+      <a href="/corpus/${obj.id}" class="object-card">
+        ${imgSrc
+          ? `<div class="card-image"><img src="${imgSrc}" alt="${accession}" loading="lazy" /></div>`
+          : `<div class="card-no-image">No image</div>`}
+        <div class="card-body">
+          <p class="card-accession">${accession}</p>
+          <p class="card-culture">${culture}</p>
+          <div class="card-meta">
+            <span class="${hasFingerprint ? 'card-fp-yes' : 'card-fp-no'}">
+              ${hasFingerprint ? '● Fingerprinted' : '○ No fingerprint'}
+            </span>
+            <span class="card-date">${date}</span>
+          </div>
+        </div>
+      </a>`;
+  }).join('');
+
+  // Selection click handlers
+  if (selectMode) {
+    grid.querySelectorAll('.card-selectable').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = Number(btn.dataset.id);
+        if (selectedIds.has(id)) selectedIds.delete(id);
+        else selectedIds.add(id);
+        updateBar();
+        renderGrid();
+      });
+    });
+  }
+}
+
+// ── Load ──────────────────────────────────────────────────────────────────────
+async function load() {
+  try {
+    const res = await fetch('/api/objects');
+    if (!res.ok) throw new Error(`${res.status}`);
+    allObjects = await res.json();
+    loading.style.display = 'none';
+    if (!allObjects.length) { empty.style.display = ''; return; }
+    grid.style.display = '';
+    renderGrid();
   } catch (err) {
     loading.textContent = `Error loading objects: ${err.message}`;
   }
@@ -94,18 +172,60 @@ load();
   .corpus-head { display: flex; align-items: baseline; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-10); }
   .corpus-title { font-family: var(--font-display); font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: -0.015em; font-weight: normal; }
   .corpus-sub { font-size: var(--text-base); color: var(--text-muted); flex-basis: 100%; margin-top: calc(-1 * var(--space-6)); max-width: none; }
+  .corpus-actions { display: flex; gap: var(--space-3); align-items: center; margin-left: auto; }
   .corpus-action-link {
-    margin-left: auto;
-    font-family: var(--font-mono);
-    font-size: var(--text-sm);
-    color: var(--accent);
-    text-decoration: none;
-    border: 1px solid var(--accent);
-    padding: var(--space-2) var(--space-4);
-    border-radius: 3px;
-    white-space: nowrap;
+    font-family: var(--font-mono); font-size: var(--text-sm); color: var(--accent);
+    text-decoration: none; border: 1px solid var(--accent);
+    padding: var(--space-2) var(--space-4); border-radius: 3px; white-space: nowrap;
   }
   .corpus-action-link:hover { background: var(--accent-dim); }
+  .corpus-select-btn {
+    font-family: var(--font-mono); font-size: var(--text-sm);
+    color: var(--text-muted); background: none; border: 1px solid var(--border);
+    padding: var(--space-2) var(--space-4); border-radius: 3px; cursor: pointer; white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .corpus-select-btn:hover { color: var(--text); border-color: var(--text-muted); }
+  .corpus-select-btn.select-active { color: var(--text); border-color: var(--text); }
+
+  /* Selection card states */
+  .card-selectable { cursor: pointer; position: relative; text-align: left; }
+  .card-selectable:focus { outline: 2px solid var(--accent); }
+  .card-checked { border-color: var(--accent) !important; box-shadow: 0 0 0 2px var(--accent) !important; }
+  .card-check-overlay {
+    position: absolute; top: var(--space-2); right: var(--space-2); z-index: 2;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--bg-surface); border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: var(--accent);
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .card-checked .card-check-overlay { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* Sticky selection bar */
+  .selection-bar {
+    position: fixed; bottom: var(--space-6); left: 50%; transform: translateX(-50%);
+    background: var(--bg-dark); color: var(--text-invert);
+    border-radius: 40px; padding: var(--space-4) var(--space-6);
+    display: flex; align-items: center; gap: var(--space-6);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3); z-index: 200;
+    white-space: nowrap;
+  }
+  .sel-count { font-family: var(--font-mono); font-size: var(--text-sm); color: #ede9e2; }
+  .sel-actions { display: flex; gap: var(--space-3); align-items: center; }
+  .sel-clear {
+    font-family: var(--font-mono); font-size: var(--text-xs); color: #8a8079;
+    background: none; border: 1px solid #4a4540; border-radius: 3px;
+    padding: var(--space-1) var(--space-3); cursor: pointer;
+  }
+  .sel-clear:hover { color: #ede9e2; border-color: #8a8079; }
+  .sel-compare {
+    font-family: var(--font-mono); font-size: var(--text-sm);
+    background: var(--accent); color: #fff; text-decoration: none;
+    padding: var(--space-2) var(--space-5); border-radius: 3px;
+    transition: background 0.2s;
+  }
+  .sel-compare:hover { background: var(--accent-light); color: #fff; }
 
   .corpus-loading, .corpus-empty {
     font-size: var(--text-base);

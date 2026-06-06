@@ -38,9 +38,61 @@ import SiteFooter from '../components/SiteFooter.astro';
         <div id="tradBars" class="trad-bars"></div>
       </div>
 
+      <!-- Set header (shown when ids param is present) -->
+      <div id="setHeader" class="set-header" style="display:none">
+        <div class="set-info">
+          <span id="setCount" class="set-count"></span>
+          <a href="/corpus" class="set-back">← Back to full corpus</a>
+        </div>
+      </div>
+
+      <!-- Synthesis query (shown once objects are loaded) -->
+      <div id="synthesisSection" class="synthesis-section" style="display:none">
+        <h2>Comparative analysis</h2>
+        <p class="synth-sub">Ask a research question about the selected objects. Claude analyzes all fingerprints and Pass 1 observations together.</p>
+
+        <div class="preset-row">
+          <p class="preset-label">Suggested questions:</p>
+          <div class="presets">
+            <button class="preset-btn" data-q="What production techniques do these objects share, and where do they diverge?">Production techniques</button>
+            <button class="preset-btn" data-q="Which of these objects show the most consistent iconographic or design vocabulary, and which are outliers?">Iconographic patterns</button>
+            <button class="preset-btn" data-q="Are any of these objects' perceptual fingerprints inconsistent with their documented cultural attribution? Flag any cases worth closer examination.">Tradition verification</button>
+            <button class="preset-btn" data-q="Which objects in this set are most likely to be contemporaneous based on their perceptual fingerprints?">Contemporaneity</button>
+            <button class="preset-btn" data-q="What does the investment gradient across these objects suggest about production context — household, specialist, or ceremonial?">Production context</button>
+          </div>
+        </div>
+
+        <div class="synth-input-row">
+          <textarea id="synthQuery" class="synth-textarea" rows="3"
+            placeholder="Or type your own research question…"></textarea>
+          <button id="synthBtn" class="synth-btn">Analyze →</button>
+        </div>
+
+        <div id="synthResult" class="synth-result" style="display:none">
+          <div class="synth-result-head">
+            <p class="synth-result-label">Synthesis</p>
+            <p id="synthModel" class="synth-model"></p>
+          </div>
+          <div id="synthText" class="synth-text"></div>
+        </div>
+      </div>
+
+      <!-- Similarity weighting -->
+      <div id="weightSection" class="weight-section" style="display:none">
+        <p class="weight-label">Weight similarity by:</p>
+        <div class="weight-presets">
+          <button class="weight-btn weight-active" data-preset="all">All equal</button>
+          <button class="weight-btn" data-preset="production">Production evidence</button>
+          <button class="weight-btn" data-preset="iconographic">Iconographic</button>
+          <button class="weight-btn" data-preset="investment">Investment / craft</button>
+          <button class="weight-btn" data-preset="symmetry">Symmetry / composition</button>
+        </div>
+      </div>
+
       <!-- Object selector -->
       <div id="selectorSection" class="selector-section" style="display:none">
-        <h2>Select an object</h2>
+        <h2 id="selectorHeading">Select an anchor object</h2>
+        <p class="selector-sub">Pick one object as the anchor — the others will be ranked by fingerprint similarity to it.</p>
         <div id="objectGrid" class="object-grid"></div>
       </div>
 
@@ -48,7 +100,7 @@ import SiteFooter from '../components/SiteFooter.astro';
       <div id="resultsSection" class="results-section" style="display:none">
         <div class="results-header">
           <div id="selectedInfo" class="selected-info"></div>
-          <button id="clearBtn" class="clear-btn">← Select different object</button>
+          <button id="clearBtn" class="clear-btn">← Select different anchor</button>
         </div>
 
         <div class="results-body">
@@ -99,18 +151,6 @@ const TRAD_COLORS = {
   casas_grandes:'#6d28d9', salado:'#c0392b', unknown:'#a09487',
 };
 
-// ── Math ───────────────────────────────────────────────────────────────────
-
-function cosineSimilarity(a, b) {
-  let dot = 0, magA = 0, magB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot  += a[i] * b[i];
-    magA += a[i] * a[i];
-    magB += b[i] * b[i];
-  }
-  if (magA === 0 || magB === 0) return 0;
-  return dot / (Math.sqrt(magA) * Math.sqrt(magB));
-}
 
 // ── Radar chart (client-side SVG) ──────────────────────────────────────────
 
@@ -177,30 +217,154 @@ function buildMiniBars(vec, compareVec = null) {
   }).join('');
 }
 
+// ── Principle weighting presets ────────────────────────────────────────────
+
+const WEIGHT_PRESETS = {
+  all:        {},
+  production: { ap_1:3, ap_2:3, ap_3:2, ap_4:2, ap_15:3 },
+  iconographic:{ ap_8:3, ap_9:2, ap_10:3, ta_4:3, ta_15:3, ta_5:2 },
+  investment: { ap_11:4, ap_1:2, ap_9:2 },
+  symmetry:   { ap_8:4, ap_9:2, ta_4:3, ta_5:2, ta_15:2 },
+};
+let activeWeights = {};
+
+document.querySelectorAll('.weight-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.weight-btn').forEach(b => b.classList.remove('weight-active'));
+    btn.classList.add('weight-active');
+    activeWeights = WEIGHT_PRESETS[btn.dataset.preset] ?? {};
+    if (selected) renderMatches(computeMatches());
+  });
+});
+
+function weightedCosine(a, b) {
+  let dot = 0, magA = 0, magB = 0;
+  for (let i = 0; i < a.length; i++) {
+    const w = (activeWeights[VECTOR_KEY[i]] ?? 1);
+    dot  += w * a[i] * b[i];
+    magA += w * a[i] * a[i];
+    magB += w * b[i] * b[i];
+  }
+  if (!magA || !magB) return 0;
+  return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+}
+
+function computeMatches() {
+  return objects
+    .filter(o => o.id !== selected.id && o.vec)
+    .map(o => ({ ...o, similarity: weightedCosine(selected.vec, o.vec) }))
+    .sort((a, b) => b.similarity - a.similarity);
+}
+
+// ── Synthesis ──────────────────────────────────────────────────────────────
+
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('synthQuery').value = btn.dataset.q;
+    runSynthesis();
+  });
+});
+
+document.getElementById('synthBtn')?.addEventListener('click', runSynthesis);
+document.getElementById('synthQuery')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) runSynthesis();
+});
+
+async function runSynthesis() {
+  const query = document.getElementById('synthQuery').value.trim();
+  if (!query) return;
+  const synthIds = objects.map(o => o.id);
+  if (synthIds.length < 2) { alert('Need at least 2 objects to synthesize.'); return; }
+
+  const btn = document.getElementById('synthBtn');
+  const result = document.getElementById('synthResult');
+  const text   = document.getElementById('synthText');
+  const model  = document.getElementById('synthModel');
+
+  btn.disabled = true;
+  btn.textContent = 'Analyzing…';
+  result.style.display = '';
+  text.textContent = '';
+  model.textContent = '';
+
+  try {
+    const res = await fetch('/api/compare/synthesize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: synthIds, query }),
+    });
+    if (!res.ok || !res.body) throw new Error(`${res.status}`);
+
+    const reader  = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        let evt; try { evt = JSON.parse(line.slice(6)); } catch { continue; }
+        if (evt.type === 'delta') text.textContent += evt.text;
+        if (evt.type === 'complete') model.textContent = evt.model ?? '';
+        if (evt.type === 'error') text.textContent += `\nError: ${evt.error}`;
+      }
+    }
+  } catch (err) {
+    text.textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Analyze →';
+  }
+}
+
 // ── Data ───────────────────────────────────────────────────────────────────
 
 let objects = [];
 let selected = null;
+
+// Read optional ids filter from URL
+const urlIds = new URLSearchParams(window.location.search).get('ids')
+  ?.split(',').map(Number).filter(Boolean) ?? [];
 
 async function loadData() {
   try {
     const res = await fetch('/api/fingerprints');
     if (!res.ok) throw new Error(`${res.status}`);
     const raw = await res.json();
-    objects = raw.map(o => ({
+    const all = raw.map(o => ({
       ...o,
       vec: o.fingerprint_vector ? JSON.parse(o.fingerprint_vector) : null,
     })).filter(o => o.vec && o.vec.length === 27);
+
+    // Filter to selected ids if present
+    objects = urlIds.length > 0 ? all.filter(o => urlIds.includes(o.id)) : all;
 
     document.getElementById('loading').style.display = 'none';
 
     if (objects.length === 0) {
       document.getElementById('error').style.display = '';
-      document.getElementById('error').textContent = 'No fingerprinted objects in corpus yet. Catalog objects first.';
+      document.getElementById('error').textContent = urlIds.length > 0
+        ? 'None of the selected objects have fingerprints yet. Catalog them first.'
+        : 'No fingerprinted objects in corpus yet. Catalog objects first.';
       return;
     }
 
-    renderOverview();
+    // Show set header if filtering
+    if (urlIds.length > 0) {
+      document.getElementById('setHeader').style.display = '';
+      document.getElementById('setCount').textContent =
+        `${objects.length} object${objects.length !== 1 ? 's' : ''} selected for comparison`;
+    }
+
+    // Show synthesis section and weight section once we have objects
+    document.getElementById('synthesisSection').style.display = '';
+    document.getElementById('weightSection').style.display = '';
+
+    if (urlIds.length === 0) renderOverview();
     renderSelector();
   } catch (err) {
     document.getElementById('loading').style.display = 'none';
@@ -298,16 +462,7 @@ function selectObject(id) {
   document.getElementById('selectedRadar').innerHTML = buildRadar(selected.vec);
   document.getElementById('selectedBars').innerHTML  = buildMiniBars(selected.vec);
 
-  // Compute cosine similarity against all other objects
-  const others = objects
-    .filter(o => o.id !== selected.id && o.vec)
-    .map(o => ({
-      ...o,
-      similarity: cosineSimilarity(selected.vec, o.vec),
-    }))
-    .sort((a, b) => b.similarity - a.similarity);
-
-  renderMatches(others);
+  renderMatches(computeMatches());
 
   document.getElementById('resultsSection').style.display = '';
 }
@@ -421,9 +576,72 @@ loadData();
   .trad-bar   { height: 100%; border-radius: 2px; }
   .trad-count { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); text-align: right; }
 
+  /* Set header */
+  .set-header { margin-bottom: var(--space-8); }
+  .set-info { display: flex; align-items: center; gap: var(--space-6); }
+  .set-count { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--text); }
+  .set-back  { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); text-decoration: none; }
+  .set-back:hover { color: var(--accent); }
+
+  /* Synthesis section */
+  .synthesis-section {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: var(--space-8); margin-bottom: var(--space-8);
+  }
+  .synthesis-section h2 { font-size: var(--text-xl); margin-bottom: var(--space-2); }
+  .synth-sub { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-6); max-width: 60ch; }
+  .preset-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: var(--space-3); max-width: none; }
+  .presets { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-5); }
+  .preset-btn {
+    font-family: var(--font-mono); font-size: var(--text-xs);
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 20px; padding: var(--space-2) var(--space-4);
+    cursor: pointer; color: var(--text-muted); transition: all 0.2s;
+  }
+  .preset-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+  .synth-input-row { display: flex; gap: var(--space-3); align-items: flex-start; }
+  .synth-textarea {
+    flex: 1; font-family: var(--font-body); font-size: var(--text-sm); line-height: 1.6;
+    border: 1px solid var(--border); border-radius: 3px;
+    padding: var(--space-3) var(--space-4); background: var(--bg); color: var(--text);
+    resize: vertical; min-height: 80px;
+  }
+  .synth-textarea:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+  .synth-btn {
+    background: var(--accent); color: #fff; border: none; border-radius: 3px;
+    padding: var(--space-3) var(--space-6); font-family: var(--font-mono);
+    font-size: var(--text-sm); cursor: pointer; white-space: nowrap;
+    transition: background 0.2s; align-self: flex-end;
+  }
+  .synth-btn:hover:not(:disabled) { background: var(--accent-light); }
+  .synth-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .synth-result { margin-top: var(--space-6); border-top: 1px solid var(--border); padding-top: var(--space-6); }
+  .synth-result-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+  .synth-result-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; max-width: none; }
+  .synth-model { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
+  .synth-text { font-size: var(--text-base); line-height: 1.85; color: var(--text); white-space: pre-wrap; max-width: 78ch; }
+
+  /* Weight section */
+  .weight-section {
+    display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;
+    margin-bottom: var(--space-8); padding: var(--space-4) var(--space-6);
+    background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px;
+  }
+  .weight-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+  .weight-presets { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .weight-btn {
+    font-family: var(--font-mono); font-size: var(--text-xs);
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 3px; padding: var(--space-1) var(--space-4);
+    cursor: pointer; color: var(--text-muted); transition: all 0.2s;
+  }
+  .weight-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .weight-active  { background: var(--accent); color: #fff !important; border-color: var(--accent) !important; }
+
   /* Object selector */
-  .selector-section { margin-bottom: var(--space-12); }
-  .selector-section h2 { font-size: var(--text-2xl); margin-bottom: var(--space-6); }
+  .selector-section { margin-bottom: var(--space-8); }
+  .selector-section h2 { font-size: var(--text-xl); margin-bottom: var(--space-2); }
+  .selector-sub { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-5); max-width: 60ch; }
   .object-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: var(--space-4);
