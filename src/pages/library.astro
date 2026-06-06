@@ -105,11 +105,23 @@ import SiteFooter from '../components/SiteFooter.astro';
         <div id="uploadStatus" class="upload-status" style="display:none"></div>
       </div>
 
+      <!-- Passage search -->
+      <div class="search-section">
+        <h2>Search passages</h2>
+        <p class="section-sub">Full-text search across all indexed document passages. Supports phrases (<code>"kill hole"</code>), AND/OR, and single keywords.</p>
+        <div class="search-bar">
+          <input type="search" id="passageSearch" class="passage-search-input"
+            placeholder="kill hole · coil-and-scrape · positive-negative ambiguity · Mimbres geometric…" />
+          <button id="searchBtn" class="search-go-btn">Search</button>
+        </div>
+        <div id="searchResults" class="search-results" style="display:none"></div>
+      </div>
+
       <!-- Document list -->
       <div class="library-section">
         <div class="library-head">
           <h2>Indexed documents <span id="docCount" class="doc-count"></span></h2>
-          <input type="search" id="searchBox" class="search-box" placeholder="Search titles, authors, citation keys…" />
+          <input type="search" id="searchBox" class="search-box" placeholder="Filter by title, author, citation key…" />
         </div>
         <div id="docList" class="doc-list">
           <p class="loading">Loading library…</p>
@@ -315,6 +327,58 @@ uploadForm.addEventListener('submit', async e => {
   }
 });
 
+// ── Passage search ───────────────────────────────────────────────────────────
+
+const passageSearch = document.getElementById('passageSearch');
+const searchBtn     = document.getElementById('searchBtn');
+const searchResults = document.getElementById('searchResults');
+
+async function runSearch() {
+  const q = passageSearch.value.trim();
+  if (!q) { searchResults.style.display = 'none'; return; }
+
+  searchBtn.disabled = true;
+  searchBtn.textContent = '…';
+  searchResults.style.display = '';
+  searchResults.innerHTML = '<p class="sr-loading">Searching…</p>';
+
+  try {
+    const res  = await fetch(`/api/library/search?q=${encodeURIComponent(q)}&limit=20`);
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error ?? `${res.status}`);
+
+    if (!Array.isArray(data) || data.length === 0) {
+      searchResults.innerHTML = `<p class="sr-empty">No passages found for <em>${q}</em>. Try different terms or check the document list.</p>`;
+      return;
+    }
+
+    searchResults.innerHTML = `
+      <p class="sr-count">${data.length} passage${data.length !== 1 ? 's' : ''} matching <em>${q}</em></p>
+      <div class="sr-list">
+        ${data.map(r => `
+          <div class="sr-item">
+            <div class="sr-citation">
+              <span class="sr-key">${r.citation_key}</span>
+              ${r.page_ref    ? `<span class="sr-page">${r.page_ref}</span>` : ''}
+              ${r.section_ref ? `<span class="sr-section">${r.section_ref}</span>` : ''}
+            </div>
+            <p class="sr-snippet">${r.snippet}</p>
+            <p class="sr-source">${r.author}${r.year ? ', ' + r.year : ''} — <em>${r.title}</em></p>
+          </div>
+        `).join('')}
+      </div>`;
+  } catch (err) {
+    searchResults.innerHTML = `<p class="sr-error">Search error: ${err.message}</p>`;
+  } finally {
+    searchBtn.disabled = false;
+    searchBtn.textContent = 'Search';
+  }
+}
+
+searchBtn.addEventListener('click', runSearch);
+passageSearch.addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+
 // ── Document list ────────────────────────────────────────────────────────────
 
 async function loadDocs() {
@@ -449,6 +513,54 @@ loadDocs();
   .upload-status { margin-top: var(--space-4); }
   .status-ok  { font-size: var(--text-sm); color: var(--cons); max-width: none; }
   .status-err { font-size: var(--text-sm); color: #c0392b; max-width: none; }
+
+  /* Passage search */
+  .search-section {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: var(--space-8); margin-bottom: var(--space-12);
+  }
+  .search-section h2 { font-size: var(--text-xl); margin-bottom: var(--space-2); }
+  .section-sub { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-6); max-width: 68ch; }
+  .section-sub code { font-family: var(--font-mono); font-size: var(--text-xs); background: var(--bg-alt); padding: 0.1em 0.4em; border-radius: 2px; }
+  .search-bar { display: flex; gap: var(--space-3); margin-bottom: var(--space-6); }
+  .passage-search-input {
+    flex: 1; font-family: var(--font-body); font-size: var(--text-base);
+    border: 1px solid var(--border); border-radius: 3px;
+    padding: var(--space-3) var(--space-4); background: var(--bg); color: var(--text);
+  }
+  .passage-search-input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+  .search-go-btn {
+    background: var(--accent); color: #fff; border: none; border-radius: 3px;
+    padding: var(--space-3) var(--space-6); font-family: var(--font-mono);
+    font-size: var(--text-sm); cursor: pointer; white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .search-go-btn:hover:not(:disabled) { background: var(--accent-light); }
+  .search-go-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .search-results { border-top: 1px solid var(--border); padding-top: var(--space-6); }
+  .sr-loading, .sr-empty, .sr-error { font-size: var(--text-sm); color: var(--text-muted); max-width: none; }
+  .sr-error { color: #c0392b; }
+  .sr-count { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-5); max-width: none; letter-spacing: 0.03em; }
+  .sr-count em { color: var(--accent); font-style: normal; }
+  .sr-list { display: flex; flex-direction: column; gap: var(--space-4); }
+  .sr-item {
+    padding: var(--space-5) var(--space-6);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    border-left: 3px solid var(--accent);
+  }
+  .sr-citation { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); flex-wrap: wrap; }
+  .sr-key { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 700; color: var(--accent); }
+  .sr-page, .sr-section { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
+  .sr-snippet {
+    font-size: var(--text-base); line-height: 1.75; color: var(--text);
+    margin-bottom: var(--space-3); max-width: 80ch;
+  }
+  .sr-snippet mark { background: #fef3c7; color: var(--text); border-radius: 2px; padding: 0 2px; }
+  .sr-source { font-size: var(--text-xs); color: var(--text-muted); font-style: normal; max-width: none; }
+  .sr-source em { font-style: italic; }
 
   /* Document list */
   .library-section { }
