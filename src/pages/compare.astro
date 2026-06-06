@@ -1,0 +1,524 @@
+---
+export const prerender = true;
+import SiteNav from '../components/SiteNav.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Compare — The Grammar of Things</title>
+  <style is:global>
+    @import url('/src/styles/base.css');
+  </style>
+</head>
+<body>
+  <SiteNav />
+
+  <div class="cmp-page">
+    <div class="container">
+
+      <div class="page-head">
+        <h1>Fingerprint comparison</h1>
+        <p class="page-sub">Select an object to see how its perceptual fingerprint compares against the rest of the corpus. Objects with similar fingerprints but different attributed traditions are surfaced as research flags.</p>
+        <p class="proto-note">Prototype instrument — comparisons are computed across the current corpus only. Findings are flagged for closer examination, not asserted as conclusions.</p>
+      </div>
+
+      <div id="loading" class="cmp-loading">Loading corpus fingerprints…</div>
+      <div id="error"   class="cmp-error"   style="display:none"></div>
+
+      <!-- Corpus overview (populated by JS) -->
+      <div id="overview" class="overview" style="display:none">
+        <div class="stat-row">
+          <div class="stat"><span id="statTotal" class="stat-n">—</span><span class="stat-l">objects in corpus</span></div>
+          <div class="stat"><span id="statFp"    class="stat-n">—</span><span class="stat-l">fingerprinted</span></div>
+          <div class="stat"><span id="statTrad"  class="stat-n">—</span><span class="stat-l">traditions represented</span></div>
+        </div>
+        <div id="tradBars" class="trad-bars"></div>
+      </div>
+
+      <!-- Object selector -->
+      <div id="selectorSection" class="selector-section" style="display:none">
+        <h2>Select an object</h2>
+        <div id="objectGrid" class="object-grid"></div>
+      </div>
+
+      <!-- Results -->
+      <div id="resultsSection" class="results-section" style="display:none">
+        <div class="results-header">
+          <div id="selectedInfo" class="selected-info"></div>
+          <button id="clearBtn" class="clear-btn">← Select different object</button>
+        </div>
+
+        <div class="results-body">
+          <div class="results-left">
+            <p class="panel-label">Fingerprint</p>
+            <div id="selectedRadar" class="radar-wrap"></div>
+            <div id="selectedBars" class="mini-bars"></div>
+          </div>
+          <div class="results-right">
+            <p class="panel-label">Closest matches by perceptual fingerprint</p>
+            <div id="matchList" class="match-list"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <SiteFooter />
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────
+
+const VECTOR_KEY = [
+  'ap_1','ap_2','ap_3','ap_4','ap_5','ap_6','ap_7','ap_8','ap_9','ap_10',
+  'ap_11','ap_12','ap_13','ap_14','ap_15',
+  'ta_1','ta_2','ta_4','ta_5','ta_13','ta_15','ta_20','ta_28',
+  'ta_47','ta_48','ta_49','ta_51',
+];
+const PRINCIPLE_NAMES = {
+  ap_1:'Production Trace Reading', ap_2:'Sequence Inference', ap_3:'Material Boundary Attention',
+  ap_4:'Wear Differential', ap_5:'Absence as Evidence', ap_6:'Composite Detection',
+  ap_7:'Anatomical Correspondence', ap_8:'Symmetry as Evidence', ap_9:'Proportion as Encoding',
+  ap_10:'Color Zone Logic', ap_11:'Investment Gradient', ap_12:'Attachment Point Reading',
+  ap_13:'Orientation Dependency', ap_14:'Completion State', ap_15:'Reduction vs. Construction',
+  ta_1:'Edge Detection', ta_2:'Color Opponent Channels', ta_4:'Figure-Ground Relationships',
+  ta_5:'Grouping', ta_13:'Overlap / Occlusion', ta_15:'Closure / Negative Space',
+  ta_20:'Simultaneous Contrast', ta_28:'Specularity / Reflection',
+  ta_47:'Face Detection', ta_48:'Biological Motion', ta_49:'Gaze Direction', ta_51:'Visual Pop-out',
+};
+const TRAD_LABELS = {
+  mimbres:'Mimbres', hohokam:'Hohokam', ancestral_puebloan:'Ancestral Puebloan',
+  casas_grandes:'Casas Grandes', salado:'Salado', unknown:'Unknown / indeterminate',
+};
+const TRAD_COLORS = {
+  mimbres:'#9b4f19', hohokam:'#4a6741', ancestral_puebloan:'#1d5fa8',
+  casas_grandes:'#6d28d9', salado:'#c0392b', unknown:'#a09487',
+};
+
+// ── Math ───────────────────────────────────────────────────────────────────
+
+function cosineSimilarity(a, b) {
+  let dot = 0, magA = 0, magB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot  += a[i] * b[i];
+    magA += a[i] * a[i];
+    magB += b[i] * b[i];
+  }
+  if (magA === 0 || magB === 0) return 0;
+  return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+}
+
+// ── Radar chart (client-side SVG) ──────────────────────────────────────────
+
+function buildRadar(vec, size = 320) {
+  const cx = 160, cy = 160, r = 120, n = VECTOR_KEY.length;
+  const toRad = d => (d * Math.PI) / 180;
+  const spoke = (i, radius) => {
+    const a = toRad((360 / n) * i - 90);
+    return { x: cx + radius * Math.cos(a), y: cy + radius * Math.sin(a) };
+  };
+  const ring = frac => VECTOR_KEY.map((_, i) => spoke(i, r * frac))
+    .map((p, i) => `${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + ' Z';
+  const poly = VECTOR_KEY.map((_, i) => {
+    const s = vec[i] ?? 0;
+    const p = spoke(i, s === 0 ? 3 : r * (s / 3));
+    return `${i===0?'M':'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+  }).join(' ') + ' Z';
+  const spokes = VECTOR_KEY.map((_, i) => {
+    const o = spoke(i, r);
+    return `<line x1="${cx}" y1="${cy}" x2="${o.x.toFixed(1)}" y2="${o.y.toFixed(1)}" stroke="#d4cdc4" stroke-width="1"/>`;
+  }).join('');
+  const labels = VECTOR_KEY.map((k, i) => {
+    const pos = spoke(i, r + 16);
+    const anchor = pos.x < cx - 4 ? 'end' : pos.x > cx + 4 ? 'start' : 'middle';
+    const name = PRINCIPLE_NAMES[k] ?? k;
+    const short = name.length > 14 ? name.slice(0, 12) + '…' : name;
+    const color = k.startsWith('ap') ? '#9b4f19' : '#4a6741';
+    return `<text x="${pos.x.toFixed(1)}" y="${pos.y.toFixed(1)}" text-anchor="${anchor}" font-size="6.5" fill="${color}" font-family="system-ui,sans-serif" dominant-baseline="middle">${short}</text>`;
+  }).join('');
+  const dots = VECTOR_KEY.map((k, i) => {
+    const s = vec[i] ?? 0; if (!s) return '';
+    const p = spoke(i, r * (s / 3));
+    return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3" fill="${k.startsWith('ap') ? '#9b4f19' : '#4a6741'}"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:${size}px;height:auto;">
+    <path d="${ring(1/3)}" fill="none" stroke="#ede9e2" stroke-width="1"/>
+    <path d="${ring(2/3)}" fill="none" stroke="#d4cdc4" stroke-width="1"/>
+    <path d="${ring(1)}"   fill="none" stroke="#a09487" stroke-width="1"/>
+    ${spokes}
+    <path d="${poly}" fill="rgba(155,79,25,0.10)" stroke="#9b4f19" stroke-width="1.5" stroke-linejoin="round"/>
+    ${dots}${labels}
+  </svg>`;
+}
+
+function scoreColor(s) {
+  return s === 0 ? '#d4cdc4' : s === 1 ? '#c8a882' : s === 2 ? '#c4742a' : '#9b4f19';
+}
+
+function buildMiniBars(vec, compareVec = null) {
+  return VECTOR_KEY.map((k, i) => {
+    const s   = vec[i] ?? 0;
+    const c   = compareVec ? (compareVec[i] ?? 0) : null;
+    const diff = c !== null ? c - s : null;
+    const diffHtml = diff !== null && diff !== 0
+      ? `<span class="diff ${diff > 0 ? 'diff-up' : 'diff-down'}">${diff > 0 ? '+' : ''}${diff}</span>`
+      : '';
+    return `<div class="mb-row">
+      <span class="mb-code">${k}</span>
+      <div class="mb-track"><div class="mb-fill" style="width:${(s/3)*100}%;background:${scoreColor(s)}"></div></div>
+      <span class="mb-score">${s}</span>
+      ${diffHtml}
+      <span class="mb-name">${PRINCIPLE_NAMES[k] ?? k}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Data ───────────────────────────────────────────────────────────────────
+
+let objects = [];
+let selected = null;
+
+async function loadData() {
+  try {
+    const res = await fetch('/api/fingerprints');
+    if (!res.ok) throw new Error(`${res.status}`);
+    const raw = await res.json();
+    objects = raw.map(o => ({
+      ...o,
+      vec: o.fingerprint_vector ? JSON.parse(o.fingerprint_vector) : null,
+    })).filter(o => o.vec && o.vec.length === 27);
+
+    document.getElementById('loading').style.display = 'none';
+
+    if (objects.length === 0) {
+      document.getElementById('error').style.display = '';
+      document.getElementById('error').textContent = 'No fingerprinted objects in corpus yet. Catalog objects first.';
+      return;
+    }
+
+    renderOverview();
+    renderSelector();
+  } catch (err) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('error').style.display = '';
+    document.getElementById('error').textContent = `Error loading data: ${err.message}`;
+  }
+}
+
+// ── Corpus overview ────────────────────────────────────────────────────────
+
+function renderOverview() {
+  const overview = document.getElementById('overview');
+  overview.style.display = '';
+
+  document.getElementById('statTotal').textContent = objects.length;
+  document.getElementById('statFp').textContent    = objects.filter(o => o.vec).length;
+
+  const tradCounts = {};
+  objects.forEach(o => {
+    const t = o.attribution_culture ?? 'unknown';
+    tradCounts[t] = (tradCounts[t] ?? 0) + 1;
+  });
+  document.getElementById('statTrad').textContent = Object.keys(tradCounts).filter(t => t !== 'unknown').length || Object.keys(tradCounts).length;
+
+  const max = Math.max(...Object.values(tradCounts));
+  document.getElementById('tradBars').innerHTML = Object.entries(tradCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([t, n]) => {
+      const label = TRAD_LABELS[t] ?? t;
+      const color = TRAD_COLORS[t] ?? '#a09487';
+      return `<div class="trad-row">
+        <span class="trad-name">${label}</span>
+        <div class="trad-bar-wrap">
+          <div class="trad-bar" style="width:${(n/max)*100}%;background:${color}"></div>
+        </div>
+        <span class="trad-count">${n}</span>
+      </div>`;
+    }).join('');
+}
+
+// ── Object selector ────────────────────────────────────────────────────────
+
+function renderSelector() {
+  document.getElementById('selectorSection').style.display = '';
+  const accession = o => o.accession_number ?? o.catalog_number ?? `#${o.id}`;
+  const imgKey = o => o.image_analysis_key?.split(',')[0]?.trim();
+  const trad = o => o.attribution_culture ?? 'unknown';
+  const tradColor = o => TRAD_COLORS[trad(o)] ?? '#a09487';
+  const tradLabel = o => TRAD_LABELS[trad(o)] ?? trad(o);
+
+  document.getElementById('objectGrid').innerHTML = objects.map(o => `
+    <button class="obj-card" data-id="${o.id}" aria-label="Select ${accession(o)}">
+      <div class="obj-thumb">
+        ${imgKey(o)
+          ? `<img src="/api/image/${imgKey(o)}" alt="${accession(o)}" loading="lazy" />`
+          : `<div class="obj-no-img">No image</div>`}
+      </div>
+      <p class="obj-acc">${accession(o)}</p>
+      <p class="obj-trad" style="color:${tradColor(o)}">${tradLabel(o)}</p>
+    </button>
+  `).join('');
+
+  document.getElementById('objectGrid').addEventListener('click', e => {
+    const btn = e.target.closest('.obj-card');
+    if (!btn) return;
+    const id = Number(btn.dataset.id);
+    selectObject(id);
+  });
+}
+
+// ── Selection + comparison ─────────────────────────────────────────────────
+
+function selectObject(id) {
+  selected = objects.find(o => o.id === id);
+  if (!selected) return;
+
+  document.getElementById('selectorSection').style.display = 'none';
+  document.getElementById('overview').style.display = 'none';
+
+  const accession = selected.accession_number ?? selected.catalog_number ?? `#${selected.id}`;
+  const tradLabel  = TRAD_LABELS[selected.attribution_culture] ?? selected.attribution_culture ?? 'Unknown';
+  const tradColor  = TRAD_COLORS[selected.attribution_culture] ?? '#a09487';
+
+  document.getElementById('selectedInfo').innerHTML = `
+    <p class="sel-acc">${accession}</p>
+    <p class="sel-trad" style="color:${tradColor}">${tradLabel}${selected.attribution_confidence ? ` <span class="sel-conf">(${selected.attribution_confidence})</span>` : ''}</p>
+    <p class="sel-model">Fingerprinted${selected.fingerprint_model ? ' · ' + selected.fingerprint_model : ''}</p>`;
+
+  document.getElementById('selectedRadar').innerHTML = buildRadar(selected.vec);
+  document.getElementById('selectedBars').innerHTML  = buildMiniBars(selected.vec);
+
+  // Compute cosine similarity against all other objects
+  const others = objects
+    .filter(o => o.id !== selected.id && o.vec)
+    .map(o => ({
+      ...o,
+      similarity: cosineSimilarity(selected.vec, o.vec),
+    }))
+    .sort((a, b) => b.similarity - a.similarity);
+
+  renderMatches(others);
+
+  document.getElementById('resultsSection').style.display = '';
+}
+
+function renderMatches(matches) {
+  if (matches.length === 0) {
+    document.getElementById('matchList').innerHTML =
+      '<p class="no-matches">No other fingerprinted objects to compare against yet.</p>';
+    return;
+  }
+
+  const selectedTrad = selected.attribution_culture ?? 'unknown';
+
+  document.getElementById('matchList').innerHTML = matches.map((o, i) => {
+    const accession  = o.accession_number ?? o.catalog_number ?? `#${o.id}`;
+    const matchTrad  = o.attribution_culture ?? 'unknown';
+    const tradLabel  = TRAD_LABELS[matchTrad] ?? matchTrad;
+    const tradColor  = TRAD_COLORS[matchTrad] ?? '#a09487';
+    const pct        = Math.round(o.similarity * 100);
+    const imgKey     = o.image_analysis_key?.split(',')[0]?.trim();
+
+    const tradMismatch = matchTrad !== 'unknown' && selectedTrad !== 'unknown' && matchTrad !== selectedTrad;
+
+    // Compute per-principle deltas for the comparison bars
+    const diffs = selected.vec.map((s, i) => (o.vec[i] ?? 0) - s);
+    const bigDiffs = VECTOR_KEY
+      .map((k, i) => ({ k, name: PRINCIPLE_NAMES[k] ?? k, diff: diffs[i] }))
+      .filter(d => Math.abs(d.diff) >= 2)
+      .slice(0, 4);
+
+    return `
+      <div class="match-card ${tradMismatch ? 'match-mismatch' : ''}">
+        <div class="match-head">
+          <div class="match-thumb">
+            ${imgKey
+              ? `<img src="/api/image/${imgKey}" alt="${accession}" />`
+              : `<div class="match-no-img">#${i+1}</div>`}
+          </div>
+          <div class="match-info">
+            <p class="match-acc"><a href="/corpus/${o.id}">${accession}</a></p>
+            <p class="match-trad" style="color:${tradColor}">${tradLabel}</p>
+            ${o.source_institution ? `<p class="match-inst">${o.source_institution}</p>` : ''}
+          </div>
+          <div class="match-score">
+            <p class="score-pct">${pct}%</p>
+            <p class="score-label">similarity</p>
+            <div class="score-bar-wrap">
+              <div class="score-bar" style="width:${pct}%"></div>
+            </div>
+          </div>
+        </div>
+
+        ${tradMismatch ? `
+          <div class="mismatch-flag">
+            <span class="flag-badge">⚠ Attribution differs</span>
+            <span class="flag-text">Fingerprint similarity ${pct}% — documented traditions differ (${TRAD_LABELS[selectedTrad] ?? selectedTrad} vs. ${tradLabel}). Warrants closer examination.</span>
+          </div>` : ''}
+
+        ${bigDiffs.length > 0 ? `
+          <div class="diff-summary">
+            <p class="diff-label">Largest principle differences</p>
+            <div class="diff-list">
+              ${bigDiffs.map(d => `
+                <span class="diff-chip ${d.diff > 0 ? 'diff-chip-up' : 'diff-chip-down'}">
+                  ${d.name}: ${d.diff > 0 ? '+' : ''}${d.diff}
+                </span>`).join('')}
+            </div>
+          </div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  selected = null;
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('overview').style.display = '';
+  document.getElementById('selectorSection').style.display = '';
+});
+
+loadData();
+</script>
+
+<style is:global>
+  .cmp-page { padding-block: var(--space-16) var(--space-24); background: var(--bg); min-height: 80vh; }
+  .cmp-page .container { max-width: 1100px; }
+  .page-head { margin-bottom: var(--space-10); }
+  .cmp-page h1 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: -0.015em; margin-bottom: var(--space-4); }
+  .page-sub { font-size: var(--text-base); color: var(--text-muted); line-height: 1.7; max-width: 68ch; margin-bottom: var(--space-3); }
+  .proto-note {
+    font-family: var(--font-mono); font-size: var(--text-xs); color: var(--theory);
+    background: var(--theory-bg); border: 1px solid #e5c68a; border-radius: 3px;
+    padding: var(--space-3) var(--space-4); max-width: 68ch;
+  }
+  .cmp-loading { font-size: var(--text-base); color: var(--text-muted); padding: var(--space-16) 0; max-width: none; }
+  .cmp-error   { font-size: var(--text-base); color: #c0392b; padding: var(--space-8) 0; max-width: none; }
+
+  /* Overview */
+  .overview { margin-bottom: var(--space-12); }
+  .stat-row {
+    display: flex; gap: var(--space-10); flex-wrap: wrap;
+    background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px;
+    padding: var(--space-6) var(--space-8); margin-bottom: var(--space-6);
+  }
+  .stat { display: flex; flex-direction: column; gap: var(--space-1); }
+  .stat-n { font-family: var(--font-display); font-size: var(--text-4xl); color: var(--accent); line-height: 1; }
+  .stat-l { font-size: var(--text-sm); color: var(--text-muted); max-width: none; }
+  .trad-bars { display: flex; flex-direction: column; gap: var(--space-3); max-width: 480px; }
+  .trad-row { display: grid; grid-template-columns: 160px 1fr 32px; gap: var(--space-3); align-items: center; }
+  .trad-name  { font-size: var(--text-sm); color: var(--text); }
+  .trad-bar-wrap { height: 10px; background: var(--bg-alt); border-radius: 2px; overflow: hidden; }
+  .trad-bar   { height: 100%; border-radius: 2px; }
+  .trad-count { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); text-align: right; }
+
+  /* Object selector */
+  .selector-section { margin-bottom: var(--space-12); }
+  .selector-section h2 { font-size: var(--text-2xl); margin-bottom: var(--space-6); }
+  .object-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: var(--space-4);
+  }
+  .obj-card {
+    display: flex; flex-direction: column; gap: var(--space-2);
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: var(--space-3); cursor: pointer; text-align: left;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .obj-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(155,79,25,0.1); }
+  .obj-thumb { width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 2px; border: 1px solid var(--border); background: var(--bg-alt); }
+  .obj-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
+  .obj-no-img { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; color: var(--text-muted); }
+  .obj-acc  { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text); font-weight: 600; max-width: none; }
+  .obj-trad { font-size: var(--text-xs); max-width: none; }
+
+  /* Results */
+  .results-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: var(--space-10); flex-wrap: wrap; gap: var(--space-4);
+  }
+  .selected-info { display: flex; flex-direction: column; gap: var(--space-1); }
+  .sel-acc   { font-family: var(--font-display); font-size: var(--text-3xl); letter-spacing: -0.015em; }
+  .sel-trad  { font-size: var(--text-lg); font-weight: 500; }
+  .sel-conf  { font-weight: normal; font-size: var(--text-base); }
+  .sel-model { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); max-width: none; }
+  .clear-btn {
+    font-family: var(--font-mono); font-size: var(--text-xs);
+    color: var(--text-muted); background: none; border: 1px solid var(--border);
+    border-radius: 2px; padding: var(--space-2) var(--space-4); cursor: pointer;
+    white-space: nowrap;
+  }
+  .clear-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  .results-body {
+    display: grid; grid-template-columns: 380px 1fr;
+    gap: var(--space-10); align-items: start;
+  }
+  .panel-label {
+    font-family: var(--font-mono); font-size: var(--text-xs);
+    color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase;
+    margin-bottom: var(--space-4); max-width: none;
+  }
+  .radar-wrap { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: var(--space-4); margin-bottom: var(--space-4); }
+
+  /* Mini bars */
+  .mini-bars { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: var(--space-4); max-height: 400px; overflow-y: auto; }
+  .mb-row { display: grid; grid-template-columns: 36px 52px 14px 24px 1fr; gap: var(--space-2); align-items: center; padding-block: 2px; border-bottom: 1px solid var(--bg-alt); }
+  .mb-row:last-child { border-bottom: none; }
+  .mb-code  { font-family: var(--font-mono); font-size: 0.6rem; color: var(--text-muted); }
+  .mb-track { height: 5px; background: var(--bg-alt); border-radius: 2px; overflow: hidden; }
+  .mb-fill  { height: 100%; border-radius: 2px; }
+  .mb-score { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; color: var(--text); text-align: center; }
+  .mb-name  { font-size: 0.65rem; color: var(--text-muted); }
+  .diff     { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; text-align: center; }
+  .diff-up   { color: var(--cons); }
+  .diff-down { color: var(--accent); }
+
+  /* Match list */
+  .match-list { display: flex; flex-direction: column; gap: var(--space-4); }
+  .no-matches { font-size: var(--text-sm); color: var(--text-muted); max-width: none; }
+  .match-card {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: var(--space-5);
+  }
+  .match-mismatch { border-color: #e5c68a; background: #fffdf5; }
+  .match-head { display: flex; gap: var(--space-4); align-items: flex-start; margin-bottom: var(--space-4); }
+  .match-thumb { width: 72px; height: 72px; flex-shrink: 0; overflow: hidden; border-radius: 2px; border: 1px solid var(--border); background: var(--bg-alt); }
+  .match-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
+  .match-no-img { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: var(--text-xs); color: var(--text-muted); }
+  .match-info { flex: 1; min-width: 0; }
+  .match-acc  { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: 600; max-width: none; }
+  .match-acc a { color: var(--text); text-decoration: none; }
+  .match-acc a:hover { color: var(--accent); }
+  .match-trad { font-size: var(--text-sm); font-weight: 500; max-width: none; margin-top: var(--space-1); }
+  .match-inst { font-size: var(--text-xs); color: var(--text-muted); max-width: none; margin-top: var(--space-1); }
+  .match-score { flex-shrink: 0; text-align: right; }
+  .score-pct   { font-family: var(--font-display); font-size: var(--text-3xl); color: var(--text); line-height: 1; }
+  .score-label { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); margin-bottom: var(--space-2); max-width: none; }
+  .score-bar-wrap { width: 80px; height: 5px; background: var(--bg-alt); border-radius: 2px; overflow: hidden; }
+  .score-bar  { height: 100%; background: var(--accent); border-radius: 2px; }
+
+  /* Mismatch flag */
+  .mismatch-flag {
+    display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap;
+    background: var(--theory-bg); border: 1px solid #e5c68a; border-radius: 3px;
+    padding: var(--space-3) var(--space-4); margin-bottom: var(--space-4);
+  }
+  .flag-badge { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 700; color: var(--theory); white-space: nowrap; }
+  .flag-text  { font-size: var(--text-sm); color: var(--theory); line-height: 1.5; max-width: none; }
+
+  /* Diff chips */
+  .diff-summary { border-top: 1px solid var(--border); padding-top: var(--space-4); }
+  .diff-label   { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: var(--space-3); max-width: none; }
+  .diff-list    { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .diff-chip    { font-family: var(--font-mono); font-size: var(--text-xs); padding: 0.15em 0.6em; border-radius: 2px; }
+  .diff-chip-up   { background: var(--cons-bg);   color: var(--cons);   }
+  .diff-chip-down { background: var(--accent-dim); color: var(--accent); }
+
+  @media (max-width: 900px) {
+    .results-body { grid-template-columns: 1fr; }
+    .match-head   { flex-wrap: wrap; }
+  }
+</style>
