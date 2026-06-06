@@ -46,7 +46,19 @@ import SiteFooter from '../components/SiteFooter.astro';
         </div>
       </div>
 
-      <!-- Synthesis query (shown once objects are loaded) -->
+      <!-- Similarity weighting — above comparative analysis -->
+      <div id="weightSection" class="weight-section" style="display:none">
+        <p class="weight-label">Weight similarity by:</p>
+        <div class="weight-presets">
+          <button class="weight-btn weight-active" data-preset="all">All equal</button>
+          <button class="weight-btn" data-preset="production">Production evidence</button>
+          <button class="weight-btn" data-preset="iconographic">Iconographic</button>
+          <button class="weight-btn" data-preset="investment">Investment / craft</button>
+          <button class="weight-btn" data-preset="symmetry">Symmetry / composition</button>
+        </div>
+      </div>
+
+      <!-- Synthesis query -->
       <div id="synthesisSection" class="synthesis-section" style="display:none">
         <h2>Comparative analysis</h2>
         <p class="synth-sub">Ask a research question about the selected objects. Claude analyzes all fingerprints and Pass 1 observations together.</p>
@@ -74,18 +86,6 @@ import SiteFooter from '../components/SiteFooter.astro';
             <p id="synthModel" class="synth-model"></p>
           </div>
           <div id="synthText" class="synth-text"></div>
-        </div>
-      </div>
-
-      <!-- Similarity weighting -->
-      <div id="weightSection" class="weight-section" style="display:none">
-        <p class="weight-label">Weight similarity by:</p>
-        <div class="weight-presets">
-          <button class="weight-btn weight-active" data-preset="all">All equal</button>
-          <button class="weight-btn" data-preset="production">Production evidence</button>
-          <button class="weight-btn" data-preset="iconographic">Iconographic</button>
-          <button class="weight-btn" data-preset="investment">Investment / craft</button>
-          <button class="weight-btn" data-preset="symmetry">Symmetry / composition</button>
         </div>
       </div>
 
@@ -591,7 +591,7 @@ loadData();
   .synthesis-section h2 { font-size: var(--text-xl); margin-bottom: var(--space-2); }
   .synth-sub { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-6); max-width: 60ch; }
   .preset-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: var(--space-3); max-width: none; }
-  .presets { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-5); }
+  .presets { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-8); }
   .preset-btn {
     font-family: var(--font-mono); font-size: var(--text-xs);
     background: var(--bg); border: 1px solid var(--border);
