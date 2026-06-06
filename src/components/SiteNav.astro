@@ -3,6 +3,8 @@
 <nav>
   <div class="container nav-inner">
     <a href="/" class="wordmark">The Grammar of Things</a>
+
+    <!-- Desktop links -->
     <ul class="nav-links">
       <li><a href="/#proof">Proof</a></li>
       <li><a href="/#how-it-works">How it works</a></li>
@@ -12,22 +14,66 @@
       <li><a href="/compare" class="nav-app">Compare</a></li>
       <li><a href="/library" class="nav-app">Reference Library</a></li>
     </ul>
+
+    <!-- Hamburger button (mobile only) -->
+    <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+
+  <!-- Mobile drawer -->
+  <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+    <ul class="mobile-links">
+      <li><a href="/#proof">Proof</a></li>
+      <li><a href="/#how-it-works">How it works</a></li>
+      <li><a href="/#roadmap">Roadmap</a></li>
+      <li class="mobile-divider">Tools</li>
+      <li><a href="/corpus" class="nav-app">Artifact Collection</a></li>
+      <li><a href="/catalog" class="nav-app">Catalog new object</a></li>
+      <li><a href="/compare" class="nav-app">Compare</a></li>
+      <li><a href="/library" class="nav-app">Reference Library</a></li>
+    </ul>
   </div>
 </nav>
+
+<script>
+  const btn  = document.getElementById('hamburger');
+  const menu = document.getElementById('mobileMenu');
+  let open   = false;
+
+  btn.addEventListener('click', () => {
+    open = !open;
+    btn.setAttribute('aria-expanded', String(open));
+    menu.setAttribute('aria-hidden',  String(!open));
+    btn.classList.toggle('is-open', open);
+    menu.classList.toggle('is-open', open);
+  });
+
+  // Close on link click
+  menu.querySelectorAll('a').forEach(a =>
+    a.addEventListener('click', () => {
+      open = false;
+      btn.setAttribute('aria-expanded', 'false');
+      menu.setAttribute('aria-hidden',  'true');
+      btn.classList.remove('is-open');
+      menu.classList.remove('is-open');
+    })
+  );
+</script>
 
 <style>
   nav {
     position: sticky;
     top: 0;
-    z-index: 100;
+    z-index: 200;
     background: var(--bg);
     border-bottom: 1px solid var(--border);
-    padding-block: var(--space-4);
   }
   .nav-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding-block: var(--space-4);
     gap: var(--space-8);
   }
   .wordmark {
@@ -36,12 +82,16 @@
     color: var(--text);
     text-decoration: none;
     letter-spacing: -0.01em;
+    flex-shrink: 0;
   }
   .wordmark:hover { color: var(--accent); }
+
+  /* Desktop links */
   .nav-links {
     display: flex;
     list-style: none;
     gap: var(--space-8);
+    align-items: center;
   }
   .nav-links a {
     font-size: var(--text-sm);
@@ -53,5 +103,73 @@
   .nav-divider { color: var(--border-strong); user-select: none; }
   .nav-app { color: var(--text) !important; }
   .nav-app:hover { color: var(--accent) !important; }
-  @media (max-width: 640px) { .nav-links { display: none; } }
+
+  /* Hamburger button */
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 36px;
+    height: 36px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+  .hamburger span {
+    display: block;
+    height: 2px;
+    width: 100%;
+    background: var(--text);
+    border-radius: 2px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    transform-origin: center;
+  }
+  /* Animate to X when open */
+  .hamburger.is-open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .hamburger.is-open span:nth-child(2) { opacity: 0; }
+  .hamburger.is-open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* Mobile drawer */
+  .mobile-menu {
+    display: none;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding: var(--space-4) 0 var(--space-6);
+  }
+  .mobile-menu.is-open { display: block; }
+
+  .mobile-links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+  }
+  .mobile-links li a {
+    display: block;
+    padding: var(--space-3) var(--space-8);
+    font-size: var(--text-base);
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .mobile-links li a:hover { color: var(--accent); }
+  .mobile-links li a.nav-app { color: var(--text); font-weight: 500; }
+
+  .mobile-divider {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: var(--space-4) var(--space-8) var(--space-2);
+    margin-top: var(--space-2);
+    border-top: 1px solid var(--border);
+  }
+
+  @media (max-width: 640px) {
+    .nav-links   { display: none; }
+    .hamburger   { display: flex; }
+  }
 </style>
