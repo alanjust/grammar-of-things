@@ -812,4 +812,11 @@ function buildBars(scores) {
   @media (max-width: 768px) {
     .results-grid { grid-template-columns: 1fr; }
   }
+  @media (max-width: 640px) {
+    .submit-row   { flex-direction: column; align-items: stretch; }
+    .submit-btn   { width: 100%; }
+    .image-slots  { gap: var(--space-3); }
+    .img-slot, .slot-add { width: calc(50% - var(--space-2)); }
+    .slot-thumb   { width: 100%; height: auto; aspect-ratio: 1; }
+  }
 </style>

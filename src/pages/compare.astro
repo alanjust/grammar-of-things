@@ -753,4 +753,17 @@ loadData();
     .results-body { grid-template-columns: 1fr; }
     .match-head   { flex-wrap: wrap; }
   }
+  @media (max-width: 640px) {
+    .synth-input-row  { flex-direction: column; }
+    .synth-btn        { width: 100%; }
+    .weight-section   { flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+    .weight-presets   { width: 100%; }
+    .trad-row         { grid-template-columns: 120px 1fr 28px; }
+    .selector-section h2 { font-size: var(--text-xl); }
+    .results-header   { flex-direction: column; gap: var(--space-4); }
+    .clear-btn        { align-self: flex-start; }
+    .object-grid      { grid-template-columns: repeat(2, 1fr); }
+    .match-card       { padding: var(--space-5); }
+    .score-pct        { font-size: var(--text-2xl); }
+  }
 </style>
