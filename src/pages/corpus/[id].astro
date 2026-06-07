@@ -31,6 +31,17 @@ if (!db) {
   }
 }
 
+// Fetch cross-source claims
+let claims: any[] = [];
+if (db && object) {
+  try {
+    const cr = await db.prepare(
+      'SELECT id, source_institution, source_url, attribution_culture, created_at FROM object_claims WHERE object_id = ? ORDER BY created_at ASC'
+    ).bind(Number(id)).all();
+    claims = cr.results ?? [];
+  } catch { /* object_claims may not exist if migration hasn't run */ }
+}
+
 // Parse doc_canonical for display
 let canonical: any = null;
 if (object?.doc_canonical) {
@@ -171,6 +182,38 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
               </dl>
             </div>
           </div>
+
+          <!-- Cross-source claims -->
+          {claims.length > 1 && (
+            <section class="claims-section">
+              <h2>
+                Cross-source claims
+                {object.claim_conflict ? <span class="conflict-badge">⚠ sources disagree</span> : null}
+              </h2>
+              <p class="section-sub">
+                {claims.length} source{claims.length !== 1 ? 's' : ''} have asserted claims about this object.
+                {object.claim_conflict
+                  ? 'The cultural attributions differ — this is a research flag, not a conclusion. Flagged for closer examination.'
+                  : 'All sources agree on the cultural attribution.'}
+              </p>
+              <div class="claims-list">
+                {claims.map((c: any) => {
+                  const disagrees = object.claim_conflict && c.attribution_culture &&
+                    c.attribution_culture.toLowerCase().trim() !== (object.attribution_culture ?? '').toLowerCase().trim();
+                  return (
+                    <div class={`claim-row ${disagrees ? 'claim-conflict' : ''}`}>
+                      <p class="claim-institution">{c.source_institution}</p>
+                      <p class="claim-culture">
+                        {c.attribution_culture ?? '—'}
+                        {disagrees && <span class="claim-conflict-label"> ← differs from primary</span>}
+                      </p>
+                      <p class="claim-date">{new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           <!-- Fingerprint -->
           {fpVec.length > 0 && (
@@ -512,6 +555,18 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
   h2 { font-size: var(--text-2xl); letter-spacing: -0.01em; margin-bottom: var(--space-2); }
   .section-sub { font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-6); max-width: 60ch; }
   .count { font-size: var(--text-lg); color: var(--text-muted); }
+
+  /* Cross-source claims */
+  .claims-section { margin-bottom: var(--space-12); padding-bottom: var(--space-10); border-bottom: 1px solid var(--border); }
+  .claims-section h2 { font-size: var(--text-xl); margin-bottom: var(--space-2); display: flex; align-items: center; gap: var(--space-4); }
+  .conflict-badge { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; background: var(--theory-bg); color: var(--theory); border: 1px solid #e5c68a; padding: 0.15em 0.6em; border-radius: 2px; }
+  .claims-list { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-6); }
+  .claim-row { display: grid; grid-template-columns: 1fr auto auto; gap: var(--space-6); align-items: baseline; padding: var(--space-3) var(--space-5); background: var(--bg-surface); border: 1px solid var(--border); border-radius: 3px; }
+  .claim-row.claim-conflict { border-color: #e5c68a; background: var(--theory-bg); }
+  .claim-institution { font-size: var(--text-sm); color: var(--text); font-weight: 500; max-width: none; }
+  .claim-culture { font-size: var(--text-sm); color: var(--text-muted); max-width: none; }
+  .claim-conflict-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--theory); }
+  .claim-date { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap; }
 
   /* Fingerprint bars */
   .fp-section { margin-bottom: var(--space-16); padding-bottom: var(--space-12); border-bottom: 1px solid var(--border); }

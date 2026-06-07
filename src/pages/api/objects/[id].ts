@@ -47,9 +47,15 @@ export const GET: APIRoute = async ({ params }) => {
     .bind(id)
     .all();
 
+  const claimsResult = await db
+    .prepare('SELECT id, source_institution, source_url, attribution_culture, created_at FROM object_claims WHERE object_id = ? ORDER BY created_at ASC')
+    .bind(id)
+    .all();
+
   return new Response(JSON.stringify({
     object,
     analyses: analysesResult.results ?? [],
+    claims:   claimsResult.results   ?? [],
   }), {
     headers: { 'Content-Type': 'application/json' },
   });

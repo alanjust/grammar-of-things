@@ -160,17 +160,30 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   if (existingId) {
-    // Attach claim to existing object (cross-source reconciliation, step 5)
-    const incoming = record.claim.attribution.culture;
-    const stored   = ((await db.prepare('SELECT attribution_culture FROM objects WHERE id = ?').bind(existingId).first()) as any)?.attribution_culture ?? null;
-    const conflict = !!(incoming && stored && incoming !== stored);
+    // ── Cross-source reconciliation (Step 5) ──────────────────────────────
+    // Insert this source's claim into object_claims (one row per source assertion).
+    await db.prepare(`
+      INSERT INTO object_claims (object_id, source_institution, source_url, attribution_culture, doc_raw, doc_structured)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(
+      existingId,
+      record.claim.source.institution,
+      record.claim.source.url,
+      record.claim.attribution.culture,
+      record.claim.raw,
+      JSON.stringify(record.claim.structured),
+    ).run();
+
+    // Check for disagreement: does this source's culture claim differ from the stored one?
+    const stored    = ((await db.prepare('SELECT attribution_culture FROM objects WHERE id = ?').bind(existingId).first()) as any)?.attribution_culture ?? null;
+    const incoming  = record.claim.attribution.culture;
+    const conflict  = !!(incoming && stored && incoming.toLowerCase().trim() !== stored.toLowerCase().trim());
 
     if (conflict) {
-      // Set conflict flag — claim_conflict column added in step 5 migration
-      await db.prepare(`UPDATE objects SET claim_conflict = 1, updated_at = datetime('now') WHERE id = ?`).bind(existingId).run().catch(() => {});
+      await db.prepare(`UPDATE objects SET claim_conflict = 1, updated_at = datetime('now') WHERE id = ?`).bind(existingId).run();
     }
 
-    return json({ updated: true, object_id: existingId, claim_conflict: conflict });
+    return json({ updated: true, object_id: existingId, claim_conflict: conflict, source, source_object_id });
   }
 
   // ── Step 4: Insert object with mapped claim fields ────────────────────────
@@ -198,6 +211,19 @@ export const POST: APIRoute = async ({ request }) => {
   ).run();
 
   const objectId = insertResult.meta?.last_row_id as number;
+
+  // Store first claim in object_claims so the table is always complete
+  await db.prepare(`
+    INSERT INTO object_claims (object_id, source_institution, source_url, attribution_culture, doc_raw, doc_structured)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).bind(
+    objectId,
+    record.claim.source.institution,
+    record.claim.source.url,
+    record.claim.attribution.culture,
+    record.claim.raw,
+    JSON.stringify(record.claim.structured),
+  ).run();
 
   // ── Step 5: Fetch image → R2 ─────────────────────────────────────────────
   const imageUrl    = record.image.best_long_edge_url ?? record.image.original_url;

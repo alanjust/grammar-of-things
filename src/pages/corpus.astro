@@ -27,6 +27,15 @@ import SiteFooter from '../components/SiteFooter.astro';
         <p class="corpus-sub">All cataloged objects. Click any object to view its fingerprint and run an analysis.</p>
       </div>
 
+      <!-- Filter bar (shown when there are conflict objects) -->
+      <div id="filterBar" class="filter-bar" style="display:none">
+        <button id="conflictFilter" class="filter-btn">
+          ⚠ Sources disagree
+          <span id="conflictCount" class="conflict-count"></span>
+        </button>
+        <button id="clearFilter" class="filter-clear" style="display:none">Show all</button>
+      </div>
+
       <div id="loading" class="corpus-loading">Loading objects…</div>
       <div id="empty" class="corpus-empty" style="display:none">
         No objects cataloged yet. <a href="/catalog">Catalog the first one →</a>
@@ -87,7 +96,14 @@ function updateBar() {
 // ── Render ────────────────────────────────────────────────────────────────────
 function renderGrid() {
   if (!allObjects.length) return;
-  grid.innerHTML = allObjects.map(obj => {
+  const displayObjects = conflictFilterActive
+    ? allObjects.filter(o => o.claim_conflict)
+    : allObjects;
+  if (displayObjects.length === 0) {
+    grid.innerHTML = '<p class="corpus-empty">No objects match this filter.</p>';
+    return;
+  }
+  grid.innerHTML = displayObjects.map(obj => {
     const imgKey  = obj.image_analysis_key?.split(',')[0]?.trim();
     const imgSrc  = imgKey ? `/api/image/${imgKey}` : null;
     const culture = obj.attribution_culture ?? '—';
@@ -129,7 +145,7 @@ function renderGrid() {
             <span class="${hasFingerprint ? 'card-fp-yes' : 'card-fp-no'}">
               ${hasFingerprint ? '● Fingerprinted' : '○ No fingerprint'}
             </span>
-            <span class="card-date">${date}</span>
+            ${obj.claim_conflict ? '<span class="card-conflict">⚠ disagree</span>' : `<span class="card-date">${date}</span>`}
           </div>
         </div>
       </a>`;
@@ -149,6 +165,28 @@ function renderGrid() {
   }
 }
 
+// ── Conflict filter ───────────────────────────────────────────────────────────
+
+let conflictFilterActive = false;
+const filterBar     = document.getElementById('filterBar');
+const conflictFilter = document.getElementById('conflictFilter');
+const conflictCount  = document.getElementById('conflictCount');
+const clearFilter    = document.getElementById('clearFilter');
+
+conflictFilter?.addEventListener('click', () => {
+  conflictFilterActive = true;
+  conflictFilter.classList.add('filter-active');
+  clearFilter.style.display = '';
+  renderGrid();
+});
+
+clearFilter?.addEventListener('click', () => {
+  conflictFilterActive = false;
+  conflictFilter.classList.remove('filter-active');
+  clearFilter.style.display = 'none';
+  renderGrid();
+});
+
 // ── Load ──────────────────────────────────────────────────────────────────────
 async function load() {
   try {
@@ -158,6 +196,14 @@ async function load() {
     loading.style.display = 'none';
     if (!allObjects.length) { empty.style.display = ''; return; }
     grid.style.display = '';
+
+    // Show conflict filter if any objects have disagreeing claims
+    const conflictObjs = allObjects.filter(o => o.claim_conflict);
+    if (conflictObjs.length > 0) {
+      filterBar.style.display = '';
+      conflictCount.textContent = `(${conflictObjs.length})`;
+    }
+
     renderGrid();
   } catch (err) {
     loading.textContent = `Error loading objects: ${err.message}`;
@@ -291,7 +337,26 @@ load();
   .card-accession { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--text); font-weight: 600; max-width: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card-culture { font-size: var(--text-sm); color: var(--text-muted); max-width: none; }
   .card-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-1); }
-  .card-fp-yes { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.03em; color: var(--cons); }
-  .card-fp-no  { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.03em; color: var(--text-muted); }
-  .card-date   { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); }
+  .card-fp-yes  { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.03em; color: var(--cons); }
+  .card-fp-no   { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.03em; color: var(--text-muted); }
+  .card-date    { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); }
+  .card-conflict{ font-family: var(--font-mono); font-size: 0.65rem; color: var(--theory); letter-spacing: 0.03em; }
+
+  /* Filter bar */
+  .filter-bar { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-6); }
+  .filter-btn {
+    font-family: var(--font-mono); font-size: var(--text-xs);
+    background: var(--theory-bg); color: var(--theory);
+    border: 1px solid #e5c68a; border-radius: 3px;
+    padding: var(--space-2) var(--space-4); cursor: pointer;
+    transition: all 0.2s; letter-spacing: 0.03em;
+  }
+  .filter-btn:hover, .filter-btn.filter-active { background: var(--theory); color: #fff; border-color: var(--theory); }
+  .conflict-count { font-size: var(--text-xs); opacity: 0.8; margin-left: var(--space-2); }
+  .filter-clear {
+    font-family: var(--font-mono); font-size: var(--text-xs);
+    background: none; color: var(--text-muted); border: 1px solid var(--border);
+    border-radius: 3px; padding: var(--space-2) var(--space-4); cursor: pointer;
+  }
+  .filter-clear:hover { color: var(--text); border-color: var(--text-muted); }
 </style>
