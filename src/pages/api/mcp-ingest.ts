@@ -27,8 +27,9 @@ interface McpObjectRecord {
   source:           string;
   source_object_id: string;
   image: {
-    image_mode:         string;
+    image_mode:         'full' | 'reference';  // 'reference' → no archival image, skip fingerprint
     original_url:       string | null;
+    thumbnail_url:      string | null;
     best_long_edge_url: string | null;
   };
   claim: {
@@ -117,6 +118,70 @@ export const POST: APIRoute = async ({ request }) => {
       error: `MCP call failed: ${err instanceof Error ? err.message : String(err)}`,
       hint:  `Is the MCP server running at ${mcpUrl}? Start with: cd ~/grammar-collections-mcp && npm run start -- --http-only`,
     }, 502);
+  }
+
+  // ── Step 1b: Reference-mode — claim-only ingestion ───────────────────────
+  // image_mode="reference": licensed metadata retrievable, full image is not.
+  // The claim side is stored in full; image fetch and fingerprinting are skipped.
+  // A3 rule: never fingerprint a thumbnail — the canonical vector must come
+  // from an archival full-resolution image only.
+  // Reference records still participate in cross-source reconciliation.
+  if (record.image.image_mode === 'reference') {
+    // Dedupe first (same logic as full mode)
+    const refArk       = record.claim.identifiers.ark;
+    const refAccession = record.claim.identifiers.accession_number;
+    let refExistingId: number | null = null;
+
+    if (refArk) {
+      const row = await db.prepare('SELECT id FROM objects WHERE ezid_ark = ?').bind(refArk).first();
+      if (row) refExistingId = (row as any).id;
+    }
+    if (!refExistingId && refAccession) {
+      const row = await db.prepare('SELECT id FROM objects WHERE accession_number = ?').bind(refAccession).first();
+      if (row) refExistingId = (row as any).id;
+    }
+
+    if (refExistingId) {
+      // Attach claim to existing object
+      await db.prepare(`
+        INSERT INTO object_claims (object_id, source_institution, source_url, attribution_culture, doc_raw, doc_structured)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).bind(refExistingId, record.claim.source.institution, record.claim.source.url,
+              record.claim.attribution.culture, record.claim.raw,
+              JSON.stringify(record.claim.structured)).run();
+      return json({ updated: true, object_id: refExistingId, image_mode: 'reference', fingerprinted: false, source, source_object_id });
+    }
+
+    // Insert new reference-mode object (no image keys, no fingerprint)
+    const refInsert = await db.prepare(`
+      INSERT INTO objects (
+        ezid_ark, catalog_number, accession_number,
+        attribution_culture, doc_raw, doc_structured,
+        source_institution, source_url,
+        image_spec, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'reference-mode-no-image', datetime('now'), datetime('now'))
+    `).bind(refArk, record.claim.identifiers.catalog_number, refAccession,
+            record.claim.attribution.culture, record.claim.raw,
+            JSON.stringify(record.claim.structured),
+            record.claim.source.institution, record.claim.source.url).run();
+
+    const refObjectId = refInsert.meta?.last_row_id as number;
+
+    await db.prepare(`
+      INSERT INTO object_claims (object_id, source_institution, source_url, attribution_culture, doc_raw, doc_structured)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(refObjectId, record.claim.source.institution, record.claim.source.url,
+            record.claim.attribution.culture, record.claim.raw,
+            JSON.stringify(record.claim.structured)).run();
+
+    return json({
+      created:      true,
+      object_id:    refObjectId,
+      image_mode:   'reference',
+      fingerprinted: false,
+      message:      'Reference-mode: claim stored, no archival image, fingerprinting skipped (A3 rule).',
+      source, source_object_id,
+    });
   }
 
   // ── Step 2: Rights gate ───────────────────────────────────────────────────
