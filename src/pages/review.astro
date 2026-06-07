@@ -1,0 +1,186 @@
+---
+export const prerender = false;
+import { env as cfEnv } from 'cloudflare:workers';
+import SiteNav from '../components/SiteNav.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+
+const env = cfEnv as unknown as Record<string, any>;
+const db  = env.DB;
+
+let pending: any[] = [];
+let dbError = false;
+
+if (db) {
+  try {
+    const result = await db.prepare(
+      "SELECT id, source, source_object_id, flag_reason, created_at, object_record FROM review_queue WHERE status = 'pending' ORDER BY created_at DESC LIMIT 50"
+    ).all();
+    pending = (result.results ?? []).map((row: any) => {
+      let parsed: any = null;
+      try { parsed = JSON.parse(row.object_record); } catch {}
+      return { ...row, parsed };
+    });
+  } catch { dbError = true; }
+}
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Review Queue — The Grammar of Things</title>
+  <style is:global>
+    @import url('/src/styles/base.css');
+  </style>
+</head>
+<body>
+  <SiteNav />
+
+  <div class="review-page">
+    <div class="container">
+      <div class="page-head">
+        <h1>Human review queue</h1>
+        <p class="page-sub">
+          Records flagged as culturally sensitive (human remains, funerary objects, NAGPRA-relevant material).
+          These must never be auto-ingested. Review each record and approve or reject.
+        </p>
+        <p class="proto-note">
+          A false positive costs a glance. A false negative is what this project exists to prevent.
+        </p>
+      </div>
+
+      {dbError && <p class="db-error">DB binding unavailable — configure the D1 binding.</p>}
+
+      {!dbError && pending.length === 0 && (
+        <p class="empty">No records pending review.</p>
+      )}
+
+      {pending.length > 0 && (
+        <div class="queue-list">
+          {pending.map((row) => {
+            const rec = row.parsed;
+            const culture = rec?.claim?.attribution?.culture ?? '—';
+            const title   = rec?.claim?.structured?.fields?.['Title'] ?? rec?.claim?.structured?.fields?.['Object Type'] ?? row.source_object_id;
+            const institution = rec?.claim?.source?.institution ?? row.source;
+            const rawPreview  = (rec?.claim?.raw ?? '').slice(0, 300);
+            const imgUrl  = rec?.image?.best_long_edge_url ?? rec?.image?.original_url ?? null;
+
+            return (
+              <div class="queue-card" data-id={row.id}>
+                <div class="card-head">
+                  <div class="card-flag">⚠ {row.flag_reason.replace(/_/g, ' ')}</div>
+                  <span class="card-date">{new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                </div>
+
+                <div class="card-body">
+                  {imgUrl && (
+                    <div class="card-thumb">
+                      <img src={imgUrl} alt={title} loading="lazy" />
+                    </div>
+                  )}
+                  <div class="card-info">
+                    <p class="card-title">{title}</p>
+                    <p class="card-meta">{institution} · {row.source} · {row.source_object_id}</p>
+                    {culture !== '—' && <p class="card-culture">Culture: {culture}</p>}
+                    <pre class="card-raw">{rawPreview}{rawPreview.length >= 300 ? '…' : ''}</pre>
+                  </div>
+                </div>
+
+                <div class="card-actions">
+                  <button class="approve-btn" data-id={row.id}>
+                    ✓ Approve — ingest this record
+                  </button>
+                  <button class="reject-btn" data-id={row.id}>
+                    ✗ Reject — do not ingest
+                  </button>
+                </div>
+                <div class="card-result" id={`result-${row.id}`}></div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  </div>
+
+  <SiteFooter />
+
+<script>
+document.querySelectorAll('.approve-btn, .reject-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const id      = btn.dataset.id;
+    const action  = btn.classList.contains('approve-btn') ? 'approve' : 'reject';
+    const resultEl = document.getElementById(`result-${id}`);
+    btn.disabled = true;
+    btn.textContent = action === 'approve' ? 'Approving…' : 'Rejecting…';
+
+    try {
+      const res = await fetch('/api/review-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: Number(id), action }),
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        resultEl.textContent = `Error: ${data.error}`;
+        resultEl.style.color = '#c0392b';
+        btn.disabled = false;
+        btn.textContent = action === 'approve' ? '✓ Approve' : '✗ Reject';
+      } else {
+        const card = btn.closest('.queue-card');
+        card.style.opacity = '0.4';
+        card.style.pointerEvents = 'none';
+        resultEl.textContent = action === 'approve'
+          ? `✓ Approved — ingesting as object #${data.object_id ?? '?'}`
+          : '✗ Rejected — record will not be ingested.';
+        resultEl.style.color = action === 'approve' ? 'var(--cons)' : '#c0392b';
+      }
+    } catch (err) {
+      resultEl.textContent = `Error: ${err.message}`;
+      resultEl.style.color = '#c0392b';
+      btn.disabled = false;
+    }
+  });
+});
+</script>
+
+<style>
+  .review-page { padding-block: var(--space-16) var(--space-24); background: var(--bg); min-height: 80vh; }
+  .container { max-width: 900px; }
+  h1 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: -0.015em; margin-bottom: var(--space-4); }
+  .page-sub  { font-size: var(--text-base); color: var(--text-muted); line-height: 1.7; max-width: 68ch; margin-bottom: var(--space-3); }
+  .proto-note { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--theory); background: var(--theory-bg); border: 1px solid #e5c68a; border-radius: 3px; padding: var(--space-3) var(--space-4); max-width: 68ch; margin-bottom: var(--space-8); }
+  .db-error, .empty { font-size: var(--text-base); color: var(--text-muted); padding: var(--space-8) 0; max-width: none; }
+
+  .queue-list { display: flex; flex-direction: column; gap: var(--space-6); }
+  .queue-card { background: var(--bg-surface); border: 2px solid #e5c68a; border-radius: 4px; padding: var(--space-6); }
+  .card-head { display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-5); }
+  .card-flag { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 700; color: var(--theory); background: var(--theory-bg); padding: 0.15em 0.6em; border-radius: 2px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .card-date { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); margin-left: auto; }
+  .card-body { display: grid; grid-template-columns: 160px 1fr; gap: var(--space-6); margin-bottom: var(--space-6); }
+  .card-thumb img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 3px; border: 1px solid var(--border); display: block; }
+  .card-title   { font-size: var(--text-lg); font-weight: 500; margin-bottom: var(--space-2); max-width: none; }
+  .card-meta    { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-2); max-width: none; }
+  .card-culture { font-size: var(--text-sm); color: var(--accent); margin-bottom: var(--space-3); max-width: none; }
+  .card-raw { font-family: var(--font-mono); font-size: 0.65rem; line-height: 1.6; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); border-radius: 2px; padding: var(--space-3) var(--space-4); white-space: pre-wrap; overflow: hidden; }
+  .card-actions { display: flex; gap: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border); }
+  .approve-btn {
+    font-family: var(--font-mono); font-size: var(--text-sm);
+    background: var(--cons-bg); color: var(--cons); border: 1px solid var(--cons);
+    border-radius: 3px; padding: var(--space-2) var(--space-6); cursor: pointer;
+    transition: all 0.2s;
+  }
+  .approve-btn:hover:not(:disabled) { background: var(--cons); color: #fff; }
+  .reject-btn {
+    font-family: var(--font-mono); font-size: var(--text-sm);
+    background: none; color: var(--text-muted); border: 1px solid var(--border);
+    border-radius: 3px; padding: var(--space-2) var(--space-6); cursor: pointer;
+    transition: all 0.2s;
+  }
+  .reject-btn:hover:not(:disabled) { color: #c0392b; border-color: #c0392b; }
+  .approve-btn:disabled, .reject-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .card-result { font-family: var(--font-mono); font-size: var(--text-xs); margin-top: var(--space-3); min-height: 1.2em; max-width: none; }
+
+  @media (max-width: 640px) { .card-body { grid-template-columns: 1fr; } }
+</style>
