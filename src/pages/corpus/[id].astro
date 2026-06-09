@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 import { env as cfEnv } from 'cloudflare:workers';
+import { marked } from 'marked';
 import SiteNav from '../../components/SiteNav.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
 
@@ -246,7 +247,7 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
               {object.fingerprint_pass1_text && (
                 <div class="fp-pass1">
                   <p class="fp-pass1-label">Pass 1 — blind observation</p>
-                  <p class="fp-pass1-text">{object.fingerprint_pass1_text}</p>
+                  <div class="fp-pass1-text prose" set:html={marked.parse(object.fingerprint_pass1_text)} />
                 </div>
               )}
             </section>
@@ -338,6 +339,11 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
   </div>
 
   <SiteFooter />
+
+<script>
+  import { marked } from 'marked';
+  window.__marked = (md) => marked.parse(md);
+</script>
 
 <script define:vars={{ objectId: object?.id }}>
 // ── Delete object ──────────────────────────────────────────────────────────
@@ -453,13 +459,13 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
         } else if (evt.type === 'delta') {
           pass2Block.style.display = '';
           pass2Acc += evt.text;
-          pass2Text.textContent = pass2Acc;
+          pass2Text.innerHTML = window.__marked(pass2Acc);
         } else if (evt.type === 'error') {
           addStatus(evt.error, true);
         } else if (evt.type === 'complete') {
           if (evt.pass3_text) {
             pass3Block.style.display = '';
-            pass3Text.textContent = evt.pass3_text;
+            pass3Text.innerHTML = window.__marked(evt.pass3_text);
           }
           if (evt.fingerprint_flag) {
             const flag = evt.fingerprint_flag;
@@ -583,7 +589,14 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
   .fp-name  { font-size: var(--text-sm); color: var(--text); }
   .fp-pass1 { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: var(--space-6); }
   .fp-pass1-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: var(--space-4); max-width: none; }
-  .fp-pass1-text { font-size: var(--text-base); line-height: 1.8; color: var(--text-muted); white-space: pre-wrap; max-height: 320px; overflow-y: auto; }
+  .fp-pass1-text { font-size: var(--text-base); line-height: 1.8; color: var(--text-muted); max-height: 320px; overflow-y: auto; }
+  .fp-pass1-text :global(p)  { margin-bottom: 0.75em; }
+  .fp-pass1-text :global(ul),
+  .fp-pass1-text :global(ol) { padding-left: 1.4em; margin-bottom: 0.75em; }
+  .fp-pass1-text :global(li) { margin-bottom: 0.2em; }
+  .fp-pass1-text :global(strong) { font-weight: 600; color: var(--text); }
+  .fp-pass1-text :global(h2),
+  .fp-pass1-text :global(h3) { font-family: var(--font-display); color: var(--text-muted); font-size: var(--text-sm); margin: 1em 0 0.3em; }
   @media (max-width: 900px) { .fp-layout { grid-template-columns: 1fr; } }
 
   /* Past analyses */
@@ -654,8 +667,15 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
     background: var(--bg-surface); border: 1px solid var(--border);
     border-radius: 3px; padding: var(--space-6);
     max-height: 400px; overflow-y: auto;
-    white-space: pre-wrap; margin-bottom: var(--space-6);
+    margin-bottom: var(--space-6);
   }
+  .pass2-text :global(p), .pass3-text :global(p)  { margin-bottom: 0.75em; }
+  .pass2-text :global(ul), .pass2-text :global(ol),
+  .pass3-text :global(ul), .pass3-text :global(ol) { padding-left: 1.4em; margin-bottom: 0.75em; }
+  .pass2-text :global(li), .pass3-text :global(li) { margin-bottom: 0.2em; }
+  .pass2-text :global(strong), .pass3-text :global(strong) { font-weight: 600; }
+  .pass2-text :global(h2), .pass2-text :global(h3),
+  .pass3-text :global(h2), .pass3-text :global(h3) { font-family: var(--font-display); margin: 1em 0 0.3em; }
   .fp-flag-block { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: var(--space-5); }
 
   @media (max-width: 768px) {
