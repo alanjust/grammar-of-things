@@ -141,7 +141,7 @@ const date = analysis ? new Date(analysis.created_at).toLocaleDateString('en-US'
                       <span class="fp-code">{k}</span>
                       <div class="fp-track"><div class="fp-fill" style={`width:${(s/3)*100}%;background:${scoreColor(s)}`}></div></div>
                       <span class="fp-score">{s}</span>
-                      <span class="fp-name">{PRINCIPLE_NAMES[k] ?? k}</span>
+                      <a class="fp-name" href={`/principles#${k}`}>{PRINCIPLE_NAMES[k] ?? k}</a>
                     </div>
                   );
                 })}
@@ -184,7 +184,7 @@ const date = analysis ? new Date(analysis.created_at).toLocaleDateString('en-US'
   .container { max-width: 860px; }
   .not-found { color: var(--text-muted); padding: var(--space-16) 0; }
 
-  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-10); }
+  .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-8); }
   .back-link { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); text-decoration: none; letter-spacing: 0.04em; }
   .back-link:hover { color: var(--accent); }
   .download-link {
@@ -196,11 +196,12 @@ const date = analysis ? new Date(analysis.created_at).toLocaleDateString('en-US'
 
   /* Header */
   .analysis-header {
-    display: grid; grid-template-columns: 200px 1fr; gap: var(--space-10);
+    display: grid; grid-template-columns: 200px 1fr; gap: var(--space-12);
     align-items: start; margin-bottom: var(--space-16);
     padding-bottom: var(--space-12); border-bottom: 2px solid var(--border-strong);
   }
   .header-images { display: flex; flex-direction: column; gap: var(--space-3); }
+  .header-info { padding-left: var(--space-4); }
   .header-images img { width: 100%; aspect-ratio: 1; object-fit: cover; object-position: center top; border: 1px solid var(--border); border-radius: 3px; display: block; }
   .eyebrow { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: var(--space-2); max-width: none; }
   h1 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: -0.015em; margin-bottom: var(--space-2); }
@@ -252,7 +253,8 @@ const date = analysis ? new Date(analysis.created_at).toLocaleDateString('en-US'
   .fp-track { height: 7px; background: var(--bg-alt); border-radius: 2px; overflow: hidden; }
   .fp-fill  { height: 100%; border-radius: 2px; }
   .fp-score { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 700; color: var(--text); text-align: center; }
-  .fp-name  { font-size: var(--text-sm); color: var(--text); }
+  .fp-name  { font-size: var(--text-sm); color: var(--text); text-decoration: none; }
+  .fp-name:hover { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; }
 
   @media (max-width: 640px) {
     .analysis-header { grid-template-columns: 1fr; }
