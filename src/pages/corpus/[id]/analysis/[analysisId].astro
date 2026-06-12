@@ -1,7 +1,7 @@
 ---
 export const prerender = false;
 import { env as cfEnv } from 'cloudflare:workers';
-import { marked } from 'marked';
+import { renderMarkdown } from '../../../../lib/markdown';
 import SiteNav from '../../../../components/SiteNav.astro';
 import SiteFooter from '../../../../components/SiteFooter.astro';
 
@@ -122,7 +122,7 @@ const date = analysis ? new Date(analysis.created_at).toLocaleDateString('en-US'
                 <span class="pass-name">Blind observation</span>
                 <span class="pass-note">Documentation excluded — image only</span>
               </div>
-              <div class="pass-body prose" set:html={marked.parse(analysis.pass1_text)} />
+              <div class="pass-body prose" set:html={renderMarkdown(analysis.pass1_text)} />
             </section>
           )}
 
@@ -156,7 +156,7 @@ const date = analysis ? new Date(analysis.created_at).toLocaleDateString('en-US'
                 <span class="pass-num">Pass 2</span>
                 <span class="pass-name">{analysis.mode === 'connections' ? 'Cultural connections' : 'Artifact analysis'}</span>
               </div>
-              <div class="pass-body prose" set:html={marked.parse(analysis.pass2_text)} />
+              <div class="pass-body prose" set:html={renderMarkdown(analysis.pass2_text)} />
             </section>
           )}
 
@@ -167,7 +167,7 @@ const date = analysis ? new Date(analysis.created_at).toLocaleDateString('en-US'
                 <span class="pass-num">Pass 3</span>
                 <span class="pass-name">What to take forward</span>
               </div>
-              <div class="pass-body prose" set:html={marked.parse(analysis.pass3_text)} />
+              <div class="pass-body prose" set:html={renderMarkdown(analysis.pass3_text)} />
             </section>
           )}
         </>

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import Anthropic from '@anthropic-ai/sdk';
 import { env as cfEnv } from 'cloudflare:workers';
+import { requireAdmin } from '../../../lib/auth';
 import { resolveModelConfig } from '../../../lib/model-router';
 
 export const prerender = false;
@@ -38,6 +39,9 @@ function formatFingerprint(vec: number[]): string {
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+
   const env = cfEnv as unknown as Record<string, any>;
   const db  = env.DB;
   const apiKey = env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;

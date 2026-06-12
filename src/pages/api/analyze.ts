@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import Anthropic from '@anthropic-ai/sdk';
 import { env as cfEnv } from 'cloudflare:workers';
+import { requireAdmin } from '../../lib/auth';
 import { VECTOR_SCORING_PROMPT } from '../../lib/principles';
 import { resolveModelConfig, streamModel, callModel } from '../../lib/model-router';
 import { VECTOR_KEY, serializeVector, type DocCanonical } from '../../db/types';
@@ -51,21 +52,22 @@ ${named}
 
 DOCUMENTED ATTRIBUTION: ${culture} (confidence: ${confidence || 'unknown'})
 
-Compare these two independent lines of evidence: what the image shows perceptually versus what the documentation claims culturally.
+This is a PROVISIONAL HEURISTIC NOTE, not a validated comparison. No reference corpus of scored fingerprints exists for any tradition yet, so there is NO measured baseline distribution to compare against — do not imply that one exists. Treat your judgment as a loose qualitative impression that raises questions for a human reviewer, never as a finding.
 
 Output ONLY valid JSON — no markdown, no commentary:
 {
   "alignment": "aligned | divergent | inconclusive",
   "flag_strength": "strong | moderate | weak | none",
-  "reasoning": "<2–3 sentences: which specific scores drive this assessment and why>",
-  "caveats": "<1 sentence: key limitations of this comparison>"
+  "reasoning": "<2–3 sentences phrased as open questions rather than conclusions: which scores a human might want to look at, and why>",
+  "caveats": "<1 sentence — MUST state plainly that this is not a validated comparison and that no corpus baseline exists yet>"
 }
 
 Rules:
-- "divergent" requires at least two specific score observations unexpected for the claimed tradition
-- "inconclusive" means the scores do not strongly support OR contradict the claimed tradition
-- Never assert authenticity, inauthenticity, or misattribution — flag only
-- "flag_strength: none" is valid when scores align with the claimed tradition`;
+- You have NO validated baseline for the claimed tradition. Base the note only on general perceptual plausibility, and acknowledge that limit.
+- Use "divergent" only to flag — never to conclude — at least two scores a human might want to examine more closely.
+- "inconclusive" is the appropriate default when the scores alone say little.
+- Never assert authenticity, inauthenticity, misattribution, or that the fingerprint "matches" or "contradicts" the attribution.
+- "flag_strength: none" is valid and expected for most objects.`;
 };
 
 // ---------------------------------------------------------------------------
@@ -99,6 +101,9 @@ async function loadImageFromR2(r2: any, key: string): Promise<string | null> {
 // ---------------------------------------------------------------------------
 
 export const POST: APIRoute = async ({ request, locals }) => {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+
   const env = cfEnv as unknown as Record<string, any>;
   const apiKey = env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {

@@ -1,9 +1,13 @@
 import type { APIRoute } from 'astro';
 import { env as cfEnv } from 'cloudflare:workers';
+import { requireAdmin } from '../../../lib/auth';
 
 export const prerender = false;
 
-export const DELETE: APIRoute = async ({ params }) => {
+export const DELETE: APIRoute = async ({ params, request }) => {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+
   const env = cfEnv as unknown as Record<string, any>;
   const db = env.DB;
   const id = Number(params.id);

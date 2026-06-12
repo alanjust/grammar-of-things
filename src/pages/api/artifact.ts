@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import Anthropic from '@anthropic-ai/sdk';
 import { env as cfEnv } from 'cloudflare:workers';
+import { requireAdmin } from '../../lib/auth';
 import { buildSearchQuery, retrievePassages, formatReferences } from '../../lib/retrieval';
 import {
   PRINCIPLE_NAMES, APPLICABLE_TIER_A_NAMES, ARTIFACT_PRINCIPLE_NAMES,
@@ -910,6 +911,9 @@ export function buildConnectionsPass2UserText(pass1: string, fields: Record<stri
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+
   const env = cfEnv as unknown as Record<string, any>;
   const apiKey = env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
   const modelConfig = resolveModelConfig(env);

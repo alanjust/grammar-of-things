@@ -1,11 +1,13 @@
 ---
 export const prerender = false;
 import { env as cfEnv } from 'cloudflare:workers';
-import { marked } from 'marked';
+import { renderMarkdown } from '../../lib/markdown';
+import { isAdmin } from '../../lib/auth';
 import SiteNav from '../../components/SiteNav.astro';
 import SiteFooter from '../../components/SiteFooter.astro';
 
 const { id } = Astro.params;
+const admin = await isAdmin(Astro.request);
 const env = cfEnv as unknown as Record<string, any>;
 const db  = env.DB;
 
@@ -143,7 +145,7 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
     <div class="container">
       <div class="top-bar">
         <a href="/corpus" class="back-link">← Corpus</a>
-        {!notFound && (
+        {!notFound && admin && (
           <button id="deleteBtn" class="delete-btn" data-id={object.id}>Delete object</button>
         )}
       </div>
@@ -247,7 +249,7 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
               {object.fingerprint_pass1_text && (
                 <div class="fp-pass1">
                   <p class="fp-pass1-label">Pass 1 — blind observation</p>
-                  <div class="fp-pass1-text prose" set:html={marked.parse(object.fingerprint_pass1_text)} />
+                  <div class="fp-pass1-text prose" set:html={renderMarkdown(object.fingerprint_pass1_text)} />
                 </div>
               )}
             </section>
@@ -272,16 +274,18 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
                       </div>
                     </div>
                     {a.pass2_text && (
-                      <div class="analysis-excerpt" set:html={marked.parse(a.pass2_text)} />
+                      <div class="analysis-excerpt" set:html={renderMarkdown(a.pass2_text)} />
                     )}
                     {a.fingerprint_flag && (() => {
                       let flag: any = null;
                       try { flag = JSON.parse(a.fingerprint_flag); } catch {}
                       return flag ? (
                         <div class={`fp-flag flag-${flag.alignment}`}>
+                          <p class="fp-disclaimer">Provisional heuristic — not a validated comparison; no reference-corpus baseline exists yet.</p>
                           <span class="flag-badge">{flag.alignment}</span>
                           <span class="flag-strength">{flag.flag_strength}</span>
                           <p class="flag-reason">{flag.reasoning}</p>
+                          {flag.caveats && <p class="flag-caveat">{flag.caveats}</p>}
                         </div>
                       ) : null;
                     })()}
@@ -291,7 +295,7 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
             </section>
           )}
 
-          <!-- Run analysis form -->
+          {admin && (
           <section class="run-section">
             <h2>Run analysis</h2>
             <p class="section-sub">Passes 2, 3, and 4. Documentation is available as context. Results are stored against this object.</p>
@@ -328,11 +332,13 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
                 <div id="runPass3Text" class="pass3-text"></div>
               </div>
               <div id="runFpFlag" style="display:none">
-                <p class="block-label">Fingerprint vs. attribution</p>
+                <p class="block-label">Heuristic consistency note — provisional</p>
+                <p class="fp-disclaimer">Provisional heuristic only — no validated reference corpus exists yet, so this is not a measured comparison against a real distribution.</p>
                 <div id="runFpFlagContent" class="fp-flag-block"></div>
               </div>
             </div>
           </section>
+          )}
         </>
       )}
     </div>
@@ -341,8 +347,8 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
   <SiteFooter />
 
 <script>
-  import { marked } from 'marked';
-  window.__marked = (md) => marked.parse(md);
+  import { renderMarkdown } from '../../lib/markdown';
+  window.__marked = (md) => renderMarkdown(md);
 </script>
 
 <script define:vars={{ objectId: object?.id }}>
@@ -470,13 +476,30 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
           if (evt.fingerprint_flag) {
             const flag = evt.fingerprint_flag;
             fpFlagDiv.style.display = '';
-            fpFlagContent.innerHTML = `
-              <div class="flag-${flag.alignment}" style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;">
-                <span class="flag-badge">${flag.alignment}</span>
-                <span style="font-size:0.75rem;color:var(--text-muted);font-family:var(--font-mono)">${flag.flag_strength}</span>
-              </div>
-              <p style="font-size:0.875rem;line-height:1.7;color:var(--text)">${flag.reasoning}</p>
-              <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;font-style:italic">${flag.caveats}</p>`;
+            // Build with DOM nodes + textContent — these fields are model output
+            // and must never be injected as HTML.
+            fpFlagContent.replaceChildren();
+
+            const head = document.createElement('div');
+            head.className = 'flag-' + String(flag.alignment ?? '');
+            head.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;';
+            const badge = document.createElement('span');
+            badge.className = 'flag-badge';
+            badge.textContent = flag.alignment ?? '';
+            const strength = document.createElement('span');
+            strength.style.cssText = 'font-size:0.75rem;color:var(--text-muted);font-family:var(--font-mono)';
+            strength.textContent = flag.flag_strength ?? '';
+            head.append(badge, strength);
+
+            const reason = document.createElement('p');
+            reason.style.cssText = 'font-size:0.875rem;line-height:1.7;color:var(--text)';
+            reason.textContent = flag.reasoning ?? '';
+
+            const caveat = document.createElement('p');
+            caveat.style.cssText = 'font-size:0.75rem;color:var(--text-muted);margin-top:0.5rem;font-style:italic';
+            caveat.textContent = flag.caveats ?? '';
+
+            fpFlagContent.append(head, reason, caveat);
           }
           if (evt.analysis_id) {
             addStatus(`Saved — analysis #${evt.analysis_id}`);
@@ -637,6 +660,8 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
   .flag-inconclusive .flag-badge { background: var(--bg-alt); color: var(--text-muted); }
   .flag-strength { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
   .flag-reason { font-size: var(--text-sm); color: var(--text); line-height: 1.6; margin-top: var(--space-2); max-width: 70ch; }
+  .flag-caveat { font-size: var(--text-xs); color: var(--text-muted); font-style: italic; line-height: 1.6; margin-top: var(--space-2); max-width: 70ch; }
+  .fp-disclaimer { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); line-height: 1.6; margin-bottom: var(--space-3); max-width: 70ch; }
 
   /* Run analysis */
   .run-section { margin-bottom: var(--space-16); }

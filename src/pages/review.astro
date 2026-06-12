@@ -3,14 +3,19 @@ export const prerender = false;
 import { env as cfEnv } from 'cloudflare:workers';
 import SiteNav from '../components/SiteNav.astro';
 import SiteFooter from '../components/SiteFooter.astro';
+import { isAdmin } from '../lib/auth';
 
+const admin = await isAdmin(Astro.request);
 const env = cfEnv as unknown as Record<string, any>;
 const db  = env.DB;
 
 let pending: any[] = [];
 let dbError = false;
 
-if (db) {
+// Only an admin session may load the queue — these records flag culturally
+// sensitive material (human remains, funerary objects, NAGPRA-relevant items)
+// and the list itself is not for public view.
+if (admin && db) {
   try {
     const result = await db.prepare(
       "SELECT id, source, source_object_id, flag_reason, created_at, object_record FROM review_queue WHERE status = 'pending' ORDER BY created_at DESC LIMIT 50"
@@ -49,13 +54,20 @@ if (db) {
         </p>
       </div>
 
-      {dbError && <p class="db-error">DB binding unavailable — configure the D1 binding.</p>}
+      {!admin && (
+        <div class="locked-panel">
+          <p>This queue lists culturally sensitive records and is restricted to signed-in reviewers.</p>
+          <a href="/admin" class="locked-link">Sign in to review →</a>
+        </div>
+      )}
 
-      {!dbError && pending.length === 0 && (
+      {admin && dbError && <p class="db-error">DB binding unavailable — configure the D1 binding.</p>}
+
+      {admin && !dbError && pending.length === 0 && (
         <p class="empty">No records pending review.</p>
       )}
 
-      {pending.length > 0 && (
+      {admin && pending.length > 0 && (
         <div class="queue-list">
           {pending.map((row) => {
             const rec = row.parsed;
@@ -152,6 +164,10 @@ document.querySelectorAll('.approve-btn, .reject-btn').forEach(btn => {
   .page-sub  { font-size: var(--text-base); color: var(--text-muted); line-height: 1.7; max-width: 68ch; margin-bottom: var(--space-3); }
   .proto-note { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--theory); background: var(--theory-bg); border: 1px solid #e5c68a; border-radius: 3px; padding: var(--space-3) var(--space-4); max-width: 68ch; margin-bottom: var(--space-8); }
   .db-error, .empty { font-size: var(--text-base); color: var(--text-muted); padding: var(--space-8) 0; max-width: none; }
+  .locked-panel { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: var(--space-8); margin-top: var(--space-4); }
+  .locked-panel p { font-size: var(--text-base); color: var(--text-muted); margin-bottom: var(--space-4); max-width: 60ch; }
+  .locked-link { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--accent); text-decoration: none; }
+  .locked-link:hover { color: var(--accent-light); }
 
   .queue-list { display: flex; flex-direction: column; gap: var(--space-6); }
   .queue-card { background: var(--bg-surface); border: 2px solid #e5c68a; border-radius: 4px; padding: var(--space-6); }

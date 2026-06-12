@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import Anthropic from '@anthropic-ai/sdk';
 import { env as cfEnv } from 'cloudflare:workers';
+import { requireAdmin } from '../../lib/auth';
 import {
   ARTIFACT_PRINCIPLE_NAMES, APPLICABLE_TIER_A_NAMES,
   PASS1_PROMPT_SINGLE, PASS1_PROMPT_MULTI, VECTOR_SCORING_PROMPT,
@@ -31,6 +32,9 @@ const PASS1_SYSTEM = 'You are a trained artifact observer. Report only what is d
 // ---------------------------------------------------------------------------
 
 export const POST: APIRoute = async ({ request, locals }) => {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+
   const env = cfEnv as unknown as Record<string, any>;
   const apiKey = (env.ANTHROPIC_API_KEY as string | undefined) || process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {

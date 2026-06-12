@@ -2,6 +2,7 @@
 export const prerender = true;
 import SiteNav from '../components/SiteNav.astro';
 import SiteFooter from '../components/SiteFooter.astro';
+import AdminGate from '../components/AdminGate.astro';
 ---
 <!doctype html>
 <html lang="en">
@@ -17,6 +18,7 @@ import SiteFooter from '../components/SiteFooter.astro';
 </head>
 <body>
   <SiteNav />
+  <AdminGate />
 
   <div class="lib-page">
     <div class="container">
@@ -26,8 +28,13 @@ import SiteFooter from '../components/SiteFooter.astro';
         <p class="page-sub">Scholarly sources indexed for retrieval during Pass 2 analysis. Upload a PDF or paste extracted text — the system chunks and indexes it automatically.</p>
       </div>
 
+      <div class="admin-locked-note locked-panel">
+        <p>Adding and removing reference documents is restricted to signed-in curators. Search is open to everyone.</p>
+        <a href="/admin" class="locked-link">Sign in →</a>
+      </div>
+
       <!-- Upload form -->
-      <div class="upload-section">
+      <div class="upload-section admin-only">
         <h2>Add document</h2>
 
         <div id="dropZone" class="drop-zone">
@@ -348,28 +355,68 @@ async function runSearch() {
 
     if (!res.ok) throw new Error(data.error ?? `${res.status}`);
 
+    // Results are document content + the reflected query — build with DOM nodes
+    // and textContent so neither can inject markup into this public page.
+    const mkEm = (text) => { const e = document.createElement('em'); e.textContent = text ?? ''; return e; };
+
     if (!Array.isArray(data) || data.length === 0) {
-      searchResults.innerHTML = `<p class="sr-empty">No passages found for <em>${q}</em>. Try different terms or check the document list.</p>`;
+      searchResults.replaceChildren();
+      const p = document.createElement('p');
+      p.className = 'sr-empty';
+      p.append('No passages found for ', mkEm(q), '. Try different terms or check the document list.');
+      searchResults.appendChild(p);
       return;
     }
 
-    searchResults.innerHTML = `
-      <p class="sr-count">${data.length} passage${data.length !== 1 ? 's' : ''} matching <em>${q}</em></p>
-      <div class="sr-list">
-        ${data.map(r => `
-          <div class="sr-item">
-            <div class="sr-citation">
-              <span class="sr-key">${r.citation_key}</span>
-              ${r.page_ref    ? `<span class="sr-page">${r.page_ref}</span>` : ''}
-              ${r.section_ref ? `<span class="sr-section">${r.section_ref}</span>` : ''}
-            </div>
-            <p class="sr-snippet">${r.snippet}</p>
-            <p class="sr-source">${r.author}${r.year ? ', ' + r.year : ''} — <em>${r.title}</em></p>
-          </div>
-        `).join('')}
-      </div>`;
+    searchResults.replaceChildren();
+    const count = document.createElement('p');
+    count.className = 'sr-count';
+    count.append(`${data.length} passage${data.length !== 1 ? 's' : ''} matching `, mkEm(q));
+    searchResults.appendChild(count);
+
+    const list = document.createElement('div');
+    list.className = 'sr-list';
+    for (const r of data) {
+      const item = document.createElement('div');
+      item.className = 'sr-item';
+
+      const cite = document.createElement('div');
+      cite.className = 'sr-citation';
+      const key = document.createElement('span');
+      key.className = 'sr-key';
+      key.textContent = r.citation_key ?? '';
+      cite.appendChild(key);
+      if (r.page_ref) {
+        const pg = document.createElement('span');
+        pg.className = 'sr-page';
+        pg.textContent = r.page_ref;
+        cite.appendChild(pg);
+      }
+      if (r.section_ref) {
+        const sec = document.createElement('span');
+        sec.className = 'sr-section';
+        sec.textContent = r.section_ref;
+        cite.appendChild(sec);
+      }
+
+      const snippet = document.createElement('p');
+      snippet.className = 'sr-snippet';
+      snippet.textContent = r.snippet ?? '';
+
+      const source = document.createElement('p');
+      source.className = 'sr-source';
+      source.append(`${r.author ?? ''}${r.year ? ', ' + r.year : ''} — `, mkEm(r.title));
+
+      item.append(cite, snippet, source);
+      list.appendChild(item);
+    }
+    searchResults.appendChild(list);
   } catch (err) {
-    searchResults.innerHTML = `<p class="sr-error">Search error: ${err.message}</p>`;
+    searchResults.replaceChildren();
+    const p = document.createElement('p');
+    p.className = 'sr-error';
+    p.textContent = `Search error: ${err.message}`;
+    searchResults.appendChild(p);
   } finally {
     searchBtn.disabled = false;
     searchBtn.textContent = 'Search';
@@ -397,19 +444,35 @@ function renderDocs(docs) {
     docList.innerHTML = '<p class="empty-lib">No documents indexed yet. Upload the first one above.</p>';
     return;
   }
-  docList.innerHTML = docs.map(doc => `
-    <div class="doc-row" data-id="${doc.id}">
-      <div class="doc-main">
-        <p class="doc-key">${doc.citation_key}</p>
-        <p class="doc-title">${doc.title}</p>
-        <p class="doc-meta">${doc.author}${doc.year ? ' · ' + doc.year : ''}${doc.doc_type ? ' · ' + doc.doc_type : ''}</p>
-      </div>
-      <div class="doc-right">
-        <span class="chunk-count">${doc.chunk_count} passages</span>
-        <button class="del-btn" data-id="${doc.id}" aria-label="Delete ${doc.title}">Delete</button>
-      </div>
-    </div>
-  `).join('');
+  // Document metadata is untrusted; build with DOM nodes + textContent so it
+  // can't inject markup into this public page. The Delete button is .admin-only.
+  docList.replaceChildren();
+  for (const doc of docs) {
+    const row = document.createElement('div');
+    row.className = 'doc-row';
+    row.dataset.id = doc.id;
+
+    const main = document.createElement('div');
+    main.className = 'doc-main';
+    const key = document.createElement('p'); key.className = 'doc-key'; key.textContent = doc.citation_key ?? '';
+    const title = document.createElement('p'); title.className = 'doc-title'; title.textContent = doc.title ?? '';
+    const meta = document.createElement('p'); meta.className = 'doc-meta';
+    meta.textContent = `${doc.author ?? ''}${doc.year ? ' · ' + doc.year : ''}${doc.doc_type ? ' · ' + doc.doc_type : ''}`;
+    main.append(key, title, meta);
+
+    const right = document.createElement('div');
+    right.className = 'doc-right';
+    const count = document.createElement('span'); count.className = 'chunk-count'; count.textContent = `${doc.chunk_count} passages`;
+    const del = document.createElement('button');
+    del.className = 'del-btn admin-only';
+    del.dataset.id = doc.id;
+    del.setAttribute('aria-label', `Delete ${doc.title ?? ''}`);
+    del.textContent = 'Delete';
+    right.append(count, del);
+
+    row.append(main, right);
+    docList.appendChild(row);
+  }
 
   docList.querySelectorAll('.del-btn').forEach(btn => {
     btn.addEventListener('click', async () => {

@@ -1,0 +1,18 @@
+---
+// Drop this into any page that has `.admin-only` controls. It asks the server
+// whether the current request carries a valid admin session and, if so, sets
+// `data-admin="1"` on <body>, which reveals `.admin-only` elements (see the
+// gate rule in base.css). The security boundary is the server-side endpoint
+// guard — this only controls what the UI shows.
+---
+<script>
+  fetch('/api/admin-status', { credentials: 'same-origin' })
+    .then((r) => r.json())
+    .then((d) => {
+      if (d && d.admin) {
+        document.body.dataset.admin = '1';
+        (window as any).__isAdmin = true;
+      }
+    })
+    .catch(() => {});
+</script>

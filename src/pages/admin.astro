@@ -1,0 +1,116 @@
+---
+export const prerender = false;
+import { isAdmin } from '../lib/auth';
+import SiteNav from '../components/SiteNav.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+
+const admin = await isAdmin(Astro.request);
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>Admin — The Grammar of Things</title>
+  <style is:global>
+    @import url('/src/styles/base.css');
+  </style>
+</head>
+<body>
+  <SiteNav />
+
+  <div class="admin-page">
+    <div class="container">
+      <h1>Curator access</h1>
+
+      {admin ? (
+        <>
+          <p class="sub">You are signed in. Write tools (catalog, run analysis, review, delete) are enabled in this browser.</p>
+          <button id="logoutBtn" class="auth-btn">Sign out</button>
+          <p class="result" id="result"></p>
+        </>
+      ) : (
+        <>
+          <p class="sub">
+            Browsing the corpus, reference library, and framework is open to everyone.
+            Cataloging objects, running analyses, deleting records, and the review queue
+            require the admin token.
+          </p>
+          <form id="loginForm" class="auth-form">
+            <label class="field-label" for="token">Admin token</label>
+            <input type="password" id="token" name="token" autocomplete="current-password" required />
+            <button type="submit" class="auth-btn">Sign in</button>
+          </form>
+          <p class="result" id="result"></p>
+        </>
+      )}
+    </div>
+  </div>
+
+  <SiteFooter />
+
+<script>
+  const form = document.getElementById('loginForm');
+  const result = document.getElementById('result');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const token = (document.getElementById('token') as HTMLInputElement)?.value ?? '';
+    result.textContent = 'Checking…';
+    try {
+      const res = await fetch('/api/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ token }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        result.textContent = 'Signed in. Reloading…';
+        window.location.reload();
+      } else {
+        result.textContent = data.error ?? `Error ${res.status}`;
+      }
+    } catch (err) {
+      result.textContent = `Error: ${(err as Error).message}`;
+    }
+  });
+
+  document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+    result.textContent = 'Signing out…';
+    try {
+      await fetch('/api/admin-logout', { method: 'POST', credentials: 'same-origin' });
+      window.location.reload();
+    } catch (err) {
+      result.textContent = `Error: ${(err as Error).message}`;
+    }
+  });
+</script>
+
+<style>
+  .admin-page { padding-block: var(--space-16) var(--space-24); background: var(--bg); min-height: 70vh; }
+  .container { max-width: 480px; }
+  h1 { font-size: clamp(var(--text-2xl), 3vw, var(--text-3xl)); letter-spacing: -0.015em; margin-bottom: var(--space-4); }
+  .sub { font-size: var(--text-base); color: var(--text-muted); line-height: 1.7; margin-bottom: var(--space-8); }
+  .auth-form { display: flex; flex-direction: column; gap: var(--space-3); }
+  .field-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; }
+  input[type="password"] {
+    font-family: var(--font-mono); font-size: var(--text-base);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border); border-radius: 3px;
+    background: var(--bg-surface); color: var(--text);
+  }
+  input[type="password"]:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent); }
+  .auth-btn {
+    align-self: flex-start;
+    background: var(--accent); color: #fff; border: none; border-radius: 3px;
+    padding: var(--space-3) var(--space-8); font-family: var(--font-mono);
+    font-size: var(--text-sm); letter-spacing: 0.03em; cursor: pointer;
+    transition: background var(--ease);
+  }
+  .auth-btn:hover { background: var(--accent-light); }
+  .result { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--space-4); min-height: 1.2em; }
+</style>
+</body>
+</html>

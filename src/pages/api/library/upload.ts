@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env as cfEnv } from 'cloudflare:workers';
+import { requireAdmin } from '../../../lib/auth';
 
 export const prerender = false;
 
@@ -52,6 +53,9 @@ function chunkText(text: string): string[] {
 }
 
 export const POST: APIRoute = async ({ request }) => {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+
   const env = cfEnv as unknown as Record<string, any>;
   const db  = env.DB;
   const r2  = env.ARTIFACTS;

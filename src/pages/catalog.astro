@@ -2,6 +2,7 @@
 export const prerender = true;
 import SiteNav from '../components/SiteNav.astro';
 import SiteFooter from '../components/SiteFooter.astro';
+import AdminGate from '../components/AdminGate.astro';
 ---
 <!doctype html>
 <html lang="en">
@@ -15,6 +16,7 @@ import SiteFooter from '../components/SiteFooter.astro';
 </head>
 <body>
   <SiteNav />
+  <AdminGate />
 
   <div class="page">
     <div class="container">
@@ -27,7 +29,12 @@ import SiteFooter from '../components/SiteFooter.astro';
         </div>
       </div>
 
-      <form id="catalogForm" novalidate>
+      <div class="admin-locked-note locked-panel">
+        <p>Cataloging new objects is restricted to signed-in curators.</p>
+        <a href="/admin" class="locked-link">Sign in to catalog →</a>
+      </div>
+
+      <form id="catalogForm" class="admin-only" novalidate>
 
         <!-- Images -->
         <section class="form-section">
@@ -411,11 +418,19 @@ function renderResults(data) {
         ['Condition', can.condition],
         ['Notes', can.notes],
       ].filter(([, v]) => v);
-      canonEl.innerHTML = rows.map(([k, v]) =>
-        `<div><dt>${k}</dt><dd>${v}</dd></div>`
-      ).join('');
+      // Values are model output — build with DOM nodes + textContent, never innerHTML.
+      canonEl.replaceChildren();
+      const addRow = (k, v, cls) => {
+        const wrap = document.createElement('div');
+        if (cls) wrap.className = cls;
+        const dt = document.createElement('dt'); dt.textContent = k;
+        const dd = document.createElement('dd'); dd.textContent = v;
+        wrap.append(dt, dd);
+        canonEl.appendChild(wrap);
+      };
+      for (const [k, v] of rows) addRow(k, v);
       if (can.mapping_flags?.length) {
-        canonEl.innerHTML += `<div class="flag-row"><dt>Mapping flags</dt><dd>${can.mapping_flags.join('; ')}</dd></div>`;
+        addRow('Mapping flags', can.mapping_flags.join('; '), 'flag-row');
       }
     }
   }

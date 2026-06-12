@@ -62,3 +62,16 @@ section { padding-block: var(--space-20); }
 .label-interp { color: var(--interp); background: var(--interp-bg); }
 .label-cons   { color: var(--cons);   background: var(--cons-bg);   }
 .label-theory { color: var(--theory); background: var(--theory-bg); }
+
+/* ── Admin-gated controls ──────────────────────────────────────────────────
+   Hidden by default; AdminGate.astro sets data-admin="1" on <body> once the
+   server confirms an admin session. The real security boundary is the
+   server-side endpoint guard — this is UI only. */
+body:not([data-admin="1"]) .admin-only { display: none !important; }
+body[data-admin="1"] .admin-locked-note { display: none !important; }
+
+/* Shared "this area is admin-only" notice (catalog, library, compare, review). */
+.locked-panel { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: var(--space-8); margin-block: var(--space-4); }
+.locked-panel p { font-size: var(--text-base); color: var(--text-muted); margin-bottom: var(--space-4); max-width: 60ch; }
+.locked-link { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--accent); text-decoration: none; }
+.locked-link:hover { color: var(--accent-light); }

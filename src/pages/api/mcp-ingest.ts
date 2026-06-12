@@ -14,6 +14,7 @@
 import type { APIRoute } from 'astro';
 import Anthropic          from '@anthropic-ai/sdk';
 import { env as cfEnv }  from 'cloudflare:workers';
+import { requireAdmin } from '../../lib/auth';
 import { resolveModelConfig, streamModel, callModel } from '../../lib/model-router';
 import { normalizeImage, dataUrlToBlob, IMAGE_SPEC } from '../../lib/image';
 import {
@@ -91,6 +92,9 @@ async function callMcpTool(
 // ── Main handler ─────────────────────────────────────────────────────────────
 
 export const POST: APIRoute = async ({ request }) => {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+
   const env    = cfEnv as unknown as Record<string, any>;
   const db     = env.DB;
   const r2     = env.ARTIFACTS;
