@@ -6,7 +6,7 @@
 //   1. Call MCP get_object via HTTP
 //   2. Rights gate → skip if not passed
 //   3. Sensitivity flag → queue for human review, do not auto-ingest
-//   4. Dedupe by ARK then accession number
+//   4. Dedupe by ARK then catalog number
 //   5. Map claim fields → objects columns (doc_raw quarantined from Pass 1)
 //   6. Fetch image → R2 (original + normalized analysis copy)
 //   7. Canonical fingerprinter (Pass 1 blind — doc_raw excluded from context)
@@ -133,15 +133,15 @@ export const POST: APIRoute = async ({ request }) => {
   if (record.image.image_mode === 'reference') {
     // Dedupe first (same logic as full mode)
     const refArk       = record.claim.identifiers.ark;
-    const refAccession = record.claim.identifiers.accession_number;
+    const refCatalogNumber = record.claim.identifiers.catalog_number;
     let refExistingId: number | null = null;
 
     if (refArk) {
       const row = await db.prepare('SELECT id FROM objects WHERE ezid_ark = ?').bind(refArk).first();
       if (row) refExistingId = (row as any).id;
     }
-    if (!refExistingId && refAccession) {
-      const row = await db.prepare('SELECT id FROM objects WHERE accession_number = ?').bind(refAccession).first();
+    if (!refExistingId && refCatalogNumber) {
+      const row = await db.prepare('SELECT id FROM objects WHERE catalog_number = ?').bind(refCatalogNumber).first();
       if (row) refExistingId = (row as any).id;
     }
 
@@ -214,17 +214,17 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  // ── Step 3: Dedupe — match by ARK, then accession ─────────────────────────
-  const ark             = record.claim.identifiers.ark;
-  const accessionNumber = record.claim.identifiers.accession_number;
+  // ── Step 3: Dedupe — match by ARK, then catalog number ────────────────────
+  const ark           = record.claim.identifiers.ark;
+  const catalogNumber = record.claim.identifiers.catalog_number;
   let existingId: number | null = null;
 
   if (ark) {
     const row = await db.prepare('SELECT id FROM objects WHERE ezid_ark = ?').bind(ark).first();
     if (row) existingId = row.id as number;
   }
-  if (!existingId && accessionNumber) {
-    const row = await db.prepare('SELECT id FROM objects WHERE accession_number = ?').bind(accessionNumber).first();
+  if (!existingId && catalogNumber) {
+    const row = await db.prepare('SELECT id FROM objects WHERE catalog_number = ?').bind(catalogNumber).first();
     if (row) existingId = row.id as number;
   }
 

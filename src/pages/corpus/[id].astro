@@ -145,7 +145,7 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{notFound ? 'Not found' : `Object ${object?.accession_number ?? id} — Corpus`} · The Grammar of Things</title>
+  <title>{notFound ? 'Not found' : `Object ${object?.catalog_number ?? id} — Corpus`} · The Grammar of Things</title>
   <style is:global>
     @import url('/src/styles/base.css');
   </style>
@@ -182,12 +182,12 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
 
             <div class="object-info">
               <p class="object-eyebrow">Object #{object.id}{object.fingerprinted_at ? ' · Fingerprinted' : ' · No fingerprint'}</p>
-              <h1>{object.accession_number ?? object.catalog_number ?? `Object ${object.id}`}</h1>
+              <h1>{object.catalog_number ?? `Object ${object.id}`}</h1>
 
               <dl class="catalog">
                 {object.attribution_culture && <div><dt>Culture</dt><dd>{object.attribution_culture} {object.attribution_confidence && <span class="conf">({object.attribution_confidence})</span>}</dd></div>}
                 {object.catalog_number     && <div><dt>Catalog no.</dt><dd>{object.catalog_number}</dd></div>}
-                {object.accession_number   && <div><dt>Accession</dt><dd>{object.accession_number}</dd></div>}
+                {object.accession_number   && <div><dt>Accession lot</dt><dd>{object.accession_number}</dd></div>}
                 {object.source_institution && <div><dt>Institution</dt><dd>{object.source_institution}</dd></div>}
                 {canonical?.period         && <div><dt>Period</dt><dd>{canonical.period}</dd></div>}
                 {canonical?.material       && <div><dt>Material</dt><dd>{canonical.material}</dd></div>}
