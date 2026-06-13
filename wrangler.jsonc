@@ -34,5 +34,10 @@
 			"database_name": "grammar-of-things",
 			"database_id": "c1a25de3-3bd9-4627-ba35-5466afead0a0"
 		}
-	]
+	],
+	// Tuning — override via Cloudflare dashboard to change without a code deploy.
+	// Set STABILITY_PASSES=1 to revert to single-pass behavior without a code change.
+	"vars": {
+		"STABILITY_PASSES": "3"
+	}
 }

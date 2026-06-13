@@ -12,6 +12,7 @@ import {
   type PassConfig, type ModelConfig,
   resolveModelConfig, streamModel, callModel,
 } from '../../lib/model-router';
+import { VECTOR_KEY } from '../../db/types';
 
 export const prerender = false;
 
@@ -917,6 +918,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const env = cfEnv as unknown as Record<string, any>;
   const apiKey = env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
   const modelConfig = resolveModelConfig(env);
+  const stabilityPasses = Math.max(1, parseInt(String(env.STABILITY_PASSES ?? '3'), 10) || 1);
   if (!apiKey) {
     return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY is not set.' }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
@@ -980,17 +982,26 @@ export const POST: APIRoute = async ({ request, locals }) => {
       try {
         send({ type: 'status', message: 'Pass 1 — formal observation…' });
 
-        const pass1Stream = streamModel(modelConfig.pass1, {
+        const pass1MsgParams = {
           max_tokens: 2048,
           system: 'You are a trained artifact observer. Report only what is directly present and physically observable. Read surface features as production evidence. No interpretation, no cultural attribution, no quality judgments.',
           messages: [{
-            role: 'user',
+            role: 'user' as const,
             content: [
               ...imageBlocks,
-              { type: 'text', text: pass1Prompt },
+              { type: 'text' as const, text: pass1Prompt },
             ],
           }],
-        });
+        };
+
+        // Runs 2–N start concurrently with run 1 stream
+        const extraRunPromises: Promise<Anthropic.Message>[] = stabilityPasses > 1
+          ? Array.from({ length: stabilityPasses - 1 }, () =>
+              callModel(modelConfig.pass1, pass1MsgParams as any, anthropic)
+            )
+          : [];
+
+        const pass1Stream = streamModel(modelConfig.pass1, pass1MsgParams as any, anthropic);
 
         for await (const event of pass1Stream) {
           if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
@@ -1006,6 +1017,64 @@ export const POST: APIRoute = async ({ request, locals }) => {
           .join('\n\n');
 
         send({ type: 'pass1_complete', pass1: pass1Text });
+
+        // --- Stability check ---
+        type StabilityMap = Record<string, { hits: number; total: number }>;
+        const stabilityMap: StabilityMap = {};
+        let stabilityBlock = '';
+
+        const extraMsgs = await Promise.all(extraRunPromises);
+
+        {
+          const totalIn  = pass1Msg.usage.input_tokens  + extraMsgs.reduce((s, m) => s + m.usage.input_tokens,  0);
+          const totalOut = pass1Msg.usage.output_tokens + extraMsgs.reduce((s, m) => s + m.usage.output_tokens, 0);
+          console.log(`[stability] ${stabilityPasses} pass${stabilityPasses > 1 ? 'es' : ''} | pass1 tokens: ${totalIn} in / ${totalOut} out`);
+        }
+
+        if (stabilityPasses > 1) {
+          send({ type: 'status', message: `Scoring stability across ${stabilityPasses} passes…` });
+
+          const allPass1Texts = [
+            pass1Text,
+            ...extraMsgs.map(msg =>
+              msg.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n\n')
+            ),
+          ];
+
+          const scoreMsgs = await Promise.all(allPass1Texts.map(text =>
+            callModel(modelConfig.vector, {
+              max_tokens: 512,
+              system: 'You are a scoring assistant. Output ONLY a flat JSON object. No markdown, no commentary, no extra text. Begin your response with { and end with }.',
+              messages: [{ role: 'user' as const, content: [{ type: 'text' as const, text: VECTOR_SCORING_PROMPT(text) }] }],
+            }, anthropic)
+          ));
+
+          const allScores: Record<string, number>[] = scoreMsgs.map(msg => {
+            try {
+              let raw = msg.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('').trim()
+                .replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+              const s = raw.indexOf('{'), e = raw.lastIndexOf('}');
+              if (s !== -1 && e > s) raw = raw.slice(s, e + 1);
+              return JSON.parse(raw);
+            } catch { return {}; }
+          });
+
+          for (const principleId of VECTOR_KEY) {
+            const hits = allScores.filter(scores => (scores[principleId] ?? 0) > 0).length;
+            if (hits > 0) stabilityMap[principleId] = { hits, total: stabilityPasses };
+          }
+
+          const threshold     = Math.ceil(stabilityPasses / 2);
+          const vkOrder       = VECTOR_KEY as readonly string[];
+          const sortByVk      = (ids: string[]) => ids.sort((a, b) => vkOrder.indexOf(a) - vkOrder.indexOf(b));
+          const stableIds     = sortByVk(Object.keys(stabilityMap).filter(id => stabilityMap[id].hits >= threshold));
+          const borderlineIds = sortByVk(Object.keys(stabilityMap).filter(id => stabilityMap[id].hits < threshold));
+          if (stableIds.length > 0 || borderlineIds.length > 0) {
+            stabilityBlock = `\n\nPERCEPTUAL STABILITY NOTE (${stabilityPasses} independent Pass 1 runs):`
+              + (stableIds.length     > 0 ? `\nHigh-confidence (majority of runs): ${stableIds.join(', ')}` : '')
+              + (borderlineIds.length > 0 ? `\nLower-confidence (minority of runs, treat with caution): ${borderlineIds.join(', ')}` : '');
+          }
+        }
 
         const isConnections = mode === 'connections';
         const audienceLower = (audience || '').toLowerCase();
@@ -1025,9 +1094,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const refBlock   = formatReferences(passages);
         if (passages.length > 0) send({ type: 'status', message: `Retrieved ${passages.length} reference passage${passages.length > 1 ? 's' : ''} from library` });
 
-        const pass2UserText = isConnections
-          ? buildConnectionsPass2UserText(pass1Text, fields, audience || '', viewLabels) + refBlock
-          : buildArtifactPass2UserText(pass1Text, fields, audience || '', viewLabels) + refBlock;
+        const pass2UserText = (isConnections
+          ? buildConnectionsPass2UserText(pass1Text, fields, audience || '', viewLabels)
+          : buildArtifactPass2UserText(pass1Text, fields, audience || '', viewLabels))
+          + refBlock + stabilityBlock;
 
         const pass2Stream = streamModel(modelConfig.pass2, {
           max_tokens: 8000,
@@ -1039,7 +1109,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
               { type: 'text', text: pass2UserText },
             ],
           }],
-        });
+        }, anthropic);
 
         for await (const event of pass2Stream) {
           if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
@@ -1072,7 +1142,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
               { type: 'text', text: pass3PromptText },
             ],
           }],
-        });
+        }, anthropic);
 
         const pass3ModelUsed = pass3Msg.model;
         const pass3Text = pass3Msg.content
@@ -1096,14 +1166,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
               messages: [
                 { role: 'user', content: [{ type: 'text', text: EXTRACTION_PROMPT(pass1Text, pass2Text, fields, isConnections ? 'connections' : 'artifact') }] },
               ],
-            }),
+            }, anthropic),
             callModel(modelConfig.vector, {
               max_tokens: 512,
               system: 'You are a scoring assistant. Output ONLY a flat JSON object. No markdown, no commentary, no extra text. Begin your response with { and end with }.',
               messages: [
                 { role: 'user', content: [{ type: 'text', text: VECTOR_SCORING_PROMPT(pass1Text) }] },
               ],
-            }),
+            }, anthropic),
           ]);
 
           if (extractionResult.status === 'rejected') throw extractionResult.reason;
@@ -1158,6 +1228,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
           analysis: pass2Text,
           competency: pass3Text,
           mode,
+          stabilityPasses,
+          stabilityMap,
           models_used: {
             pass1:      pass1ModelUsed,
             pass2:      pass2ModelUsed,

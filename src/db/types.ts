@@ -108,6 +108,10 @@ export interface DbAnalysis {
   tradition_routing_basis: string | null;
   metadata_completeness:   string | null;
 
+  // Stability check (set when artifact.ts runs multiple Pass 1 passes)
+  stability_passes: number | null;
+  stability_map:    string | null;  // JSON: Record<string, { hits: number; total: number }>
+
   created_at: string;
 }
 
