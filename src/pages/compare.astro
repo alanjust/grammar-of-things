@@ -87,7 +87,7 @@ import AdminGate from '../components/AdminGate.astro';
             <p class="synth-result-label">Synthesis</p>
             <p id="synthModel" class="synth-model"></p>
           </div>
-          <div id="synthText" class="synth-text"></div>
+          <div id="synthText" class="synth-text prose"></div>
         </div>
       </div>
 
@@ -125,6 +125,9 @@ import AdminGate from '../components/AdminGate.astro';
   <SiteFooter />
 
 <script>
+import { renderMarkdown } from '../lib/markdown';
+window.__marked = (md) => renderMarkdown(md);
+
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const VECTOR_KEY = [
@@ -286,8 +289,10 @@ async function runSynthesis() {
   btn.disabled = true;
   btn.textContent = 'Analyzing…';
   result.style.display = '';
-  text.textContent = '';
+  text.innerHTML = '';
   model.textContent = '';
+
+  let synthAcc = '';
 
   try {
     const res = await fetch('/api/compare/synthesize', {
@@ -310,9 +315,9 @@ async function runSynthesis() {
       for (const line of lines) {
         if (!line.startsWith('data: ')) continue;
         let evt; try { evt = JSON.parse(line.slice(6)); } catch { continue; }
-        if (evt.type === 'delta') text.textContent += evt.text;
+        if (evt.type === 'delta') { synthAcc += evt.text; text.innerHTML = window.__marked(synthAcc); }
         if (evt.type === 'complete') model.textContent = evt.model ?? '';
-        if (evt.type === 'error') text.textContent += `\nError: ${evt.error}`;
+        if (evt.type === 'error') { synthAcc += `\nError: ${evt.error}`; text.innerHTML = window.__marked(synthAcc); }
       }
     }
   } catch (err) {
