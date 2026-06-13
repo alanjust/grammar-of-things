@@ -62,6 +62,12 @@ safe.use({
   },
 });
 
+export function readTime(md: string | null | undefined): number {
+  if (!md) return 0;
+  const words = md.replace(/[#*`_~[\]()!>]/g, '').split(/\s+/).filter(Boolean).length;
+  return Math.ceil(words / 200);
+}
+
 export function renderMarkdown(md: string | null | undefined): string {
   if (!md) return '';
   return safe.parse(md, { async: false }) as string;

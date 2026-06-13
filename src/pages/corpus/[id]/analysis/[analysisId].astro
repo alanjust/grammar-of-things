@@ -1,7 +1,7 @@
 ---
 export const prerender = false;
 import { env as cfEnv } from 'cloudflare:workers';
-import { renderMarkdown } from '../../../../lib/markdown';
+import { renderMarkdown, readTime } from '../../../../lib/markdown';
 import SiteNav from '../../../../components/SiteNav.astro';
 import SiteFooter from '../../../../components/SiteFooter.astro';
 
@@ -70,6 +70,8 @@ const vec: number[] = analysis?.analysis_vector ? JSON.parse(analysis.analysis_v
 const imgKeys = object?.image_analysis_key?.split(',').map((k: string) => k.trim()).filter(Boolean) ?? [];
 const accession = object?.accession_number ?? object?.catalog_number ?? `Object ${id}`;
 const date = analysis ? new Date(analysis.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+const totalWords = [analysis?.pass1_text, analysis?.pass2_text, analysis?.pass3_text].filter(Boolean).join(' ');
+const readMin = readTime(totalWords);
 ---
 <!doctype html>
 <html lang="en">
@@ -105,7 +107,7 @@ const date = analysis ? new Date(analysis.created_at).toLocaleDateString('en-US'
             <div class="header-info">
               <p class="eyebrow">{analysis.mode} · {analysis.audience}</p>
               <h1>{accession}</h1>
-              <p class="date">{date} · Analysis #{analysisId}</p>
+              <p class="date">{date} · Analysis #{analysisId}{readMin > 0 ? ` · ${readMin} min read` : ''}</p>
               {analysis.model_pass2 && <p class="model">Model: {analysis.model_pass2}</p>}
 
               {object && (
