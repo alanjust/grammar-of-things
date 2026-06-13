@@ -74,7 +74,7 @@
   nav {
     position: sticky;
     top: 0;
-    z-index: 200;
+    z-index: var(--z-nav);
     background: var(--bg);
     border-bottom: 1px solid var(--border);
   }
@@ -134,8 +134,8 @@
     height: 2px;
     width: 100%;
     background: var(--text);
-    border-radius: 2px;
-    transition: transform 0.2s ease, opacity 0.2s ease;
+    border-radius: var(--radius-xs);
+    transition: transform var(--ease), opacity var(--ease);
     transform-origin: center;
   }
   /* Animate to X when open */
@@ -163,15 +163,15 @@
     font-size: var(--text-base);
     color: var(--text-muted);
     text-decoration: none;
-    transition: color 0.15s;
+    transition: color var(--ease-fast);
   }
   .mobile-links li a:hover { color: var(--accent); }
-  .mobile-links li a.nav-app { color: var(--text); font-weight: 500; }
+  .mobile-links li a.nav-app { color: var(--text); font-weight: var(--weight-medium); }
 
   .mobile-divider {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
-    letter-spacing: 0.08em;
+    letter-spacing: var(--tracking-widest);
     text-transform: uppercase;
     color: var(--text-muted);
     padding: var(--space-4) var(--space-8) var(--space-2);

@@ -109,13 +109,13 @@ const cannotDetermine = [
   .section-label {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
-    letter-spacing: 0.08em;
+    letter-spacing: var(--tracking-widest);
     text-transform: uppercase;
     color: var(--accent);
     margin-bottom: var(--space-3);
     max-width: none;
   }
-  h2 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: -0.015em; margin-bottom: var(--space-4); }
+  h2 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: var(--tracking-snug); margin-bottom: var(--space-4); }
   .section-sub { font-size: var(--text-lg); color: var(--text-muted); }
 
   .passes {
@@ -127,7 +127,7 @@ const cannotDetermine = [
   .pass {
     background: var(--bg-surface);
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: var(--radius-md);
     padding: var(--space-8);
     display: flex;
     gap: var(--space-6);
@@ -147,19 +147,19 @@ const cannotDetermine = [
     font-family: var(--font-mono);
     font-size: var(--text-xs);
     color: var(--accent);
-    letter-spacing: 0.04em;
+    letter-spacing: var(--tracking-wide);
     border: 1px solid var(--accent-light);
     padding: 0.1em 0.5em;
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
   }
-  .pass-text { font-size: var(--text-base); color: var(--text); line-height: 1.7; }
+  .pass-text { font-size: var(--text-base); color: var(--text); line-height: var(--leading-body); }
   .pass-note { font-size: var(--text-sm); color: var(--text-muted); font-style: italic; }
 
   /* Limits */
   .limits {
     background: var(--bg-surface);
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: var(--radius-md);
     padding: var(--space-8);
   }
   .limits h3 { font-size: var(--text-xl); margin-bottom: var(--space-3); }
@@ -173,7 +173,7 @@ const cannotDetermine = [
   .limits-head {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
-    letter-spacing: 0.06em;
+    letter-spacing: var(--tracking-wider);
     text-transform: uppercase;
     margin-bottom: var(--space-4);
     max-width: none;
@@ -186,7 +186,7 @@ const cannotDetermine = [
     color: var(--text);
     padding-left: var(--space-4);
     position: relative;
-    line-height: 1.5;
+    line-height: var(--leading-snug);
   }
   li::before {
     content: '—';
@@ -199,7 +199,7 @@ const cannotDetermine = [
     color: var(--text-muted);
     border-top: 1px solid var(--border);
     padding-top: var(--space-6);
-    line-height: 1.7;
+    line-height: var(--leading-body);
   }
   .limits-close em { font-style: italic; color: var(--text); }
 

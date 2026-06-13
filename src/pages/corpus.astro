@@ -216,20 +216,20 @@ load();
 <style is:global>
   .corpus-page { padding-block: var(--space-16) var(--space-24); background: var(--bg); min-height: 80vh; }
   .corpus-head { display: flex; align-items: baseline; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-10); }
-  .corpus-title { font-family: var(--font-display); font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: -0.015em; font-weight: normal; }
+  .corpus-title { font-family: var(--font-display); font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: var(--tracking-snug); font-weight: normal; }
   .corpus-sub { font-size: var(--text-base); color: var(--text-muted); flex-basis: 100%; margin-top: calc(-1 * var(--space-6)); max-width: none; }
   .corpus-actions { display: flex; gap: var(--space-3); align-items: center; margin-left: auto; }
   .corpus-action-link {
     font-family: var(--font-mono); font-size: var(--text-sm); color: var(--accent);
     text-decoration: none; border: 1px solid var(--accent);
-    padding: var(--space-2) var(--space-4); border-radius: 3px; white-space: nowrap;
+    padding: var(--space-2) var(--space-4); border-radius: var(--radius-sm); white-space: nowrap;
   }
   .corpus-action-link:hover { background: var(--accent-dim); }
   .corpus-select-btn {
     font-family: var(--font-mono); font-size: var(--text-sm);
     color: var(--text-muted); background: none; border: 1px solid var(--border);
-    padding: var(--space-2) var(--space-4); border-radius: 3px; cursor: pointer; white-space: nowrap;
-    transition: color 0.2s, border-color 0.2s;
+    padding: var(--space-2) var(--space-4); border-radius: var(--radius-sm); cursor: pointer; white-space: nowrap;
+    transition: color var(--ease), border-color var(--ease);
   }
   .corpus-select-btn:hover { color: var(--text); border-color: var(--text-muted); }
   .corpus-select-btn.select-active { color: var(--text); border-color: var(--text); }
@@ -239,39 +239,39 @@ load();
   .card-selectable:focus { outline: 2px solid var(--accent); }
   .card-checked { border-color: var(--accent) !important; box-shadow: 0 0 0 2px var(--accent) !important; }
   .card-check-overlay {
-    position: absolute; top: var(--space-2); right: var(--space-2); z-index: 2;
+    position: absolute; top: var(--space-2); right: var(--space-2); z-index: var(--z-above);
     width: 22px; height: 22px; border-radius: 50%;
     background: var(--bg-surface); border: 2px solid var(--border);
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700; color: var(--accent);
-    transition: background 0.15s, border-color 0.15s;
+    font-size: 11px; font-weight: var(--weight-bold); color: var(--accent);
+    transition: background var(--ease-fast), border-color var(--ease-fast);
   }
-  .card-checked .card-check-overlay { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .card-checked .card-check-overlay { background: var(--accent); border-color: var(--accent); color: var(--white); }
 
   /* Sticky selection bar */
   .selection-bar {
     position: fixed; bottom: var(--space-6); left: 50%; transform: translateX(-50%);
     background: var(--bg-dark); color: var(--text-invert);
-    border-radius: 40px; padding: var(--space-4) var(--space-6);
+    border-radius: var(--radius-full); padding: var(--space-4) var(--space-6);
     display: flex; align-items: center; gap: var(--space-6);
-    box-shadow: 0 4px 24px rgba(0,0,0,0.3); z-index: 200;
+    box-shadow: var(--shadow-overlay); z-index: var(--z-nav);
     white-space: nowrap;
   }
-  .sel-count { font-family: var(--font-mono); font-size: var(--text-sm); color: #ede9e2; }
+  .sel-count { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--bg-alt); }
   .sel-actions { display: flex; gap: var(--space-3); align-items: center; }
   .sel-clear {
-    font-family: var(--font-mono); font-size: var(--text-xs); color: #8a8079;
-    background: none; border: 1px solid #4a4540; border-radius: 3px;
+    font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-subtle);
+    background: none; border: 1px solid var(--text-dim); border-radius: var(--radius-sm);
     padding: var(--space-1) var(--space-3); cursor: pointer;
   }
-  .sel-clear:hover { color: #ede9e2; border-color: #8a8079; }
+  .sel-clear:hover { color: var(--bg-alt); border-color: var(--text-subtle); }
   .sel-compare {
     font-family: var(--font-mono); font-size: var(--text-sm);
-    background: var(--accent); color: #fff; text-decoration: none;
-    padding: var(--space-2) var(--space-5); border-radius: 3px;
-    transition: background 0.2s;
+    background: var(--accent); color: var(--white); text-decoration: none;
+    padding: var(--space-2) var(--space-5); border-radius: var(--radius-sm);
+    transition: background var(--ease);
   }
-  .sel-compare:hover { background: var(--accent-light); color: #fff; }
+  .sel-compare:hover { background: var(--accent-light); color: var(--white); }
 
   .corpus-loading, .corpus-empty {
     font-size: var(--text-base);
@@ -299,14 +299,14 @@ load();
     text-decoration: none;
     background: var(--bg-surface);
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: var(--radius-md);
     overflow: hidden;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color var(--ease), box-shadow var(--ease);
     min-width: 0;
   }
   .object-card:hover {
     border-color: var(--accent);
-    box-shadow: 0 2px 10px rgba(155, 79, 25, 0.1);
+    box-shadow: var(--shadow-accent);
   }
   .card-image {
     width: 100%;
@@ -334,29 +334,29 @@ load();
     background: var(--bg-alt);
   }
   .card-body { padding: var(--space-3) var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
-  .card-accession { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--text); font-weight: 600; max-width: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card-accession { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--text); font-weight: var(--weight-semibold); max-width: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card-culture { font-size: var(--text-sm); color: var(--text-muted); max-width: none; }
   .card-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-1); }
-  .card-fp-yes  { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.03em; color: var(--cons); }
-  .card-fp-no   { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.03em; color: var(--text-muted); }
+  .card-fp-yes  { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: var(--tracking-wide); color: var(--cons); }
+  .card-fp-no   { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: var(--tracking-wide); color: var(--text-muted); }
   .card-date    { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); }
-  .card-conflict{ font-family: var(--font-mono); font-size: 0.65rem; color: var(--theory); letter-spacing: 0.03em; }
+  .card-conflict{ font-family: var(--font-mono); font-size: 0.65rem; color: var(--theory); letter-spacing: var(--tracking-wide); }
 
   /* Filter bar */
   .filter-bar { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-6); }
   .filter-btn {
     font-family: var(--font-mono); font-size: var(--text-xs);
     background: var(--theory-bg); color: var(--theory);
-    border: 1px solid #e5c68a; border-radius: 3px;
+    border: 1px solid var(--color-warn); border-radius: var(--radius-sm);
     padding: var(--space-2) var(--space-4); cursor: pointer;
-    transition: all 0.2s; letter-spacing: 0.03em;
+    transition: all var(--ease); letter-spacing: var(--tracking-wide);
   }
-  .filter-btn:hover, .filter-btn.filter-active { background: var(--theory); color: #fff; border-color: var(--theory); }
+  .filter-btn:hover, .filter-btn.filter-active { background: var(--theory); color: var(--white); border-color: var(--theory); }
   .conflict-count { font-size: var(--text-xs); opacity: 0.8; margin-left: var(--space-2); }
   .filter-clear {
     font-family: var(--font-mono); font-size: var(--text-xs);
     background: none; color: var(--text-muted); border: 1px solid var(--border);
-    border-radius: 3px; padding: var(--space-2) var(--space-4); cursor: pointer;
+    border-radius: var(--radius-sm); padding: var(--space-2) var(--space-4); cursor: pointer;
   }
   .filter-clear:hover { color: var(--text); border-color: var(--text-muted); }
 </style>

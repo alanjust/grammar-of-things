@@ -40,7 +40,7 @@ import {
       position: fixed;
       top: var(--space-4);
       left: var(--space-6);
-      z-index: 300;
+      z-index: var(--z-overlay);
       font-family: var(--font-body);
       font-size: var(--text-sm);
       color: rgba(244,241,236,0.45);
@@ -74,7 +74,7 @@ import {
       display: block;
       width: 100%;
       height: auto;
-      border-radius: 4px;
+      border-radius: var(--radius-md);
     }
 
     /* Overlay: hidden by default; visible after reveal */
@@ -83,8 +83,8 @@ import {
       inset: 0;
       pointer-events: none;
       opacity: 0;
-      transition: opacity 0.5s ease;
-      border-radius: 4px;
+      transition: opacity var(--ease-slow);
+      border-radius: var(--radius-md);
       overflow: hidden;
     }
     .look-overlay.is-visible { opacity: 1; }
@@ -94,16 +94,16 @@ import {
       position: absolute;
       inset: 0;
       background: rgba(28, 25, 23, 0.62);
-      border-radius: 4px;
+      border-radius: var(--radius-md);
     }
 
     /* The spotlight is a hole: positioned precisely, box-shadow dims everything outside */
     .look-spotlight {
       position: absolute;
-      border-radius: 3px;
+      border-radius: var(--radius-sm);
       /* box-shadow creates the dim-outside effect */
       box-shadow: 0 0 0 9999px rgba(28, 25, 23, 0.62);
-      z-index: 1;
+      z-index: var(--z-base);
       /* Actual position set inline per card */
     }
 
@@ -119,7 +119,7 @@ import {
     .look-0-text {
       font-family: var(--font-display);
       font-size: clamp(var(--text-xl), 3vw, var(--text-2xl));
-      line-height: 1.5;
+      line-height: var(--leading-snug);
       color: var(--text-invert);
       max-width: 52ch;
       text-align: center;
@@ -139,7 +139,7 @@ import {
       color: var(--bg-dark);
       background: var(--text-invert);
       border: none;
-      border-radius: 3px;
+      border-radius: var(--radius-sm);
       padding: var(--space-3) var(--space-7);
       cursor: pointer;
       transition: background var(--ease), color var(--ease);
@@ -163,11 +163,11 @@ import {
       display: inline-block;
       font-family: var(--font-mono);
       font-size: var(--text-xs);
-      font-weight: 600;
-      letter-spacing: 0.05em;
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-wider);
       text-transform: uppercase;
       padding: 0.15em 0.55em;
-      border-radius: 3px;
+      border-radius: var(--radius-sm);
       margin-bottom: var(--space-4);
     }
     .tier-obs    { color: var(--obs);    background: var(--obs-bg);    }
@@ -199,7 +199,7 @@ import {
 
     .look-reveal-text {
       font-size: var(--text-base);
-      line-height: 1.7;
+      line-height: var(--leading-body);
       color: rgba(244,241,236,0.92);
       margin-bottom: var(--space-4);
     }
@@ -223,7 +223,7 @@ import {
       font-family: var(--font-mono);
       font-size: var(--text-xs);
       color: rgba(244,241,236,0.38);
-      letter-spacing: 0.05em;
+      letter-spacing: var(--tracking-wider);
       margin-left: auto;
     }
 
@@ -252,8 +252,8 @@ import {
     .look-reveal-label {
       font-family: var(--font-mono);
       font-size: var(--text-xs);
-      font-weight: 600;
-      letter-spacing: 0.05em;
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-wider);
       text-transform: uppercase;
       color: rgba(244,241,236,0.45);
       margin-bottom: var(--space-3);
@@ -261,7 +261,7 @@ import {
 
     .look-reveal-body {
       font-size: var(--text-base);
-      line-height: 1.7;
+      line-height: var(--leading-body);
       color: rgba(244,241,236,0.88);
     }
 

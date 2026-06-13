@@ -57,20 +57,20 @@ const { content } = Astro.props;
   .eyebrow {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
-    letter-spacing: 0.08em;
+    letter-spacing: var(--tracking-widest);
     color: var(--accent);
     text-transform: uppercase;
     max-width: none;
   }
   h1 {
     font-size: clamp(var(--text-3xl), 4vw, var(--text-5xl));
-    letter-spacing: -0.02em;
+    letter-spacing: var(--tracking-tight);
     max-width: 16ch;
   }
   .subhead {
     font-size: var(--text-lg);
     color: var(--text-muted);
-    line-height: 1.7;
+    line-height: var(--leading-body);
   }
   .cta {
     display: inline-block;
@@ -100,14 +100,14 @@ const { content } = Astro.props;
     gap: var(--space-5);
     background: var(--bg-surface);
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: var(--radius-md);
     padding: var(--space-7);
     text-decoration: none;
     transition: border-color var(--ease), box-shadow var(--ease);
   }
   .object-panel:hover {
     border-color: var(--accent);
-    box-shadow: 0 2px 12px rgba(155, 79, 25, 0.12);
+    box-shadow: var(--shadow-md);
   }
   .panel-images {
     display: grid;
@@ -117,7 +117,7 @@ const { content } = Astro.props;
   .img-wrap {
     position: relative;
     overflow: hidden;
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
     border: 1px solid var(--border);
   }
   .img-wrap img {
@@ -135,12 +135,12 @@ const { content } = Astro.props;
     left: var(--space-2);
     font-family: var(--font-mono);
     font-size: 0.6rem;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--tracking-wider);
     text-transform: uppercase;
     color: rgba(255,255,255,0.8);
     background: rgba(28,25,23,0.6);
     padding: 0.1em 0.4em;
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
   }
   .panel-meta { display: flex; flex-direction: column; gap: var(--space-2); padding-inline: var(--space-1); }
   .meta-title {
@@ -154,7 +154,7 @@ const { content } = Astro.props;
     color: var(--accent);
     font-family: var(--font-mono);
     font-size: var(--text-xs);
-    letter-spacing: 0.03em;
+    letter-spacing: var(--tracking-wide);
     margin-top: var(--space-1);
   }
   .panel-tags {
@@ -167,9 +167,9 @@ const { content } = Astro.props;
   .tag {
     font-family: var(--font-mono);
     font-size: 0.65rem;
-    letter-spacing: 0.03em;
+    letter-spacing: var(--tracking-wide);
     padding: 0.15em 0.5em;
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
   }
   .tag-obs    { background: var(--obs-bg);   color: var(--obs);   }
   .tag-cons   { background: var(--cons-bg);  color: var(--cons);  }

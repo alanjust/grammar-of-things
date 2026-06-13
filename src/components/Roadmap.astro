@@ -94,14 +94,14 @@ const funded = [
   .section-label {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
-    letter-spacing: 0.08em;
+    letter-spacing: var(--tracking-widest);
     text-transform: uppercase;
     color: var(--accent);
     margin-bottom: var(--space-3);
     max-width: none;
   }
-  h2 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: -0.015em; margin-bottom: var(--space-4); }
-  .section-sub { font-size: var(--text-lg); color: var(--text-muted); line-height: 1.7; }
+  h2 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: var(--tracking-snug); margin-bottom: var(--space-4); }
+  .section-sub { font-size: var(--text-lg); color: var(--text-muted); line-height: var(--leading-body); }
 
   .roadmap-grid {
     display: grid;
@@ -113,10 +113,10 @@ const funded = [
   .col-head {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
-    letter-spacing: 0.06em;
+    letter-spacing: var(--tracking-wider);
     text-transform: uppercase;
     padding: var(--space-2) var(--space-4);
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
     max-width: none;
     margin-bottom: var(--space-2);
   }
@@ -126,7 +126,7 @@ const funded = [
   .items { display: flex; flex-direction: column; gap: var(--space-3); }
   .item {
     padding: var(--space-5);
-    border-radius: 4px;
+    border-radius: var(--radius-md);
     border: 1px solid var(--border);
   }
   .today-item  { background: var(--bg); }
@@ -139,15 +139,15 @@ const funded = [
     margin-bottom: var(--space-2);
     flex-wrap: wrap;
   }
-  .item-label { font-weight: 600; font-size: var(--text-base); }
-  .item-body { font-size: var(--text-sm); color: var(--text-muted); line-height: 1.6; }
+  .item-label { font-weight: var(--weight-semibold); font-size: var(--text-base); }
+  .item-body { font-size: var(--text-sm); color: var(--text-muted); line-height: var(--leading-normal); }
 
   .priority-tag {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
-    letter-spacing: 0.04em;
+    letter-spacing: var(--tracking-wide);
     padding: 0.1em 0.5em;
-    border-radius: 2px;
+    border-radius: var(--radius-xs);
     flex-shrink: 0;
   }
   .p-critical      { background: var(--accent-dim);   color: var(--accent); }
@@ -163,7 +163,7 @@ const funded = [
     font-size: var(--text-lg);
     font-style: italic;
     color: var(--text-muted);
-    line-height: 1.7;
+    line-height: var(--leading-body);
     max-width: 80ch;
   }
 

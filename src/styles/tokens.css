@@ -1,40 +1,59 @@
 :root {
-  /* Background */
-  --bg:           #f4f1ec;
-  --bg-surface:   #fffefb;
-  --bg-alt:       #ede9e2;
-  --bg-dark:      #1c1917;
+  /* ── Backgrounds ─────────────────────────────────────────────────────────── */
+  --bg:           #f4f1ec;   /* Page canvas — warm off-white */
+  --bg-surface:   #fffefb;   /* Raised surface — cards, panels */
+  --bg-alt:       #ede9e2;   /* Recessed surface — code, alt rows */
+  --bg-dark:      #1c1917;   /* Inverted surface — footer, dark sections */
+  --bg-inset:     #2c2824;   /* Deeper surface within dark sections */
 
-  /* Text */
-  --text:         #1c1917;
-  --text-muted:   #6b6055;
-  --text-invert:  #f4f1ec;
+  /* ── Text ────────────────────────────────────────────────────────────────── */
+  --text:         #1c1917;   /* Primary body text */
+  --text-muted:   #6b6055;   /* Secondary / supporting text */
+  --text-subtle:  #8a8079;   /* Quiet text on dark surfaces (footer secondary) */
+  --text-dim:     #4a4540;   /* Mid-range on dark (footer body) */
+  --text-invert:  #f4f1ec;   /* Text on --bg-dark */
 
-  /* Accent */
-  --accent:       #9b4f19;
-  --accent-light: #c4742a;
-  --accent-dim:   #f2e6da;
+  /* ── Accent ──────────────────────────────────────────────────────────────── */
+  --accent:       #9b4f19;   /* Primary terracotta */
+  --accent-light: #c4742a;   /* Hover / lighter accent */
+  --accent-dim:   #f2e6da;   /* Pale accent bg */
+  --accent-wash:  rgba(155, 79, 25, 0.10);  /* Very subtle accent bg */
+  --accent-glow:  rgba(155, 79, 25, 0.12);  /* Hover / card accent shadow */
 
-  /* Borders */
-  --border:       #d4cdc4;
-  --border-strong:#a09487;
+  /* ── Borders ─────────────────────────────────────────────────────────────── */
+  --border:        #d4cdc4;
+  --border-strong: #a09487;
 
-  /* Epistemic label colors */
-  --obs:          #1d5fa8;
-  --obs-bg:       #e8f0fa;
-  --interp:       #6d28d9;
-  --interp-bg:    #f0ebfd;
-  --cons:         #166534;
-  --cons-bg:      #e8f5ed;
-  --theory:       #92500a;
-  --theory-bg:    #fdf0e3;
+  /* ── State colors ────────────────────────────────────────────────────────── */
+  --white:          #ffffff;   /* Pure white — button text on accent, form inputs */
+  --color-error:    #c0392b;   /* Destructive / error */
+  --color-error-soft: #e07070; /* Soft error — status messages, non-critical warnings */
+  --color-warn:     #e5c68a;   /* Caution border — amber */
+  --color-warn-bg:  #fef3c7;   /* Caution background */
+  --color-diff-bg:  #fffdf5;   /* Mismatch / diff surface */
 
-  /* Typography */
+  /* ── Epistemic label colors ──────────────────────────────────────────────── */
+  --obs:       #1d5fa8;
+  --obs-bg:    #e8f0fa;
+  --interp:    #6d28d9;
+  --interp-bg: #f0ebfd;
+  --cons:      #166534;
+  --cons-bg:   #e8f5ed;
+  --theory:    #92500a;
+  --theory-bg: #fdf0e3;
+
+  /* ── Typography: families ────────────────────────────────────────────────── */
   --font-display: Georgia, "Palatino Linotype", Palatino, serif;
   --font-body:    system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono:    ui-monospace, "Cascadia Code", "Source Code Pro", "Courier New", monospace;
 
-  /* Scale */
+  /* ── Typography: weights ─────────────────────────────────────────────────── */
+  --weight-normal:   400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* ── Typography: size scale ──────────────────────────────────────────────── */
   --text-xs:   0.75rem;
   --text-sm:   0.875rem;
   --text-base: 1rem;
@@ -45,23 +64,62 @@
   --text-4xl:  2.25rem;
   --text-5xl:  3rem;
 
-  /* Spacing */
+  /* ── Typography: letter spacing ──────────────────────────────────────────── */
+  --tracking-tight:   -0.02em;   /* Large display headings */
+  --tracking-snug:    -0.015em;  /* Section headings */
+  --tracking-normal:   0em;      /* Body text */
+  --tracking-wide:     0.04em;   /* UI labels, uppercase */
+  --tracking-wider:    0.06em;   /* Mono labels */
+  --tracking-widest:   0.08em;   /* Category labels, strong uppercase */
+
+  /* ── Typography: line heights ────────────────────────────────────────────── */
+  --leading-tight:   1.25;   /* Headings */
+  --leading-snug:    1.4;    /* Compact body, labels */
+  --leading-normal:  1.6;    /* Base body text */
+  --leading-body:    1.7;    /* Comfortable reading */
+  --leading-relaxed: 1.8;    /* Analysis body */
+  --leading-loose:   1.9;    /* Long-form display */
+
+  /* ── Spacing ─────────────────────────────────────────────────────────────── */
   --space-1:  0.25rem;
   --space-2:  0.5rem;
   --space-3:  0.75rem;
   --space-4:  1rem;
+  --space-5:  1.25rem;
   --space-6:  1.5rem;
   --space-7:  1.75rem;
   --space-8:  2rem;
+  --space-10: 2.5rem;
   --space-12: 3rem;
   --space-16: 4rem;
   --space-20: 5rem;
   --space-24: 6rem;
 
-  /* Container */
-  --max-w:        1200px;
-  --max-w-prose:  70ch;
+  /* ── Container ───────────────────────────────────────────────────────────── */
+  --max-w:       1200px;
+  --max-w-prose: 70ch;
 
-  /* Transitions */
-  --ease: 0.2s ease;
+  /* ── Border radius ───────────────────────────────────────────────────────── */
+  --radius-xs:   2px;    /* Badges, inline code */
+  --radius-sm:   3px;    /* Small panels, labels */
+  --radius-md:   4px;    /* Buttons, inputs, cards */
+  --radius-pill: 20px;   /* Pill badges */
+  --radius-full: 40px;   /* Circle / full round */
+
+  /* ── Elevation / shadows ─────────────────────────────────────────────────── */
+  --shadow-sm:      0 2px 8px rgba(28, 25, 23, 0.08);
+  --shadow-md:      0 2px 12px rgba(155, 79, 25, 0.12);   /* Accent-tinted lift */
+  --shadow-accent:  0 2px 10px rgba(155, 79, 25, 0.10);   /* Subtle accent */
+  --shadow-overlay: 0 4px 24px rgba(0, 0, 0, 0.30);       /* Modal / drawer */
+
+  /* ── Z-index scale ───────────────────────────────────────────────────────── */
+  --z-base:    1;
+  --z-above:   2;
+  --z-nav:     200;   /* Sticky nav, selection bar */
+  --z-overlay: 300;   /* Back links, overlays */
+
+  /* ── Motion ──────────────────────────────────────────────────────────────── */
+  --ease:      0.2s ease;
+  --ease-fast: 0.15s ease;
+  --ease-slow: 0.5s ease;
 }
