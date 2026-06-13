@@ -33,6 +33,18 @@ if (object?.doc_canonical) { try { canonical = JSON.parse(object.doc_canonical);
 let fingerprintFlag: any = null;
 if (analysis?.fingerprint_flag) { try { fingerprintFlag = JSON.parse(analysis.fingerprint_flag); } catch {} }
 
+const ALIGNMENT_TOOLTIPS: Record<string, string> = {
+  aligned:      'Fingerprint scores are perceptually consistent with the claimed tradition',
+  inconclusive: 'Insufficient signal to draw a conclusion — the default for most objects',
+  divergent:    'At least two scores warrant closer human examination',
+};
+const STRENGTH_TOOLTIPS: Record<string, string> = {
+  none:     'Nothing flagged for follow-up',
+  weak:     'Minor signals worth noting',
+  moderate: 'More notable signals',
+  strong:   'Significant flags — close examination recommended',
+};
+
 const VECTOR_KEY = [
   'ap_1','ap_2','ap_3','ap_4','ap_5','ap_6','ap_7','ap_8','ap_9','ap_10',
   'ap_11','ap_12','ap_13','ap_14','ap_15',
@@ -106,8 +118,8 @@ const date = analysis ? new Date(analysis.created_at).toLocaleDateString('en-US'
 
               {fingerprintFlag && (
                 <div class={`fp-flag flag-${fingerprintFlag.alignment}`}>
-                  <span class="flag-badge">{fingerprintFlag.alignment}</span>
-                  <span class="flag-strength">{fingerprintFlag.flag_strength}</span>
+                  <span class="flag-badge" data-tooltip={ALIGNMENT_TOOLTIPS[fingerprintFlag.alignment]}>{fingerprintFlag.alignment}</span>
+                  <span class="flag-strength" data-tooltip={STRENGTH_TOOLTIPS[fingerprintFlag.flag_strength]}>{fingerprintFlag.flag_strength}</span>
                   <p class="flag-reason">{fingerprintFlag.reasoning}</p>
                 </div>
               )}

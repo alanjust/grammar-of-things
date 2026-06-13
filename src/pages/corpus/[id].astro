@@ -34,6 +34,18 @@ if (!db) {
   }
 }
 
+const ALIGNMENT_TOOLTIPS: Record<string, string> = {
+  aligned:      'Fingerprint scores are perceptually consistent with the claimed tradition',
+  inconclusive: 'Insufficient signal to draw a conclusion — the default for most objects',
+  divergent:    'At least two scores warrant closer human examination',
+};
+const STRENGTH_TOOLTIPS: Record<string, string> = {
+  none:     'Nothing flagged for follow-up',
+  weak:     'Minor signals worth noting',
+  moderate: 'More notable signals',
+  strong:   'Significant flags — close examination recommended',
+};
+
 // Fetch cross-source claims
 let claims: any[] = [];
 if (db && object) {
@@ -282,8 +294,8 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
                       return flag ? (
                         <div class={`fp-flag flag-${flag.alignment}`}>
                           <p class="fp-disclaimer">Provisional heuristic — not a validated comparison; no reference-corpus baseline exists yet.</p>
-                          <span class="flag-badge">{flag.alignment}</span>
-                          <span class="flag-strength">{flag.flag_strength}</span>
+                          <span class="flag-badge" data-tooltip={ALIGNMENT_TOOLTIPS[flag.alignment]}>{flag.alignment}</span>
+                          <span class="flag-strength" data-tooltip={STRENGTH_TOOLTIPS[flag.flag_strength]}>{flag.flag_strength}</span>
                           <p class="flag-reason">{flag.reasoning}</p>
                           {flag.caveats && <p class="flag-caveat">{flag.caveats}</p>}
                         </div>
@@ -483,12 +495,16 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
             const head = document.createElement('div');
             head.className = 'flag-' + String(flag.alignment ?? '');
             head.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;';
+            const ALIGNMENT_TIPS = { aligned: 'Fingerprint scores are perceptually consistent with the claimed tradition', inconclusive: 'Insufficient signal to draw a conclusion — the default for most objects', divergent: 'At least two scores warrant closer human examination' };
+            const STRENGTH_TIPS  = { none: 'Nothing flagged for follow-up', weak: 'Minor signals worth noting', moderate: 'More notable signals', strong: 'Significant flags — close examination recommended' };
             const badge = document.createElement('span');
             badge.className = 'flag-badge';
             badge.textContent = flag.alignment ?? '';
+            badge.setAttribute('data-tooltip', ALIGNMENT_TIPS[flag.alignment] ?? '');
             const strength = document.createElement('span');
             strength.style.cssText = 'font-size:0.75rem;color:var(--text-muted);font-family:var(--font-mono)';
             strength.textContent = flag.flag_strength ?? '';
+            strength.setAttribute('data-tooltip', STRENGTH_TIPS[flag.flag_strength] ?? '');
             head.append(badge, strength);
 
             const reason = document.createElement('p');

@@ -115,6 +115,7 @@
   /* ── Z-index scale ───────────────────────────────────────────────────────── */
   --z-base:    1;
   --z-above:   2;
+  --z-tooltip: 100;   /* Tooltip popups */
   --z-nav:     200;   /* Sticky nav, selection bar */
   --z-overlay: 300;   /* Back links, overlays */
 
