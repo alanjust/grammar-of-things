@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env as cfEnv } from 'cloudflare:workers';
+import { requireAdmin } from '../../../lib/auth';
 
 export const prerender = false;
 
@@ -19,6 +20,27 @@ const PRINCIPLE_NAMES: Record<string, string> = {
   ta_5:'Grouping', ta_13:'Overlap / Occlusion', ta_15:'Closure / Negative Space',
   ta_20:'Simultaneous Contrast', ta_28:'Specularity / Reflection',
   ta_47:'Face Detection', ta_48:'Biological Motion', ta_49:'Gaze Direction', ta_51:'Visual Pop-out',
+};
+
+export const PATCH: APIRoute = async ({ params, request }) => {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+
+  const env = cfEnv as unknown as Record<string, any>;
+  const db  = env.DB;
+  const id  = Number(params.id);
+
+  if (!db) return new Response(JSON.stringify({ error: 'DB unavailable.' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  if (!id || isNaN(id)) return new Response(JSON.stringify({ error: 'Invalid id.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+
+  let body: any;
+  try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON.' }), { status: 400, headers: { 'Content-Type': 'application/json' } }); }
+
+  if (typeof body.notes !== 'string') return new Response(JSON.stringify({ error: '"notes" string required.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+
+  await db.prepare('UPDATE analyses SET notes = ? WHERE id = ?').bind(body.notes || null, id).run();
+
+  return new Response(JSON.stringify({ updated: id }), { headers: { 'Content-Type': 'application/json' } });
 };
 
 export const GET: APIRoute = async ({ params, request }) => {

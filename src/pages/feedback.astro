@@ -1,0 +1,293 @@
+---
+export const prerender = false;
+import { env as cfEnv } from 'cloudflare:workers';
+import { isAdmin } from '../lib/auth';
+import SiteNav from '../components/SiteNav.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+
+const admin = await isAdmin(Astro.request);
+const env   = cfEnv as unknown as Record<string, any>;
+const db    = env.DB;
+
+let queue: any[] = [];
+if (admin && db) {
+  try {
+    const r = await db
+      .prepare("SELECT * FROM feedback_queue WHERE status = 'open' ORDER BY created_at DESC LIMIT 100")
+      .all();
+    queue = r.results ?? [];
+  } catch { /* table may not exist before migration runs */ }
+}
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Feedback · The Grammar of Things</title>
+  <style is:global>
+    @import url('/src/styles/base.css');
+  </style>
+</head>
+<body>
+  <SiteNav />
+
+  <div class="page">
+    <div class="container">
+
+      <header class="page-header">
+        <h1>Feedback</h1>
+        <p class="page-sub">Suggest an addition, flag a problem, or ask a question. Submissions go directly to the research team — not published.</p>
+      </header>
+
+      <!-- Public submission form -->
+      <section class="form-section">
+        <form id="feedbackForm" novalidate>
+          <div class="field">
+            <label for="fbBody" class="field-label">Message <span class="req">*</span></label>
+            <textarea id="fbBody" name="body" rows="5" class="field-textarea" placeholder="Suggested addition, problem you noticed, question about the research…" required></textarea>
+          </div>
+          <div class="field">
+            <label for="fbContact" class="field-label">Email <span class="optional">(optional)</span></label>
+            <input id="fbContact" name="contact" type="email" class="field-input" placeholder="If you'd like a reply" />
+          </div>
+          <!-- Honeypot — should stay empty -->
+          <input name="website" class="hp-field" tabindex="-1" autocomplete="off" aria-hidden="true" />
+          <div class="form-footer">
+            <button type="submit" id="submitBtn" class="submit-btn">Send feedback</button>
+            <span id="formStatus" class="form-status"></span>
+          </div>
+        </form>
+      </section>
+
+      <!-- Admin queue -->
+      {admin && (
+        <section class="queue-section">
+          <h2>Feedback queue <span id="queueCount" class="queue-count">({queue.length} open)</span></h2>
+          {queue.length === 0 ? (
+            <p class="empty">No open feedback.</p>
+          ) : (
+            <div class="queue-list" id="queueList">
+              {queue.map((item: any) => (
+                <div class="queue-item" data-id={item.id}>
+                  <div class="item-meta">
+                    <span class="item-page">{item.page ?? '—'}</span>
+                    <span class="item-date">{new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    {item.contact && <span class="item-contact">{item.contact}</span>}
+                  </div>
+                  <p class="item-body">{item.body}</p>
+                  <div class="item-actions">
+                    <button class="action-btn resolve-btn" data-id={item.id}>Resolve</button>
+                    <button class="action-btn dismiss-btn" data-id={item.id}>Dismiss</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div class="resolved-toggle">
+            <button id="showResolvedBtn" class="text-btn">Show resolved / dismissed →</button>
+          </div>
+          <div id="resolvedList" class="queue-list resolved-list" style="display:none"></div>
+        </section>
+      )}
+
+    </div>
+  </div>
+
+  <SiteFooter />
+</body>
+</html>
+
+<script define:vars={{ isAdmin: admin }}>
+// ── Feedback submission ────────────────────────────────────────────────────
+
+const form       = document.getElementById('feedbackForm');
+const submitBtn  = document.getElementById('submitBtn');
+const formStatus = document.getElementById('formStatus');
+
+form?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const body    = form.querySelector('[name="body"]').value.trim();
+  const contact = form.querySelector('[name="contact"]').value.trim();
+  const website = form.querySelector('[name="website"]').value;
+
+  if (body.length < 5) {
+    formStatus.textContent = 'Please write a message.';
+    formStatus.className = 'form-status form-error';
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Sending…';
+  formStatus.textContent = '';
+
+  try {
+    const res = await fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body, contact: contact || null, website, page: window.location.href }),
+    });
+    if (res.ok) {
+      form.reset();
+      formStatus.textContent = 'Thank you — received.';
+      formStatus.className = 'form-status form-success';
+    } else {
+      const err = await res.json().catch(() => ({}));
+      formStatus.textContent = err.error ?? 'Something went wrong.';
+      formStatus.className = 'form-status form-error';
+    }
+  } catch {
+    formStatus.textContent = 'Network error.';
+    formStatus.className = 'form-status form-error';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send feedback';
+  }
+});
+
+// ── Admin queue actions ────────────────────────────────────────────────────
+
+if (isAdmin) {
+  async function updateStatus(id, status) {
+    const res = await fetch(`/api/feedback/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    return res.ok;
+  }
+
+  document.getElementById('queueList')?.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-id]');
+    if (!btn) return;
+    const id = Number(btn.dataset.id);
+    const status = btn.classList.contains('resolve-btn') ? 'resolved' : 'dismissed';
+    const ok = await updateStatus(id, status);
+    if (ok) {
+      const item = btn.closest('.queue-item');
+      item?.remove();
+      const count = document.querySelectorAll('#queueList .queue-item').length;
+      const countEl = document.getElementById('queueCount');
+      if (countEl) countEl.textContent = `(${count} open)`;
+    }
+  });
+
+  document.getElementById('showResolvedBtn')?.addEventListener('click', async () => {
+    const list = document.getElementById('resolvedList');
+    if (list.style.display !== 'none') { list.style.display = 'none'; return; }
+
+    const [resolvedRes, dismissedRes] = await Promise.all([
+      fetch('/api/feedback?status=resolved').then(r => r.json()),
+      fetch('/api/feedback?status=dismissed').then(r => r.json()),
+    ]);
+
+    const items = [...(resolvedRes.items ?? []), ...(dismissedRes.items ?? [])];
+    items.sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+    list.innerHTML = '';
+    if (items.length === 0) {
+      const p = document.createElement('p');
+      p.className = 'empty';
+      p.textContent = 'None yet.';
+      list.appendChild(p);
+    } else {
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'queue-item queue-item-closed';
+        div.innerHTML = `
+          <div class="item-meta">
+            <span class="item-status status-${item.status}">${item.status}</span>
+            <span class="item-page">${item.page ?? '—'}</span>
+            <span class="item-date">${new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+            ${item.contact ? `<span class="item-contact">${item.contact}</span>` : ''}
+          </div>
+          <p class="item-body">${item.body}</p>
+        `;
+        list.appendChild(div);
+      });
+    }
+    list.style.display = '';
+    document.getElementById('showResolvedBtn').textContent = '← Hide resolved / dismissed';
+  });
+}
+</script>
+
+<style>
+  .page { padding-block: var(--space-16) var(--space-24); background: var(--bg); }
+  .container { max-width: 760px; }
+
+  .page-header { margin-bottom: var(--space-12); padding-bottom: var(--space-8); border-bottom: 2px solid var(--border-strong); }
+  h1 { font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl)); letter-spacing: var(--tracking-snug); margin-bottom: var(--space-3); }
+  .page-sub { font-size: var(--text-base); color: var(--text-muted); max-width: 60ch; line-height: var(--leading-relaxed); }
+
+  /* Form */
+  .form-section { margin-bottom: var(--space-16); }
+  .field { margin-bottom: var(--space-6); }
+  .field-label {
+    display: block; font-family: var(--font-mono); font-size: var(--text-xs);
+    color: var(--text-muted); letter-spacing: var(--tracking-wide); text-transform: uppercase;
+    margin-bottom: var(--space-2);
+  }
+  .req { color: var(--accent); }
+  .optional { color: var(--text-dim); font-size: var(--text-xs); }
+  .field-textarea, .field-input {
+    width: 100%; box-sizing: border-box;
+    background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: var(--space-4); font-family: var(--font-sans); font-size: var(--text-base);
+    color: var(--text); line-height: var(--leading-relaxed);
+    transition: border-color var(--ease);
+  }
+  .field-textarea { resize: vertical; }
+  .field-textarea:focus, .field-input:focus { outline: none; border-color: var(--accent); }
+  .hp-field { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .form-footer { display: flex; align-items: center; gap: var(--space-4); }
+  .submit-btn {
+    background: var(--accent); color: var(--white); border: none; border-radius: var(--radius-sm);
+    padding: var(--space-3) var(--space-8); font-family: var(--font-mono);
+    font-size: var(--text-sm); letter-spacing: var(--tracking-wide); cursor: pointer;
+    transition: background var(--ease);
+  }
+  .submit-btn:hover:not(:disabled) { background: var(--accent-light); }
+  .submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .form-status { font-family: var(--font-mono); font-size: var(--text-xs); }
+  .form-success { color: var(--cons); }
+  .form-error   { color: var(--color-error); }
+
+  /* Queue */
+  .queue-section { border-top: 2px solid var(--border-strong); padding-top: var(--space-12); }
+  h2 { font-size: var(--text-2xl); letter-spacing: var(--tracking-snug); margin-bottom: var(--space-6); }
+  .queue-count { font-size: var(--text-lg); color: var(--text-muted); }
+  .empty { color: var(--text-muted); font-size: var(--text-base); }
+  .queue-list { display: flex; flex-direction: column; gap: var(--space-4); }
+  .queue-item {
+    background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: var(--space-5) var(--space-6);
+  }
+  .item-meta { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-3); }
+  .item-page    { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
+  .item-date    { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-dim); }
+  .item-contact { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent); }
+  .item-status  { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: var(--weight-bold); letter-spacing: var(--tracking-wide); text-transform: uppercase; padding: 0.1em 0.5em; border-radius: var(--radius-xs); background: var(--bg-alt); color: var(--text-muted); }
+  .status-resolved  { background: var(--cons-bg); color: var(--cons); }
+  .status-dismissed { background: var(--bg-alt); color: var(--text-dim); }
+  .item-body { font-size: var(--text-base); color: var(--text); line-height: var(--leading-relaxed); max-width: 66ch; white-space: pre-wrap; }
+  .item-actions { display: flex; gap: var(--space-3); margin-top: var(--space-4); }
+  .action-btn {
+    font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-wide);
+    border: 1px solid var(--border); border-radius: var(--radius-xs);
+    padding: var(--space-1) var(--space-4); cursor: pointer;
+    background: var(--bg); color: var(--text-muted); transition: all var(--ease);
+  }
+  .resolve-btn:hover  { border-color: var(--cons); color: var(--cons); }
+  .dismiss-btn:hover  { border-color: var(--text-muted); color: var(--text); }
+  .queue-item-closed  { opacity: 0.65; }
+  .resolved-toggle { margin-top: var(--space-6); }
+  .resolved-list   { margin-top: var(--space-6); }
+  .text-btn {
+    background: none; border: none; cursor: pointer;
+    font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent);
+    letter-spacing: var(--tracking-wide); padding: 0;
+  }
+  .text-btn:hover { color: var(--accent-light); }
+</style>

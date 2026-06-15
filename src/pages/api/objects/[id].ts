@@ -4,6 +4,27 @@ import { requireAdmin } from '../../../lib/auth';
 
 export const prerender = false;
 
+export const PATCH: APIRoute = async ({ params, request }) => {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+
+  const env = cfEnv as unknown as Record<string, any>;
+  const db  = env.DB;
+  const id  = Number(params.id);
+
+  if (!db) return new Response(JSON.stringify({ error: 'DB binding unavailable.' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  if (!id || isNaN(id)) return new Response(JSON.stringify({ error: 'Invalid id.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+
+  let body: any;
+  try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Invalid JSON.' }), { status: 400, headers: { 'Content-Type': 'application/json' } }); }
+
+  if (typeof body.notes !== 'string') return new Response(JSON.stringify({ error: '"notes" string required.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+
+  await db.prepare("UPDATE objects SET notes = ?, updated_at = datetime('now') WHERE id = ?").bind(body.notes || null, id).run();
+
+  return new Response(JSON.stringify({ updated: id }), { headers: { 'Content-Type': 'application/json' } });
+};
+
 export const DELETE: APIRoute = async ({ params, request }) => {
   const denied = await requireAdmin(request);
   if (denied) return denied;

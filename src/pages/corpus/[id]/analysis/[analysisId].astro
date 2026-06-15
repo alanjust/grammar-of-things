@@ -2,10 +2,12 @@
 export const prerender = false;
 import { env as cfEnv } from 'cloudflare:workers';
 import { renderMarkdown, readTime } from '../../../../lib/markdown';
+import { isAdmin } from '../../../../lib/auth';
 import SiteNav from '../../../../components/SiteNav.astro';
 import SiteFooter from '../../../../components/SiteFooter.astro';
 
 const { id, analysisId } = Astro.params;
+const admin = await isAdmin(Astro.request);
 const env = cfEnv as unknown as Record<string, any>;
 const db  = env.DB;
 
@@ -246,6 +248,19 @@ const readMin = readTime(totalWords);
               </div>
             </section>
           )}
+          {admin && (
+            <section class="notes-section">
+              <div class="pass-label">
+                <span class="pass-num">Notes</span>
+                <span class="pass-name">Admin only — never shown publicly</span>
+              </div>
+              <textarea id="analysisNotes" class="notes-textarea" rows="4" placeholder="Pass 2 missed coiling construction, re-run after library update…">{analysis.notes ?? ''}</textarea>
+              <div class="notes-footer">
+                <button id="saveNotesBtn" class="save-notes-btn">Save note</button>
+                <span id="notesSaveStatus" class="notes-status"></span>
+              </div>
+            </section>
+          )}
         </>
       )}
     </div>
@@ -254,6 +269,39 @@ const readMin = readTime(totalWords);
   <SiteFooter />
 </body>
 </html>
+
+<script define:vars={{ analysisId, isAdmin: admin }}>
+if (isAdmin) {
+  document.getElementById('saveNotesBtn')?.addEventListener('click', async () => {
+    const btn    = document.getElementById('saveNotesBtn');
+    const status = document.getElementById('notesSaveStatus');
+    const text   = document.getElementById('analysisNotes').value;
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    status.textContent = '';
+    try {
+      const res = await fetch(`/api/analysis/${analysisId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: text }),
+      });
+      if (res.ok) {
+        status.textContent = 'Saved';
+        status.className = 'notes-status notes-saved';
+      } else {
+        status.textContent = 'Error saving';
+        status.className = 'notes-status notes-error';
+      }
+    } catch {
+      status.textContent = 'Error saving';
+      status.className = 'notes-status notes-error';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save note';
+    }
+  });
+}
+</script>
 
 <style>
   .page { padding-block: var(--space-16) var(--space-24); background: var(--bg); }
@@ -362,6 +410,28 @@ const readMin = readTime(totalWords);
   .contra-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); letter-spacing: var(--tracking-wide); padding-top: 2px; }
   .contra-text { font-size: var(--text-sm); color: var(--text); line-height: var(--leading-body); max-width: none; }
   .contra-tension .contra-text { color: var(--theory); font-style: italic; }
+
+  /* Notes */
+  .notes-section { margin-bottom: var(--space-16); padding-bottom: var(--space-12); border-bottom: 1px solid var(--border); }
+  .notes-textarea {
+    width: 100%; box-sizing: border-box;
+    background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: var(--space-4); font-family: var(--font-mono); font-size: var(--text-sm);
+    color: var(--text); line-height: var(--leading-relaxed); resize: vertical;
+    transition: border-color var(--ease);
+  }
+  .notes-textarea:focus { outline: none; border-color: var(--accent); }
+  .notes-footer { display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-3); }
+  .save-notes-btn {
+    font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-wide);
+    background: var(--accent); color: var(--white); border: none; border-radius: var(--radius-xs);
+    padding: var(--space-2) var(--space-5); cursor: pointer; transition: background var(--ease);
+  }
+  .save-notes-btn:hover:not(:disabled) { background: var(--accent-light); }
+  .save-notes-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .notes-status { font-family: var(--font-mono); font-size: var(--text-xs); }
+  .notes-saved { color: var(--cons); }
+  .notes-error { color: var(--color-error); }
 
   @media (max-width: 640px) {
     .analysis-header { grid-template-columns: 1fr; }

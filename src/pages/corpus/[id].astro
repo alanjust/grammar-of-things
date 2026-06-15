@@ -316,6 +316,18 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
           )}
 
           {admin && (
+          <section class="notes-section">
+            <h2>Notes</h2>
+            <p class="section-sub">Private. Never shown publicly.</p>
+            <textarea id="objectNotes" class="notes-textarea" rows="5" placeholder="Provenance hunches, cross-source discrepancies, things to investigate…">{object.notes ?? ''}</textarea>
+            <div class="notes-footer">
+              <button id="saveNotesBtn" class="save-notes-btn">Save note</button>
+              <span id="notesSaveStatus" class="notes-status"></span>
+            </div>
+          </section>
+          )}
+
+          {admin && (
           <section class="run-section">
             <h2>Run analysis</h2>
             <p class="section-sub">Passes 2, 3, and 4. Documentation is available as context. Results are stored against this object.</p>
@@ -377,6 +389,41 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
 <script>
   import { renderMarkdown } from '../../lib/markdown';
   window.__marked = (md) => renderMarkdown(md);
+</script>
+
+<script define:vars={{ objectId: object?.id, isAdmin: admin }}>
+// ── Object notes ───────────────────────────────────────────────────────────
+
+if (isAdmin) {
+  document.getElementById('saveNotesBtn')?.addEventListener('click', async () => {
+    const btn    = document.getElementById('saveNotesBtn');
+    const status = document.getElementById('notesSaveStatus');
+    const text   = document.getElementById('objectNotes').value;
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    status.textContent = '';
+    try {
+      const res = await fetch(`/api/objects/${objectId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: text }),
+      });
+      if (res.ok) {
+        status.textContent = 'Saved';
+        status.className = 'notes-status notes-saved';
+      } else {
+        status.textContent = 'Error saving';
+        status.className = 'notes-status notes-error';
+      }
+    } catch {
+      status.textContent = 'Error saving';
+      status.className = 'notes-status notes-error';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save note';
+    }
+  });
+}
 </script>
 
 <script define:vars={{ objectId: object?.id }}>
@@ -768,6 +815,28 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
   .flag-reason { font-size: var(--text-sm); color: var(--text); line-height: var(--leading-normal); margin-top: var(--space-2); max-width: 70ch; }
   .flag-caveat { font-size: var(--text-xs); color: var(--text-muted); font-style: italic; line-height: var(--leading-normal); margin-top: var(--space-2); max-width: 70ch; }
   .fp-disclaimer { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); line-height: var(--leading-normal); margin-bottom: var(--space-3); max-width: 70ch; }
+
+  /* Notes */
+  .notes-section { margin-bottom: var(--space-12); padding-bottom: var(--space-8); border-bottom: 1px solid var(--border); }
+  .notes-textarea {
+    width: 100%; box-sizing: border-box;
+    background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: var(--space-4); font-family: var(--font-mono); font-size: var(--text-sm);
+    color: var(--text); line-height: var(--leading-relaxed); resize: vertical;
+    transition: border-color var(--ease);
+  }
+  .notes-textarea:focus { outline: none; border-color: var(--accent); }
+  .notes-footer { display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-3); }
+  .save-notes-btn {
+    font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-wide);
+    background: var(--accent); color: var(--white); border: none; border-radius: var(--radius-xs);
+    padding: var(--space-2) var(--space-5); cursor: pointer; transition: background var(--ease);
+  }
+  .save-notes-btn:hover:not(:disabled) { background: var(--accent-light); }
+  .save-notes-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .notes-status { font-family: var(--font-mono); font-size: var(--text-xs); }
+  .notes-saved { color: var(--cons); }
+  .notes-error { color: var(--color-error); }
 
   /* Run analysis */
   .run-section { margin-bottom: var(--space-16); }
