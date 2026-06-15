@@ -19,6 +19,10 @@ This document is for engineers who will continue development after a grant. It d
 - **Contradiction detection pass** — Cross-references documentation claims against Pass 1 visual observations. Stored as `contradiction_flags` JSON in `analyses`.
 - **Magic-byte MIME detection** — `detectMimeFromBytes()` in `src/lib/image.ts` ensures images are declared with the correct content-type to Claude regardless of R2 metadata. Prevents a class of analysis failures caused by format mismatch.
 - **Reference corpus infrastructure** — `is_reference` and `reference_tradition` columns on `objects`. API endpoint `GET /api/reference/distribution` computes mean + stddev per principle per tradition. Catalog UI has a reference toggle. Reference Corpus page at `/reference` shows objects grouped by tradition with progress toward target.
+- **Multi-pass stability check** — Pass 1 runs N times concurrently (default 3, configurable via `STABILITY_PASSES` env var). Hit-rate per principle across runs produces a `stabilityMap`. Pass 2 receives a stability note distinguishing high-confidence vs. borderline observations. `stability_passes` and `stability_map` stored on `analyses`. Set `STABILITY_PASSES=1` to revert without a code deploy.
+- **Admin annotations** — `notes TEXT` on both `objects` and `analyses`. Admins can attach private running notes to any artifact or analysis run. Never rendered publicly. PATCH endpoints on `/api/objects/[id]` and `/api/analysis/[id]`.
+- **Per-analysis delete** — `DELETE /api/analysis/[id]` (admin-only). Intended workflow: re-run an analysis to get stability-enriched Pass 2, delete the prior single-pass version.
+- **Feedback queue** — `feedback_queue` table. Public POST `/api/feedback` (honeypot-gated). Admin GET + PATCH `/api/feedback/[id]` for status transitions (open → resolved/dismissed). Public form and admin review queue both at `/feedback`.
 - **Design system** — Token layer in `src/styles/tokens.css`. Token audit script (`node scripts/token-audit.js`) enforces no raw hex/rgba/numeric values in CSS. `.prose` class for safe markdown rendering. Tooltip system on fingerprint terms.
 - **Compare page** — Side-by-side fingerprint comparison for 2–N objects. Radar chart overlay and per-principle difference table.
 - **Corpus browsing** — `/corpus` grid with filters for conflict objects and reference objects. Each object page shows full analysis history, fingerprint chart, and authenticity flags.
@@ -54,7 +58,12 @@ This document is for engineers who will continue development after a grant. It d
 - `source_institution`, `source_url`
 - `claim_conflict` — flag for attribution source disagreement
 - `is_reference`, `reference_tradition` — reference corpus membership
+- `notes` — admin-only private notes (never rendered publicly)
 - `image_spec`, `created_at`, `updated_at`
+
+**`feedback_queue` table** — One row per public feedback submission. Key columns:
+- `id`, `body`, `contact` (optional email), `page` (URL where submitted), `created_at`
+- `status` — `open` | `resolved` | `dismissed`
 
 **`analyses` table** — One row per analysis run. Key columns:
 - `id`, `object_id` (FK), `created_at`
@@ -63,6 +72,9 @@ This document is for engineers who will continue development after a grant. It d
 - `fingerprint_flag` — structured JSON flag from Pass 4 vector scoring
 - `provenance_flags` — JSON array of ProvenanceFlag objects
 - `contradiction_flags` — JSON array of ContradictionFlag objects
+- `stability_passes` — INTEGER, number of Pass 1 runs used (nullable — null on pre-stability analyses)
+- `stability_map` — TEXT JSON, Record of principle ID → `{hits, total}` (nullable)
+- `notes` — admin-only private notes (never rendered publicly)
 - `read_time_seconds`
 
 ---
@@ -98,7 +110,7 @@ Flags should be generated when |z| > 2.0 (notable) or > 3.0 (outlier). A composi
 **Files to create/modify:**
 - `src/lib/comparison.ts` — `compareToReference(vector, distribution)` → per-principle z-scores + composite score
 - `src/pages/api/analyze.ts` — call comparison after Pass 4 vector scoring; store results in new DB column
-- `src/db/migrations/0010_comparison.sql` — add `comparison_zscores TEXT`, `comparison_anomaly_score REAL` to `analyses`
+- `src/db/migrations/0014_comparison.sql` — add `comparison_zscores TEXT`, `comparison_anomaly_score REAL` to `analyses` (migrations 0010–0013 are already applied)
 - Corpus/[id]/analysis/[analysisId].astro — show z-score column in fingerprint table; composite score chip in header
 
 **Edge cases to handle:**
@@ -231,10 +243,11 @@ npm run deploy
 ### Apply a new migration
 ```bash
 # Remote:
-wrangler d1 execute grammar-of-things --remote --file=src/db/migrations/0009_reference_corpus.sql
+wrangler d1 execute grammar-of-things --remote --file=src/db/migrations/0014_comparison.sql
 # Local:
-wrangler d1 execute grammar-of-things --local --file=src/db/migrations/0009_reference_corpus.sql
+wrangler d1 execute grammar-of-things --local --file=src/db/migrations/0014_comparison.sql
 ```
+Migrations 0001–0013 are already applied to the remote database. The next migration to write is `0014_*`.
 
 ### Token audit (before committing CSS changes)
 ```bash
