@@ -56,6 +56,13 @@ From the 2026-06-12 security hardening pass. Not urgent for a pitch PoC.
 
 - **Review** and **The Look** hidden from nav (pages still live at `/review`, `/look` — TBD whether to resurface)
 
+## Documents current as of 2026-06-15
+
+- **Homepage** — HowItWorks, Roadmap, Proof sections updated to reflect provenance/contradiction detection and reference corpus infrastructure
+- **one-pager-for-ian.md** — Panel 3/4/5 updated; provenance/contradiction capabilities added; object 16 replica validation result added; reference corpus infrastructure noted
+- **ENGINEERING_ROADMAP.md** — data model, migration numbers, "what is built" list all current
+- **Forensic partner** — corrected throughout to U.S. Fish and Wildlife Service (was incorrectly "NFS")
+
 ---
 
 ## Architecture Reference
