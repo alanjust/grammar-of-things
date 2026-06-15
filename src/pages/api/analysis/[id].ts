@@ -22,6 +22,22 @@ const PRINCIPLE_NAMES: Record<string, string> = {
   ta_47:'Face Detection', ta_48:'Biological Motion', ta_49:'Gaze Direction', ta_51:'Visual Pop-out',
 };
 
+export const DELETE: APIRoute = async ({ params, request }) => {
+  const denied = await requireAdmin(request);
+  if (denied) return denied;
+
+  const env = cfEnv as unknown as Record<string, any>;
+  const db  = env.DB;
+  const id  = Number(params.id);
+
+  if (!db) return new Response(JSON.stringify({ error: 'DB unavailable.' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  if (!id || isNaN(id)) return new Response(JSON.stringify({ error: 'Invalid id.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+
+  await db.prepare('DELETE FROM analyses WHERE id = ?').bind(id).run();
+
+  return new Response(JSON.stringify({ deleted: id }), { headers: { 'Content-Type': 'application/json' } });
+};
+
 export const PATCH: APIRoute = async ({ params, request }) => {
   const denied = await requireAdmin(request);
   if (denied) return denied;

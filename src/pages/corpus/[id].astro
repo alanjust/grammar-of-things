@@ -290,6 +290,7 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
                       <div class="analysis-actions">
                         <a href={`/corpus/${object.id}/analysis/${a.id}`} class="analysis-action-link">View full →</a>
                         <a href={`/api/analysis/${a.id}?format=md`} download class="analysis-action-link">↓ .md</a>
+                        {admin && <button class="analysis-delete-btn" data-analysis-id={a.id}>Delete</button>}
                       </div>
                     </div>
                     {a.pass2_text && (
@@ -392,6 +393,34 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
 </script>
 
 <script define:vars={{ objectId: object?.id, isAdmin: admin }}>
+// ── Delete analysis ────────────────────────────────────────────────────────
+
+if (isAdmin) {
+  document.querySelectorAll('.analysis-delete-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      const analysisId = btn.dataset.analysisId;
+      if (!confirm(`Delete analysis #${analysisId}? This cannot be undone.`)) return;
+      btn.disabled = true;
+      btn.textContent = 'Deleting…';
+      try {
+        const res = await fetch(`/api/analysis/${analysisId}`, { method: 'DELETE' });
+        if (res.ok) {
+          btn.closest('.analysis-row')?.remove();
+        } else {
+          const err = await res.json();
+          alert(`Delete failed: ${err.error ?? res.status}`);
+          btn.disabled = false;
+          btn.textContent = 'Delete';
+        }
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+        btn.disabled = false;
+        btn.textContent = 'Delete';
+      }
+    });
+  });
+}
+
 // ── Object notes ───────────────────────────────────────────────────────────
 
 if (isAdmin) {
@@ -792,6 +821,13 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
   .analysis-actions { display: flex; gap: var(--space-3); margin-left: auto; }
   .analysis-action-link { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent); text-decoration: none; letter-spacing: 0.02em; }
   .analysis-action-link:hover { color: var(--accent-light); }
+  .analysis-delete-btn {
+    font-family: var(--font-mono); font-size: var(--text-xs); letter-spacing: var(--tracking-wide);
+    background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 0;
+    transition: color var(--ease);
+  }
+  .analysis-delete-btn:hover:not(:disabled) { color: var(--color-error); }
+  .analysis-delete-btn:disabled { opacity: 0.45; cursor: not-allowed; }
   .analysis-excerpt { font-size: var(--text-sm); color: var(--text-muted); line-height: var(--leading-body); max-width: 72ch; max-height: 7em; overflow: hidden; position: relative; }
   .analysis-excerpt::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2.5em; background: linear-gradient(transparent, var(--bg-surface)); pointer-events: none; }
   .analysis-excerpt :global(p)  { margin-bottom: 0.5em; }
