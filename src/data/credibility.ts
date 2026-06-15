@@ -24,9 +24,9 @@ export const credibility: CredibilityContent = {
     {
       title: 'Forensic-science partnership',
       body:
-        'Methodology is being validated in collaboration with NFS forensic-lab partners. '
-        + 'The epistemic labeling system and RAP Protocol enforce the same evidentiary '
-        + 'standards applied in forensic documentation.',
+        'Methodology is being validated in collaboration with a U.S. Fish and Wildlife Service '
+        + 'forensic partner. The epistemic labeling system and RAP Protocol enforce the same '
+        + 'evidentiary standards applied in forensic documentation.',
     },
     {
       title: 'Independent from the market',
