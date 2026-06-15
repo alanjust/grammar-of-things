@@ -1,0 +1,496 @@
+---
+export const prerender = true;
+import SiteNav from '../components/SiteNav.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Guide — The Grammar of Things</title>
+  <style is:global>
+    @import url('/src/styles/base.css');
+  </style>
+</head>
+<body>
+  <SiteNav />
+
+  <div class="guide-page">
+    <div class="container">
+
+      <div class="guide-hero">
+        <p class="guide-overline">Researcher's Guide</p>
+        <h1>How to Use This Tool</h1>
+        <p class="guide-lede">The Grammar of Things is a visual analysis system for Southwest archaeological ceramics. It applies a structured perceptual framework to artifact photographs and compares visual evidence against catalog documentation — surfacing gaps, contradictions, and consistency measures that are difficult to track manually at scale.</p>
+      </div>
+
+      <nav class="guide-toc" aria-label="Contents">
+        <p class="toc-label">On this page</p>
+        <ol class="toc-list">
+          <li><a href="#two-track">The two-track system</a></li>
+          <li><a href="#workflow">Step-by-step workflow</a></li>
+          <li><a href="#reading-results">Reading your analysis</a></li>
+          <li><a href="#authenticity">Provenance and contradiction flags</a></li>
+          <li><a href="#principles">The 27 principles</a></li>
+          <li><a href="#reference-corpus">The reference corpus</a></li>
+          <li><a href="#limitations">Known limitations</a></li>
+          <li><a href="#glossary">Glossary</a></li>
+        </ol>
+      </nav>
+
+      <div class="guide-body">
+
+        <!-- ── Two-track system ────────────────────────────────────────── -->
+        <section id="two-track" class="guide-section">
+          <h2>The two-track system</h2>
+          <p>All analysis runs on two independent tracks that are deliberately kept separate until Pass 2.</p>
+
+          <div class="track-grid">
+            <div class="track-card track-a">
+              <p class="track-label">Track A</p>
+              <p class="track-name">Blind fingerprint</p>
+              <p>The model examines photographs only. It does not know the culture, date, institution, or any other contextual information. It scores the object against 27 visual principles and produces a Pass 1 observation — a structured description of what is physically present in the image.</p>
+              <p>This blindness is the point. Confirmation bias can corrupt visual observation when an observer already knows what the object is supposed to be. Track A prevents that.</p>
+            </div>
+            <div class="track-card track-b">
+              <p class="track-label">Track B</p>
+              <p class="track-name">Documentation</p>
+              <p>The raw catalog record is extracted from your paste, structured into typed fields, and canonicalized to a standard schema. This is the documented identity of the object as the institution records it.</p>
+              <p>Track B output is held back during Pass 1. It enters analysis in Pass 2 and Pass 4, where it is compared against Track A observations.</p>
+            </div>
+          </div>
+
+          <div class="guide-note">
+            <strong>Why keep them separate?</strong> If the model is told during observation that an object is "Mimbres Phase III, excavated at the Swarts Ranch site," it will unconsciously weight its description toward those expectations. By observing first and reading documentation second, the system produces a genuine comparison rather than a self-fulfilling confirmation.
+          </div>
+        </section>
+
+        <!-- ── Workflow ───────────────────────────────────────────────── -->
+        <section id="workflow" class="guide-section">
+          <h2>Step-by-step workflow</h2>
+
+          <div class="step-list">
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-body">
+                <p class="step-title">Catalog the object</p>
+                <p>Go to <a href="/catalog">Catalog</a>. Upload one to six views of the object (JPEG, PNG, or WebP). Paste the raw catalog record exactly as it appears from the source — field names, values, and all. Leave the documentation field empty to catalog on fingerprint alone.</p>
+                <p>If the object is an authenticated piece from an excavated, well-documented context, check "Mark as a reference piece" and select its ceramic tradition. Reference pieces build the statistical baseline used for future comparisons.</p>
+                <p>Click <strong>Catalog object</strong>. The system runs Track A: normalizes your images, runs Pass 1 (blind observation), scores the 27 principles, and stores the fingerprint vector. Track B documentation is extracted and stored in three layers: raw, structured, and canonical.</p>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-body">
+                <p class="step-title">Run the analysis</p>
+                <p>Go to <a href="/corpus">Corpus</a> and click the object. On the object page, click <strong>Run analysis</strong>. Choose an audience:</p>
+                <ul>
+                  <li><strong>Researcher</strong> — full technical detail, principle-by-principle breakdown, explicit confidence flags</li>
+                  <li><strong>Conservator</strong> — emphasis on material condition, production method, and physical evidence</li>
+                  <li><strong>General</strong> — accessible language for non-specialist audiences</li>
+                </ul>
+                <p>The system runs Passes 2, 3, and 4 in sequence. Pass 4 includes a provenance integrity check and a contradiction detector, both running in parallel with the fingerprint scoring.</p>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-body">
+                <p class="step-title">Review the analysis</p>
+                <p>The analysis page shows all four passes. Read them in order: observation first, then synthesis, then flags. The fingerprint chart shows the 27 principle scores from Pass 1. Provenance flags and contradiction flags appear after Pass 3.</p>
+              </div>
+            </div>
+
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-body">
+                <p class="step-title">Compare objects (optional)</p>
+                <p>From the Corpus page, click <strong>Select to compare</strong> and choose two or three objects. The <a href="/compare">Compare</a> page shows their fingerprint vectors side by side, with a difference overlay and a per-principle breakdown. This is most useful for comparing an object under scrutiny against a known reference.</p>
+                <p>Note: the Compare page works best for targeted comparisons of two or three specific objects. It is not designed for browsing large sets — use the Corpus grid and filter tools for that.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Reading results ────────────────────────────────────────── -->
+        <section id="reading-results" class="guide-section">
+          <h2>Reading your analysis</h2>
+
+          <div class="pass-list">
+            <div class="pass-row">
+              <div class="pass-badge pass-1">Pass 1</div>
+              <div class="pass-desc">
+                <p class="pass-title">Blind observation</p>
+                <p>A structured description of what is physically observable in the photographs: surface texture, production evidence, wear patterns, decoration geometry, and so on. No cultural attribution, no interpretation. Read this pass as a witness account from someone who has never seen the object before.</p>
+              </div>
+            </div>
+            <div class="pass-row">
+              <div class="pass-badge pass-2">Pass 2</div>
+              <div class="pass-desc">
+                <p class="pass-title">Documentation synthesis</p>
+                <p>Pass 1 observations are compared against the canonical documentation. This pass asks: given what the images show, how well does the documentation fit? Discrepancies are noted explicitly. If the catalog record claims one production method and the images show evidence of another, Pass 2 surfaces that tension.</p>
+              </div>
+            </div>
+            <div class="pass-row">
+              <div class="pass-badge pass-3">Pass 3</div>
+              <div class="pass-desc">
+                <p class="pass-title">Takeaway</p>
+                <p>A plain-language synthesis: what can be concluded, what remains uncertain, and what questions the analysis raises that warrant further investigation. The confidence flags shown here (High / Moderate / Low / Provisional) reflect the model's self-assessment of evidence quality — they are not judgments about authenticity.</p>
+              </div>
+            </div>
+            <div class="pass-row">
+              <div class="pass-badge pass-4">Pass 4</div>
+              <div class="pass-desc">
+                <p class="pass-title">Fingerprint scoring + authenticity passes</p>
+                <p>The 27-principle vector is computed from Pass 1. Simultaneously, a provenance integrity check and a contradiction detector run in parallel. Results from all three appear below Pass 3 on the analysis page.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="guide-note">
+            <strong>On the fingerprint flag.</strong> The fingerprint chart shows 27 principle scores on a 0–3 scale derived entirely from Pass 1. The "provisional" label on the chart means no validated reference corpus exists yet to compare against. Once the reference corpus reaches threshold (30+ authenticated pieces per tradition), the chart will show z-scores relative to the tradition mean rather than raw scores. Until then, treat the chart as a structured observation record, not a verdict.
+          </div>
+        </section>
+
+        <!-- ── Authenticity flags ─────────────────────────────────────── -->
+        <section id="authenticity" class="guide-section">
+          <h2>Provenance and contradiction flags</h2>
+          <p>Two parallel passes run as part of every analysis to check for documentary red flags and explicit contradictions between documentation and observation.</p>
+
+          <h3>Provenance integrity flags</h3>
+          <p>These check the structure of the documentation for patterns associated with problematic provenance chains. Flags are severity-coded:</p>
+          <ul>
+            <li><strong class="sev-high">High</strong> — A structural gap or anomaly that is a known marker of falsified or laundered provenance</li>
+            <li><strong class="sev-medium">Medium</strong> — An inconsistency that warrants attention but has plausible legitimate explanations</li>
+            <li><strong class="sev-low">Low</strong> — A minor gap or missing field that is common in legitimate collections</li>
+          </ul>
+          <p>Flag codes include: <code>CHAIN_GAP</code> (missing ownership steps), <code>PRIVATE_CHAIN</code> (entirely private sale history with no institutional anchor), <code>DATE_VAGUE</code> (undated collection events), <code>ETHNOGRAPHIC_CLAIM</code> (living-collection claim for funerary ware), and others. See the flag code legend on any analysis page.</p>
+          <p>These flags are generated from the canonical documentation fields. An object with no documentation will receive no provenance flags — absence of flags does not mean the provenance is clean, only that there is no documentation to check.</p>
+
+          <h3>Contradiction flags</h3>
+          <p>These check for direct conflicts between what the documentation claims and what Pass 1 observed. A contradiction flag is only raised when there is a specific, testable claim in the documentation that is inconsistent with the visual record.</p>
+          <p>Examples: documentation claims wheel-thrown manufacture, but Pass 1 observed coil-building traces; documentation dates a vessel to a period when a specific decoration style was not yet in use; documentation describes a mortuary bowl as complete, but Pass 1 noted a kill hole absence that would be expected for that type.</p>
+          <p>Contradiction flags are filtered to exclude placeholder responses. An object with no contradictions may simply have no specific testable claims in its documentation.</p>
+
+          <div class="guide-note guide-note-caution">
+            <strong>These flags do not determine authenticity.</strong> They identify patterns that warrant further investigation. A high-severity provenance flag means the provenance documentation has a structural problem — it does not mean the object is fake. Many objects in major institutional collections have documented provenance gaps from decades of pre-NAGPRA collecting practices. Flags are starting points for inquiry, not conclusions.
+          </div>
+        </section>
+
+        <!-- ── The 27 principles ──────────────────────────────────────── -->
+        <section id="principles" class="guide-section">
+          <h2>The 27 principles</h2>
+          <p>The perceptual fingerprint is computed from 27 principles drawn from two domains:</p>
+
+          <div class="principles-domains">
+            <div class="domain-block">
+              <p class="domain-label domain-ap">15 Artifact principles (AP)</p>
+              <p>Material-specific principles developed for archaeological ceramics: production trace reading, wear differential analysis, attachment point reading, investment gradient, and so on. These are observable in artifact photographs and correlate with manufacture method, use history, and production context.</p>
+              <a href="/principles#artifact" class="domain-link">View all 15 artifact principles →</a>
+            </div>
+            <div class="domain-block">
+              <p class="domain-label domain-ta">12 Tier A visual principles (TA)</p>
+              <p>A subset of general visual perception principles selected because they are diagnostic for hand-made ceramics: edge detection, figure-ground relationships, grouping, simultaneous contrast, and so on. These are domain-general but consistently relevant to ceramic analysis.</p>
+              <a href="/principles#tier-a" class="domain-link">View all 12 Tier A principles →</a>
+            </div>
+          </div>
+
+          <p>Each principle is scored 0–3 by the model during Pass 1. Scores reflect the strength of evidence in the available photographs, not quality or condition. A score of 0 means the principle is not observable or not applicable. A score of 3 means the principle is highly evident with multiple supporting observations.</p>
+          <p>The scoring is performed by the same model, in the same configuration, on every object. This consistency is what makes cross-object comparison meaningful.</p>
+        </section>
+
+        <!-- ── Reference corpus ───────────────────────────────────────── -->
+        <section id="reference-corpus" class="guide-section">
+          <h2>The reference corpus</h2>
+          <p>A reference corpus is a set of authenticated objects whose fingerprint vectors have been computed and stored. Once a tradition has enough reference objects (target: 30), the system can compute a mean and standard deviation for each of the 27 principles across that tradition. New objects can then be compared against this distribution — not just as raw scores but as z-scores showing where each principle falls relative to authenticated examples of the same tradition.</p>
+          <p>This is the feature that makes the tool analytically meaningful beyond case-by-case inspection. An object whose <em>Production Trace Reading</em> score is 2.4 standard deviations below the Mimbres Phase III mean is telling you something that qualitative comparison alone could not.</p>
+
+          <h3>What qualifies as a reference piece?</h3>
+          <p>A reference piece should meet all of these criteria:</p>
+          <ul>
+            <li>Excavated from a documented archaeological context (not surface-collected or purchased)</li>
+            <li>Currently held in an institutional collection with a stable catalog record</li>
+            <li>Attribution to tradition and period is well-supported by multiple independent lines of evidence</li>
+            <li>Not currently under any authenticity review or NAGPRA claim</li>
+          </ul>
+          <p>Do not mark objects as reference pieces if their authenticity is the question being evaluated. The reference corpus is the baseline — contaminating it with unverified objects degrades every future comparison.</p>
+
+          <h3>How to add reference pieces</h3>
+          <p>When cataloging an object that meets the criteria above, check <strong>Mark as a reference piece</strong> on the Catalog page and select the ceramic tradition. The object will be fingerprinted and its vector will be included in the tradition's distribution statistics once the minimum threshold is met.</p>
+          <p>View the current state of the reference corpus at <a href="/reference">Reference Corpus</a>.</p>
+        </section>
+
+        <!-- ── Limitations ────────────────────────────────────────────── -->
+        <section id="limitations" class="guide-section">
+          <h2>Known limitations</h2>
+
+          <div class="limitation-list">
+            <div class="limitation">
+              <p class="limit-title">No reference corpus yet</p>
+              <p>The statistical comparison layer is built but not yet populated. All fingerprint scores are currently provisional — they describe the object but cannot be compared against a validated distribution. The reference corpus is being built now.</p>
+            </div>
+            <div class="limitation">
+              <p class="limit-title">General vision model, not a ceramics specialist</p>
+              <p>The underlying model is a general-purpose vision model trained on broad image data, not a specialist system trained on ceramic corpora. Its observations are structurally consistent but may miss tradition-specific production markers that a human specialist would recognize immediately. Pass 1 output should be treated as a systematic first pass, not a final expert opinion.</p>
+            </div>
+            <div class="limitation">
+              <p class="limit-title">Fingerprint scores are model-version-specific</p>
+              <p>If the model used for fingerprinting changes, previously computed scores become incomparable to new ones. The system enforces a single canonical fingerprinting model per session, but cross-version comparison is not currently supported. All objects in the current corpus were scored with the same model configuration.</p>
+            </div>
+            <div class="limitation">
+              <p class="limit-title">Compare page scales with corpus size</p>
+              <p>The Compare page works well for two or three objects but becomes difficult to navigate when the corpus is large. The current interface is not designed for bulk comparison. Future development includes a search-based retrieval interface (see the engineering roadmap for planned architecture).</p>
+            </div>
+            <div class="limitation">
+              <p class="limit-title">Image quality affects score reliability</p>
+              <p>Scores for principles that depend on surface texture (Production Trace Reading, Wear Differential, Material Boundary Attention) are sensitive to photograph quality. A well-lit photograph with a ruler and color calibration card will produce more reliable scores than a snapshot under mixed lighting. When image quality is a limiting factor, Pass 1 will note it explicitly.</p>
+            </div>
+            <div class="limitation">
+              <p class="limit-title">Single tradition currently active</p>
+              <p>The tool was built with Mimbres ceramic analysis as the primary use case. The 27 principles are broadly applicable to other Southwest traditions, but no tradition-specific reference corpora exist for Hohokam, Ancestral Puebloan, Casas Grandes, or Salado material yet. The infrastructure supports multiple traditions; the corpora need to be built.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Glossary ────────────────────────────────────────────────── -->
+        <section id="glossary" class="guide-section">
+          <h2>Glossary</h2>
+          <dl class="glossary-list">
+            <div class="gloss-row">
+              <dt>Perceptual fingerprint</dt>
+              <dd>A vector of 27 scores (0–3) derived from blind visual observation of artifact photographs, one score per principle. The fingerprint describes what is visually observable about the object, independent of its documented identity.</dd>
+            </div>
+            <div class="gloss-row">
+              <dt>Track A / Track B</dt>
+              <dd>The two independent input channels. Track A is the image-only path; Track B is the documentation path. They are run sequentially to prevent confirmation bias from corrupting the visual observation.</dd>
+            </div>
+            <div class="gloss-row">
+              <dt>Pass 1</dt>
+              <dd>The blind visual observation pass. Scores the 27 principles. Does not see documentation.</dd>
+            </div>
+            <div class="gloss-row">
+              <dt>Pass 2</dt>
+              <dd>The documentation synthesis pass. Compares Pass 1 observations against the canonical documentation and notes where they fit or conflict.</dd>
+            </div>
+            <div class="gloss-row">
+              <dt>Pass 3</dt>
+              <dd>The takeaway pass. Synthesizes Passes 1 and 2 into a plain-language assessment with explicit confidence flags and open questions.</dd>
+            </div>
+            <div class="gloss-row">
+              <dt>Pass 4</dt>
+              <dd>Three parallel sub-passes: fingerprint vector scoring, provenance integrity check, and contradiction detection. Run after Pass 3.</dd>
+            </div>
+            <div class="gloss-row">
+              <dt>Provenance flag</dt>
+              <dd>A documentary anomaly in the ownership chain or catalog record that matches a known pattern associated with problematic provenance. Severity-coded High / Medium / Low. Does not determine authenticity.</dd>
+            </div>
+            <div class="gloss-row">
+              <dt>Contradiction flag</dt>
+              <dd>A direct conflict between a specific, testable claim in the documentation and what Pass 1 observed visually. Requires both a documentary claim and a conflicting observation — it is not raised when documentation is absent.</dd>
+            </div>
+            <div class="gloss-row">
+              <dt>Reference corpus</dt>
+              <dd>A set of authenticated objects whose fingerprint vectors are used as a statistical baseline. Enables z-score comparison: how does this object's fingerprint compare to the distribution of authenticated objects from the same tradition?</dd>
+            </div>
+            <div class="gloss-row">
+              <dt>Canonical documentation</dt>
+              <dd>The third documentation layer: a standardized set of typed fields (culture, period, object type, site, collection, institutional anchor, EZID/ARK, etc.) extracted from the raw catalog record by Track B processing.</dd>
+            </div>
+            <div class="gloss-row">
+              <dt>Z-score comparison</dt>
+              <dd>A statistical measure of how many standard deviations a score falls from the reference mean. Enables statements like "this vessel's symmetry score is 2.1 SD below the Mimbres Phase III mean" rather than just "the score is 1." Not yet available — requires a populated reference corpus.</dd>
+            </div>
+          </dl>
+        </section>
+
+      </div><!-- guide-body -->
+    </div><!-- container -->
+  </div><!-- guide-page -->
+
+  <SiteFooter />
+
+<style>
+  .guide-page {
+    padding-block: var(--space-16) var(--space-24);
+    background: var(--bg);
+    min-height: 80vh;
+  }
+
+  /* Hero */
+  .guide-hero { max-width: 72ch; margin-bottom: var(--space-10); }
+  .guide-overline {
+    font-family: var(--font-mono); font-size: var(--text-xs);
+    text-transform: uppercase; letter-spacing: var(--tracking-widest);
+    color: var(--accent); margin-bottom: var(--space-3); max-width: none;
+  }
+  h1 {
+    font-size: clamp(var(--text-2xl), 3vw, var(--text-4xl));
+    letter-spacing: var(--tracking-snug); margin-bottom: var(--space-5);
+  }
+  .guide-lede {
+    font-size: var(--text-lg); color: var(--text-muted);
+    line-height: var(--leading-body); max-width: 68ch;
+  }
+
+  /* TOC */
+  .guide-toc {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: var(--space-6) var(--space-8);
+    margin-bottom: var(--space-14); max-width: 52ch;
+  }
+  .toc-label {
+    font-family: var(--font-mono); font-size: var(--text-xs);
+    text-transform: uppercase; letter-spacing: var(--tracking-widest);
+    color: var(--text-muted); margin-bottom: var(--space-3); max-width: none;
+  }
+  .toc-list { padding-left: var(--space-6); display: flex; flex-direction: column; gap: var(--space-2); }
+  .toc-list li { font-size: var(--text-sm); }
+  .toc-list a { color: var(--accent); text-decoration: none; }
+  .toc-list a:hover { text-decoration: underline; }
+
+  /* Guide body */
+  .guide-body { max-width: 72ch; }
+
+  .guide-section { margin-bottom: var(--space-16); }
+  .guide-section h2 {
+    font-size: var(--text-2xl); font-family: var(--font-display);
+    letter-spacing: var(--tracking-snug); font-weight: normal;
+    margin-bottom: var(--space-6); padding-top: var(--space-2);
+    border-top: 2px solid var(--border-strong);
+  }
+  .guide-section h3 {
+    font-size: var(--text-lg); font-family: var(--font-display);
+    font-weight: normal; margin-top: var(--space-8); margin-bottom: var(--space-4);
+    letter-spacing: var(--tracking-snug);
+  }
+  .guide-section p {
+    font-size: var(--text-base); line-height: var(--leading-body);
+    color: var(--text-muted); margin-bottom: var(--space-4); max-width: 68ch;
+  }
+  .guide-section ul { padding-left: var(--space-6); margin-bottom: var(--space-4); }
+  .guide-section ul li {
+    font-size: var(--text-base); line-height: var(--leading-body);
+    color: var(--text-muted); margin-bottom: var(--space-2); max-width: 64ch;
+  }
+  .guide-section a { color: var(--accent); }
+  .guide-section code {
+    font-family: var(--font-mono); font-size: var(--text-sm);
+    background: var(--bg-alt); padding: 0.1em 0.4em; border-radius: var(--radius-xs);
+    color: var(--text);
+  }
+
+  /* Note boxes */
+  .guide-note {
+    background: var(--obs-bg); border-left: 3px solid var(--obs);
+    border-radius: var(--radius-sm); padding: var(--space-5) var(--space-6);
+    margin: var(--space-6) 0; font-size: var(--text-sm);
+    line-height: var(--leading-body); color: var(--text-muted); max-width: none;
+  }
+  .guide-note strong { color: var(--text); }
+  .guide-note-caution {
+    background: var(--theory-bg); border-left-color: var(--color-warn);
+  }
+
+  /* Two-track grid */
+  .track-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6);
+    margin: var(--space-6) 0;
+  }
+  .track-card {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: var(--space-6);
+  }
+  .track-card p { max-width: none; }
+  .track-label {
+    font-family: var(--font-mono); font-size: var(--text-xs);
+    text-transform: uppercase; letter-spacing: var(--tracking-wider);
+    margin-bottom: var(--space-1);
+  }
+  .track-a .track-label { color: var(--accent); }
+  .track-b .track-label { color: var(--obs); }
+  .track-name { font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--text); margin-bottom: var(--space-4); }
+
+  /* Steps */
+  .step-list { display: flex; flex-direction: column; gap: var(--space-8); margin: var(--space-6) 0; }
+  .step { display: grid; grid-template-columns: 32px 1fr; gap: var(--space-5); align-items: start; }
+  .step-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--accent-dim); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: var(--text-sm); font-weight: var(--weight-bold);
+    flex-shrink: 0;
+  }
+  .step-title { font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--text); margin-bottom: var(--space-3); max-width: none; }
+  .step-body p, .step-body ul { max-width: 60ch; }
+
+  /* Pass list */
+  .pass-list { display: flex; flex-direction: column; gap: var(--space-6); margin: var(--space-6) 0; }
+  .pass-row { display: grid; grid-template-columns: 72px 1fr; gap: var(--space-5); align-items: start; }
+  .pass-badge {
+    font-family: var(--font-mono); font-size: var(--text-xs);
+    text-transform: uppercase; letter-spacing: var(--tracking-wide);
+    padding: var(--space-2) var(--space-3); border-radius: var(--radius-xs);
+    text-align: center; white-space: nowrap;
+  }
+  .pass-1 { background: var(--obs-bg); color: var(--obs); }
+  .pass-2 { background: var(--theory-bg); color: var(--theory); }
+  .pass-3 { background: var(--cons-bg); color: var(--cons); }
+  .pass-4 { background: var(--bg-alt); color: var(--text-muted); }
+  .pass-title { font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--text); margin-bottom: var(--space-2); max-width: none; }
+  .pass-desc p { max-width: none; }
+
+  /* Severity */
+  .sev-high   { color: var(--theory); }
+  .sev-medium { color: var(--color-warn); }
+  .sev-low    { color: var(--text-muted); }
+
+  /* Principles */
+  .principles-domains { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); margin: var(--space-6) 0; }
+  .domain-block {
+    background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: var(--space-6);
+  }
+  .domain-block p { max-width: none; }
+  .domain-label {
+    font-family: var(--font-mono); font-size: var(--text-xs);
+    text-transform: uppercase; letter-spacing: var(--tracking-wider);
+    margin-bottom: var(--space-3); max-width: none;
+  }
+  .domain-ap { color: var(--accent); }
+  .domain-ta { color: var(--cons); }
+  .domain-link { font-size: var(--text-sm); color: var(--accent); text-decoration: none; }
+  .domain-link:hover { text-decoration: underline; }
+
+  /* Limitations */
+  .limitation-list { display: flex; flex-direction: column; gap: var(--space-6); }
+  .limitation {
+    padding: var(--space-5) var(--space-6);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+  }
+  .limit-title { font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--text); margin-bottom: var(--space-2); max-width: none; }
+  .limitation p { max-width: none; margin-bottom: 0; }
+
+  /* Glossary */
+  .glossary-list { display: flex; flex-direction: column; gap: 0; }
+  .gloss-row {
+    display: grid; grid-template-columns: 200px 1fr; gap: var(--space-6);
+    padding: var(--space-5) 0; border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+  .gloss-row:first-child { border-top: 1px solid var(--border); }
+  .gloss-row dt { font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--text); line-height: var(--leading-snug); }
+  .gloss-row dd { font-size: var(--text-sm); color: var(--text-muted); line-height: var(--leading-body); }
+
+  @media (max-width: 768px) {
+    .track-grid { grid-template-columns: 1fr; }
+    .principles-domains { grid-template-columns: 1fr; }
+    .gloss-row { grid-template-columns: 1fr; gap: var(--space-2); }
+    .pass-row { grid-template-columns: 60px 1fr; }
+    .step { grid-template-columns: 28px 1fr; }
+  }
+</style>
+</body>
+</html>

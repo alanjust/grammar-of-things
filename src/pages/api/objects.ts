@@ -20,7 +20,7 @@ export const GET: APIRoute = async () => {
       image_analysis_key, image_original_key,
       fingerprint_vector, fingerprinted_at,
       source_institution, created_at,
-      claim_conflict
+      claim_conflict, is_reference, reference_tradition
     FROM objects
     ORDER BY created_at DESC
     LIMIT 200

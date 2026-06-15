@@ -51,7 +51,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   }
 
-  const { images, doc_raw = '' } = body;
+  const { images, doc_raw = '', is_reference = 0, reference_tradition = null } = body;
   if (!images || !Array.isArray(images) || images.length === 0) {
     return new Response(JSON.stringify({ error: 'No images provided.' }), {
       status: 400, headers: { 'Content-Type': 'application/json' },
@@ -271,6 +271,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
               fingerprint_model         = ?,
               fingerprint_pass1_text    = ?,
               fingerprinted_at          = ?,
+              is_reference              = ?,
+              reference_tradition       = ?,
               updated_at                = datetime('now')
             WHERE id = ?
           `).bind(
@@ -285,6 +287,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
             pass1Msg.model,
             pass1Text,
             fingerprintedAt,
+            is_reference ? 1 : 0,
+            is_reference ? (reference_tradition ?? null) : null,
             objectId,
           ).run();
         } else if (!db) {
@@ -305,6 +309,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
           },
           attribution_culture: attributionCulture,
           attribution_confidence: attributionConfidence,
+          is_reference: is_reference ? 1 : 0,
+          reference_tradition: is_reference ? (reference_tradition ?? null) : null,
           ezid_ark: ezidArk,
           catalog_number: catalogNumber,
           accession_number: accessionNumber,

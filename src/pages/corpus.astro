@@ -27,11 +27,15 @@ import SiteFooter from '../components/SiteFooter.astro';
         <p class="corpus-sub">All cataloged objects. Click any object to view its fingerprint and run an analysis.</p>
       </div>
 
-      <!-- Filter bar (shown when there are conflict objects) -->
+      <!-- Filter bar -->
       <div id="filterBar" class="filter-bar" style="display:none">
-        <button id="conflictFilter" class="filter-btn">
+        <button id="conflictFilter" class="filter-btn filter-btn-conflict">
           ⚠ Sources disagree
-          <span id="conflictCount" class="conflict-count"></span>
+          <span id="conflictCount" class="filter-count"></span>
+        </button>
+        <button id="referenceFilter" class="filter-btn filter-btn-reference" style="display:none">
+          ◆ Reference corpus
+          <span id="referenceCount" class="filter-count"></span>
         </button>
         <button id="clearFilter" class="filter-clear" style="display:none">Show all</button>
       </div>
@@ -60,6 +64,7 @@ import SiteFooter from '../components/SiteFooter.astro';
 let allObjects = [];
 let selectMode = false;
 const selectedIds = new Set();
+let activeFilter = 'none'; // 'none' | 'conflict' | 'reference'
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 const loading      = document.getElementById('loading');
@@ -96,9 +101,9 @@ function updateBar() {
 // ── Render ────────────────────────────────────────────────────────────────────
 function renderGrid() {
   if (!allObjects.length) return;
-  const displayObjects = conflictFilterActive
-    ? allObjects.filter(o => o.claim_conflict)
-    : allObjects;
+  let displayObjects = allObjects;
+  if (activeFilter === 'conflict')   displayObjects = allObjects.filter(o => o.claim_conflict);
+  else if (activeFilter === 'reference') displayObjects = allObjects.filter(o => o.is_reference);
   if (displayObjects.length === 0) {
     grid.innerHTML = '<p class="corpus-empty">No objects match this filter.</p>';
     return;
@@ -113,6 +118,7 @@ function renderGrid() {
       ? new Date(obj.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       : '';
     const isSelected = selectedIds.has(obj.id);
+    const refBadge = obj.is_reference ? `<span class="card-ref">REF</span>` : '';
 
     if (selectMode) {
       return `
@@ -128,6 +134,7 @@ function renderGrid() {
               <span class="${hasFingerprint ? 'card-fp-yes' : 'card-fp-no'}">
                 ${hasFingerprint ? '● Fingerprinted' : '○ No fingerprint'}
               </span>
+              ${refBadge}
             </div>
           </div>
         </button>`;
@@ -145,7 +152,10 @@ function renderGrid() {
             <span class="${hasFingerprint ? 'card-fp-yes' : 'card-fp-no'}">
               ${hasFingerprint ? '● Fingerprinted' : '○ No fingerprint'}
             </span>
-            ${obj.claim_conflict ? '<span class="card-conflict">⚠ disagree</span>' : `<span class="card-date">${date}</span>`}
+            <div class="card-meta-right">
+              ${obj.claim_conflict ? '<span class="card-conflict">⚠ disagree</span>' : `<span class="card-date">${date}</span>`}
+              ${refBadge}
+            </div>
           </div>
         </div>
       </a>`;
@@ -165,27 +175,26 @@ function renderGrid() {
   }
 }
 
-// ── Conflict filter ───────────────────────────────────────────────────────────
+// ── Filters ────────────────────────────────────────────────────────────────────
 
-let conflictFilterActive = false;
-const filterBar     = document.getElementById('filterBar');
-const conflictFilter = document.getElementById('conflictFilter');
-const conflictCount  = document.getElementById('conflictCount');
-const clearFilter    = document.getElementById('clearFilter');
+const filterBar       = document.getElementById('filterBar');
+const conflictFilter  = document.getElementById('conflictFilter');
+const conflictCount   = document.getElementById('conflictCount');
+const referenceFilter = document.getElementById('referenceFilter');
+const referenceCount  = document.getElementById('referenceCount');
+const clearFilter     = document.getElementById('clearFilter');
 
-conflictFilter?.addEventListener('click', () => {
-  conflictFilterActive = true;
-  conflictFilter.classList.add('filter-active');
-  clearFilter.style.display = '';
+function setFilter(name) {
+  activeFilter = name;
+  conflictFilter?.classList.toggle('filter-active', name === 'conflict');
+  referenceFilter?.classList.toggle('filter-active', name === 'reference');
+  clearFilter.style.display = name !== 'none' ? '' : 'none';
   renderGrid();
-});
+}
 
-clearFilter?.addEventListener('click', () => {
-  conflictFilterActive = false;
-  conflictFilter.classList.remove('filter-active');
-  clearFilter.style.display = 'none';
-  renderGrid();
-});
+conflictFilter?.addEventListener('click', () => setFilter(activeFilter === 'conflict' ? 'none' : 'conflict'));
+referenceFilter?.addEventListener('click', () => setFilter(activeFilter === 'reference' ? 'none' : 'reference'));
+clearFilter?.addEventListener('click', () => setFilter('none'));
 
 // ── Load ──────────────────────────────────────────────────────────────────────
 async function load() {
@@ -197,11 +206,14 @@ async function load() {
     if (!allObjects.length) { empty.style.display = ''; return; }
     grid.style.display = '';
 
-    // Show conflict filter if any objects have disagreeing claims
-    const conflictObjs = allObjects.filter(o => o.claim_conflict);
-    if (conflictObjs.length > 0) {
-      filterBar.style.display = '';
-      conflictCount.textContent = `(${conflictObjs.length})`;
+    const conflictObjs  = allObjects.filter(o => o.claim_conflict);
+    const referenceObjs = allObjects.filter(o => o.is_reference);
+    const showBar = conflictObjs.length > 0 || referenceObjs.length > 0;
+    if (showBar) filterBar.style.display = '';
+    if (conflictObjs.length > 0) conflictCount.textContent = `(${conflictObjs.length})`;
+    if (referenceObjs.length > 0) {
+      referenceFilter.style.display = '';
+      referenceCount.textContent = `(${referenceObjs.length})`;
     }
 
     renderGrid();
@@ -341,18 +353,26 @@ load();
   .card-fp-no   { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: var(--tracking-wide); color: var(--text-muted); }
   .card-date    { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); }
   .card-conflict{ font-family: var(--font-mono); font-size: 0.65rem; color: var(--theory); letter-spacing: var(--tracking-wide); }
+  .card-ref     { font-family: var(--font-mono); font-size: 0.65rem; color: var(--cons); letter-spacing: var(--tracking-wide); }
+  .card-meta-right { display: flex; align-items: center; gap: var(--space-2); }
 
   /* Filter bar */
-  .filter-bar { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-6); }
+  .filter-bar { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-6); flex-wrap: wrap; }
   .filter-btn {
     font-family: var(--font-mono); font-size: var(--text-xs);
-    background: var(--theory-bg); color: var(--theory);
-    border: 1px solid var(--color-warn); border-radius: var(--radius-sm);
+    border-radius: var(--radius-sm);
     padding: var(--space-2) var(--space-4); cursor: pointer;
-    transition: all var(--ease); letter-spacing: var(--tracking-wide);
+    transition: all var(--ease); letter-spacing: var(--tracking-wide); border: 1px solid;
   }
-  .filter-btn:hover, .filter-btn.filter-active { background: var(--theory); color: var(--white); border-color: var(--theory); }
-  .conflict-count { font-size: var(--text-xs); opacity: 0.8; margin-left: var(--space-2); }
+  .filter-btn-conflict {
+    background: var(--theory-bg); color: var(--theory); border-color: var(--color-warn);
+  }
+  .filter-btn-conflict:hover, .filter-btn-conflict.filter-active { background: var(--theory); color: var(--white); border-color: var(--theory); }
+  .filter-btn-reference {
+    background: var(--cons-bg); color: var(--cons); border-color: var(--cons);
+  }
+  .filter-btn-reference:hover, .filter-btn-reference.filter-active { background: var(--cons); color: var(--white); border-color: var(--cons); }
+  .filter-count { font-size: var(--text-xs); opacity: 0.8; margin-left: var(--space-2); }
   .filter-clear {
     font-family: var(--font-mono); font-size: var(--text-xs);
     background: none; color: var(--text-muted); border: 1px solid var(--border);

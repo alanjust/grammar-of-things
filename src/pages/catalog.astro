@@ -62,6 +62,31 @@ import AdminGate from '../components/AdminGate.astro';
           <textarea id="docRaw" class="doc-textarea" placeholder="Catalog Number:    A326247-0&#10;Culture:    Mimbres&#10;Country:    United States&#10;Collector(s):    Fewkes, J. W.&#10;…" rows="10"></textarea>
         </section>
 
+        <!-- Reference corpus -->
+        <section class="form-section">
+          <div class="section-label-row">
+            <p class="form-label">Reference corpus <span class="optional">optional</span></p>
+            <p class="form-hint">Reference pieces are authenticated objects used to build statistical baselines for tradition-specific fingerprints. Mark only excavated, well-documented pieces from known institutional collections.</p>
+          </div>
+          <div class="ref-toggle-row">
+            <label class="ref-checkbox-label">
+              <input type="checkbox" id="refCheck" />
+              <span>Mark as a reference piece for the corpus</span>
+            </label>
+          </div>
+          <div id="refTraditionWrap" class="ref-tradition-wrap" style="display:none">
+            <label class="ref-tradition-label" for="refTradition">Ceramic tradition</label>
+            <select id="refTradition" class="ref-tradition-select">
+              <option value="mimbres">Mimbres</option>
+              <option value="hohokam">Hohokam</option>
+              <option value="ancestral_puebloan">Ancestral Puebloan</option>
+              <option value="casas_grandes">Casas Grandes / Paquimé</option>
+              <option value="salado">Salado</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </section>
+
         <!-- Submit -->
         <div class="submit-row">
           <button type="submit" id="submitBtn" class="submit-btn" disabled>
@@ -85,7 +110,10 @@ import AdminGate from '../components/AdminGate.astro';
       <div id="resultsSection" class="results-section" style="display:none">
 
         <div class="result-header">
-          <p class="result-label">Cataloged</p>
+          <div class="result-label-row">
+            <p class="result-label">Cataloged</p>
+            <p id="refBadge" class="ref-result-badge" style="display:none"></p>
+          </div>
           <p id="objectIdLine" class="object-id-line"></p>
         </div>
 
@@ -166,12 +194,26 @@ const PRINCIPLE_NAMES = {
 
 /** @type {{ data: string; label: string }[]} */
 let images = [];
+let isReference = false;
+let referenceTradition = 'mimbres';
 
 // ── Wrong-host banner ──────────────────────────────────────────────────────
 
 if (location.hostname.includes('pages.dev')) {
   document.getElementById('wrongHostBanner').style.display = '';
 }
+
+// ── Reference corpus controls ──────────────────────────────────────────────
+
+const refCheck   = /** @type {HTMLInputElement} */ (document.getElementById('refCheck'));
+const refTradWrap = /** @type {HTMLElement} */ (document.getElementById('refTraditionWrap'));
+const refTrad    = /** @type {HTMLSelectElement} */ (document.getElementById('refTradition'));
+
+refCheck.addEventListener('change', () => {
+  isReference = refCheck.checked;
+  refTradWrap.style.display = isReference ? '' : 'none';
+});
+refTrad.addEventListener('change', () => { referenceTradition = refTrad.value; });
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
 
@@ -298,6 +340,8 @@ form.addEventListener('submit', async e => {
       body: JSON.stringify({
         images: images.map(img => ({ data: img.data, label: img.label })),
         doc_raw: docRaw.value.trim(),
+        is_reference: isReference ? 1 : 0,
+        reference_tradition: isReference ? referenceTradition : null,
       }),
     });
 
@@ -369,6 +413,16 @@ function renderResults(data) {
     idLine.textContent = data.object_id
       ? `Object ID: ${data.object_id}`
       : 'Saved (DB binding not configured — object_id unavailable)';
+  }
+
+  // Reference badge
+  const refBadge = document.getElementById('refBadge');
+  if (refBadge) {
+    refBadge.style.display = data.is_reference ? '' : 'none';
+    if (data.is_reference && data.reference_tradition) {
+      const tradLabel = { mimbres:'Mimbres', hohokam:'Hohokam', ancestral_puebloan:'Ancestral Puebloan', casas_grandes:'Casas Grandes / Paquimé', salado:'Salado', other:'Other' };
+      refBadge.textContent = `Reference piece — ${tradLabel[data.reference_tradition] ?? data.reference_tradition}`;
+    }
   }
 
   // Analyze command hint
@@ -803,6 +857,34 @@ function buildBars(scores) {
   .canonical-list dd { color: var(--text); line-height: var(--leading-snug); }
   .flag-row dt, .flag-row dd { color: var(--theory) !important; }
   .no-doc-note { font-size: var(--text-sm); color: var(--text-muted); font-style: italic; }
+
+  /* Reference corpus toggle */
+  .ref-toggle-row { margin-bottom: var(--space-3); }
+  .ref-checkbox-label {
+    display: flex; align-items: center; gap: var(--space-3);
+    font-size: var(--text-sm); color: var(--text); cursor: pointer;
+  }
+  .ref-checkbox-label input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--cons); }
+  .ref-tradition-wrap { display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-4); }
+  .ref-tradition-label {
+    font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;
+  }
+  .ref-tradition-select {
+    font-family: var(--font-mono); font-size: var(--text-sm);
+    border: 1px solid var(--border); border-radius: var(--radius-xs);
+    padding: var(--space-2) var(--space-3); background: var(--bg-surface); color: var(--text);
+  }
+
+  /* Reference result badge */
+  .result-label-row { display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-2); }
+  .result-label { margin-bottom: 0; }
+  .ref-result-badge {
+    font-family: var(--font-mono); font-size: var(--text-xs);
+    text-transform: uppercase; letter-spacing: var(--tracking-wider);
+    color: var(--cons); background: var(--cons-bg);
+    padding: 0.1em 0.7em; border-radius: var(--radius-xs);
+    max-width: none;
+  }
 
   /* Next step */
   .next-step {
