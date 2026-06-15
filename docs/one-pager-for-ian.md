@@ -47,6 +47,8 @@ Not a plan. Running code. Right now the tool:
 - Quarantines the catalog record in three layers so the institutional claim never contaminates the read.
 - Labels every statement it makes by how much it can actually back up — direct observation, interpretation, consensus, theory — and anchors claims to the real scholarship (Brody, Shafer, Hegmon, Schaafsma).
 - Catalogs cheaply at upload, so a corpus of fingerprints can accrue without running expensive deep analysis on everything.
+- Reads the documentation critically on a second axis — flags structural gaps in the provenance record (no institutional anchor, no excavation context, private collection terminus, acquisition chain anomalies, and others). That's not the fingerprint. That's the paperwork failing its own test.
+- Cross-references the documentation claims against the blind observations and surfaces explicit contradictions — when what the catalog says about construction or condition doesn't match what the object shows.
 
 *[show: the fingerprint sample as horizontal bars — 6 of 27 principles, all scored. Reuse the labels: Production Trace Reading, Symmetry as Evidence, Color Zone Logic, Edge Detection, Figure-Ground, Closure/Negative Space. Footnote: "+ 21 more · full fingerprint stored as a vector."]*
 
@@ -59,7 +61,11 @@ Not a plan. Running code. Right now the tool:
 **Body:**
 On the Mimbres bowl, the tool read the object blind and landed exactly where the experts land: Classic Mimbres Black-on-white, for the right reasons — slip and pigment program, the geometric structure, the construction method.
 
-That matters, but I want to be straight about what it proves. It proves the instrument reads correctly. It does *not* yet prove the thing that makes it valuable — catching a case where the object's evidence and the catalog claim disagree. So far it's agreed with the curators. The interesting result is the disagreement.
+That matters, but I want to be straight about what it proves. It proves the instrument reads correctly on an authenticated piece.
+
+I've also run it on a known commercial replica — an object sold as decorative with no provenance at all. The tool fired on eight independent axes: no institutional anchor, no excavation record, no catalog identifier, private collection terminus, acquisition chain anomaly, and a direct contradiction between the claimed construction method and what the blind pass observed. It didn't know it was a replica. It just read what was there.
+
+That's the mechanism working. The real validation — running it against objects whose attribution is genuinely disputed, with a domain expert to judge whether the flags hold up — is still ahead. That's the study.
 
 *[show: a short before/after or "blind read → matches claim" confirmation graphic. Keep it understated — this panel is about honesty, not victory.]*
 
@@ -74,7 +80,7 @@ The real test is a validation study: feed the instrument objects where the blind
 
 That's a real research question. It needs a corpus, a way to measure the fingerprint against the claim across many objects, and a domain expert to judge whether a flag holds up. I've got the domain expert — my partner is the deputy director of the federal forensic lab in Ashland, and his graduate work was on Mimbres. What the project needs next is the technical build to run the comparison at scale, and the academic standing to make it count.
 
-*[show: a simple "what's built / what's next" split. Built: instrument, blind fingerprint, catalog. Next: corpus-scale comparison, outlier detection, the validation study. Label honestly.]*
+*[show: a simple "what's built / what's next" split. Built: instrument, blind fingerprint, catalog, provenance and contradiction detection, reference corpus infrastructure. Next: populate the reference corpus with authenticated objects, z-score comparison layer, the validation study. Label honestly.]*
 
 ---
 
