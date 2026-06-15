@@ -13,6 +13,12 @@ Updated 2026-06-15.
 - **1c. Feedback queue** — `feedback_queue` table, public form at `/feedback` (honeypot), admin resolve/dismiss queue on same page, footer link added
 - Migrations 0011–0013 applied to remote D1
 
+### Per-analysis delete — DONE (2026-06-15)
+
+- DELETE `/api/analysis/[id]` (admin-only)
+- Delete button on each analysis card in `/corpus/[id]` — confirm dialog, removes row from DOM on success
+- Intended workflow: re-run an analysis to get stability-enriched Pass 2, then delete the old one
+
 ---
 
 ### Item 2: Eval Harness — linters.py — DEFERRED
