@@ -39,5 +39,9 @@
 	// Set STABILITY_PASSES=1 to revert to single-pass behavior without a code change.
 	"vars": {
 		"STABILITY_PASSES": "3"
-	}
+	},
+	"routes": [
+		{ "pattern": "thegrammarofthings.com", "custom_domain": true },
+		{ "pattern": "www.thegrammarofthings.com", "custom_domain": true }
+	]
 }

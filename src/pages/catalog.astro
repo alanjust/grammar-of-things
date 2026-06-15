@@ -25,7 +25,7 @@ import AdminGate from '../components/AdminGate.astro';
         <h1>Catalog an object</h1>
         <p class="page-sub">Upload image(s) and paste the raw catalog record. Track A computes the blind fingerprint from the image alone. Track B extracts and maps the documentation. No Pass 2/3/4 runs here.</p>
         <div id="wrongHostBanner" class="host-banner" style="display:none">
-          ⚠ API not available at this URL. Use <strong>grammar-of-things.alan-66a.workers.dev/catalog</strong> to run ingestion.
+          ⚠ API not available at this URL. Use <strong>thegrammarofthings.com/catalog</strong> to run ingestion.
         </div>
       </div>
 
@@ -169,7 +169,7 @@ let images = [];
 
 // ── Wrong-host banner ──────────────────────────────────────────────────────
 
-if (!location.hostname.includes('workers.dev') && !location.hostname.includes('localhost')) {
+if (location.hostname.includes('pages.dev')) {
   document.getElementById('wrongHostBanner').style.display = '';
 }
 
