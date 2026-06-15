@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import Anthropic from '@anthropic-ai/sdk';
 import { env as cfEnv } from 'cloudflare:workers';
 import { requireAdmin } from '../../lib/auth';
+import { detectMimeFromBytes } from '../../lib/image';
 import { VECTOR_SCORING_PROMPT } from '../../lib/principles';
 import { resolveModelConfig, streamModel, callModel } from '../../lib/model-router';
 import { VECTOR_KEY, serializeVector, type DocCanonical } from '../../db/types';
@@ -85,7 +86,8 @@ async function loadImageFromR2(r2: any, key: string): Promise<string | null> {
     for (let i = 0; i < bytes.length; i += chunk) {
       binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + chunk, bytes.length)));
     }
-    const contentType: string = obj.httpMetadata?.contentType ?? 'image/jpeg';
+    const declared: string = obj.httpMetadata?.contentType ?? 'image/jpeg';
+    const contentType = detectMimeFromBytes(bytes) ?? declared;
     return `data:${contentType};base64,${btoa(binary)}`;
   } catch {
     return null;

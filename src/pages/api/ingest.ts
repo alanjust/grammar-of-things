@@ -133,9 +133,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
             await r2.put(origKey, origBytes, { httpMetadata: { contentType: origType } });
             originalKeys.push(origKey);
 
-            const { bytes: normBytes } = dataUrlToBlob(normalized[i].dataUrl);
+            const { bytes: normBytes, contentType: normType } = dataUrlToBlob(normalized[i].dataUrl);
             const normKey = `objects/${objectId}/${i}-${img.safeLabel}-analysis.jpg`;
-            await r2.put(normKey, normBytes, { httpMetadata: { contentType: 'image/jpeg' } });
+            await r2.put(normKey, normBytes, { httpMetadata: { contentType: normType } });
             analysisKeys.push(normKey);
           }
         } else if (!r2) {
