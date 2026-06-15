@@ -1,32 +1,17 @@
 # Grammar of Things — Next Session
 
-Pitch PoC state as of 2026-06-12. Deferred items below are real but not blocking a first demo.
+Updated 2026-06-15.
 
 ---
 
 ## Open Items
 
-### Item 1: Comment / Annotation System — NOT STARTED
+### Item 1: Comment / Annotation System — DONE (2026-06-15)
 
-Three distinct types, different audiences and write paths:
-
-**1a. Object annotations** (admin-only)
-Notes attached to a specific artifact — provenance hunches, cross-source discrepancies, things to investigate. Private. Never rendered publicly.
-- Add `object_notes` table: `id`, `object_id` (FK), `body TEXT`, `created_at`
-- OR add `notes TEXT` column on `objects` if a single running note is enough
-- Render in `/corpus/[id]` behind `isAdmin` gate (already in place)
-
-**1b. Analysis annotations** (admin-only)
-Notes on a specific analysis run — "Pass 2 missed coiling construction, re-run after library update." Private. Never rendered publicly.
-- Add `notes TEXT` to `analyses` table via migration
-- Render on `/corpus/[id]/analysis/[analysisId]` behind `isAdmin` gate
-
-**1c. Site feedback queue** (public-write → admin-review)
-Visitors can submit: suggested additions, confusion, problems, questions. This is a deliberate exception to the "read-only public" auth boundary — public CAN write, but only you see the submissions. Same queue pattern as `review_queue`.
-- Add `feedback_queue` table: `id`, `body TEXT`, `contact TEXT` (optional email), `page TEXT` (where they were), `created_at`, `status` (open/resolved/dismissed)
-- Public POST endpoint (no auth required, but rate-limit or honeypot field to deter spam)
-- Admin-only view: surface in `/review` or its own `/feedback` page
-- Spam risk is low (niche scholarly audience) but a honeypot field costs nothing
+- **1a. Object notes** — `notes TEXT` on `objects`, PATCH `/api/objects/[id]`, admin textarea in `/corpus/[id]`
+- **1b. Analysis notes** — `notes TEXT` on `analyses`, PATCH `/api/analysis/[id]`, admin textarea in `/corpus/[id]/analysis/[analysisId]`
+- **1c. Feedback queue** — `feedback_queue` table, public form at `/feedback` (honeypot), admin resolve/dismiss queue on same page, footer link added
+- Migrations 0011–0013 applied to remote D1
 
 ---
 
@@ -61,16 +46,24 @@ From the 2026-06-12 security hardening pass. Not urgent for a pitch PoC.
 
 ---
 
+## Nav
+
+- **Review** and **The Look** hidden from nav (pages still live at `/review`, `/look` — TBD whether to resurface)
+
+---
+
 ## Architecture Reference
 
 See `docs/GRAMMAR_OF_THINGS_BUILD_BRIEF.md` for full system overview.
 
 **Deploy:** `npm run deploy` from this directory — Workers Assets model, NOT Pages git connection.
 
-**Live URL:** https://grammar-of-things.alan-66a.workers.dev
+**Live URL:** https://thegrammarofthings.com (custom domain) · https://grammar-of-things.alan-66a.workers.dev
 
 **Env access:** `import { env } from 'cloudflare:workers'` — NOT `locals.runtime.env`
 
 **Auth boundary:** Read-only public. All mutations require admin. ADMIN_TOKEN is a Cloudflare Secret (also in gitignored `.dev.vars`). mcp-ingest requires `Authorization: Bearer <ADMIN_TOKEN>`.
 
 **Review page** is admin-gated to view (not just to act) — NAGPRA-sensitive records in queue. Reversible if needed.
+
+**Feedback page** (`/feedback`) is public-read. Public can submit; admin queue on same page below the form.
