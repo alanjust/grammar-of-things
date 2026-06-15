@@ -82,11 +82,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   }
 
-  const modelConfig  = resolveModelConfig(env);
-  const anthropic    = new Anthropic({ apiKey });
+  const modelConfig     = resolveModelConfig(env);
+  const stabilityPasses = Math.max(1, parseInt(String(env.STABILITY_PASSES ?? '3'), 10) || 1);
+  const anthropic       = new Anthropic({ apiKey });
   const db = env.DB;
   const r2 = env.ARTIFACTS;
-  const encoder      = new TextEncoder();
+  const encoder         = new TextEncoder();
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -159,14 +160,26 @@ export const POST: APIRoute = async ({ request, locals }) => {
           ? PASS1_PROMPT_SINGLE(ARTIFACT_PRINCIPLE_NAMES, APPLICABLE_TIER_A_NAMES)
           : PASS1_PROMPT_MULTI(normalized.length, ARTIFACT_PRINCIPLE_NAMES, APPLICABLE_TIER_A_NAMES);
 
-        send({ type: 'status', message: 'Track A — Pass 1 blind observation…' });
-
-        // Pass 1 — blind: images only, documentation excluded from context
-        const pass1Stream = streamModel(modelConfig.pass1, {
+        const pass1MsgParams = {
           max_tokens: 2048,
           system: PASS1_SYSTEM,
           messages: [{ role: 'user', content: [...imageBlocks, { type: 'text', text: pass1Prompt }] }],
-        }, anthropic);
+        };
+
+        // Extra Pass 1 runs start concurrently with the stream so they overlap
+        const extraRunPromises: Promise<Anthropic.Message>[] = stabilityPasses > 1
+          ? Array.from({ length: stabilityPasses - 1 }, () =>
+              callModel(modelConfig.pass1, pass1MsgParams as any, anthropic)
+            )
+          : [];
+
+        send({ type: 'status', message: stabilityPasses > 1
+          ? `Track A — Pass 1 blind observation (${stabilityPasses} parallel runs)…`
+          : 'Track A — Pass 1 blind observation…'
+        });
+
+        // Pass 1 run 1 — streams deltas to the client
+        const pass1Stream = streamModel(modelConfig.pass1, pass1MsgParams as any, anthropic);
 
         for await (const event of pass1Stream) {
           if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
@@ -182,23 +195,56 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         send({ type: 'pass1_complete', pass1: pass1Text });
 
-        // Score the 27-principle fingerprint vector
-        send({ type: 'status', message: 'Track A — scoring fingerprint vector…' });
+        // Await extra runs (likely already done) then score all N in parallel
+        const extraMsgs = await Promise.all(extraRunPromises);
+        const allPass1Texts = [
+          pass1Text,
+          ...extraMsgs.map(msg =>
+            msg.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n\n')
+          ),
+        ];
+
+        send({ type: 'status', message: stabilityPasses > 1
+          ? `Track A — scoring fingerprint across ${stabilityPasses} passes…`
+          : 'Track A — scoring fingerprint vector…'
+        });
 
         let fingerprintVector: string | null = null;
+        type StabilityMap = Record<string, { hits: number; total: number }>;
+        const stabilityMap: StabilityMap = {};
+
         try {
-          const vectorMsg = await callModel(modelConfig.vector, {
-            max_tokens: 512,
-            system: 'You are a scoring assistant. Output ONLY a flat JSON object. No markdown, no commentary. Begin with { and end with }.',
-            messages: [{ role: 'user', content: [{ type: 'text', text: VECTOR_SCORING_PROMPT(pass1Text) }] }],
-          }, anthropic);
-          let vectorText = vectorMsg.content
-            .filter((b: any) => b.type === 'text').map((b: any) => b.text).join('').trim()
-            .replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-          const vs = vectorText.indexOf('{'), ve = vectorText.lastIndexOf('}');
-          if (vs !== -1 && ve > vs) vectorText = vectorText.slice(vs, ve + 1);
-          const scores = JSON.parse(vectorText);
-          fingerprintVector = serializeVector(scores);
+          const scoreMsgs = await Promise.all(allPass1Texts.map(text =>
+            callModel(modelConfig.vector, {
+              max_tokens: 512,
+              system: 'You are a scoring assistant. Output ONLY a flat JSON object. No markdown, no commentary. Begin with { and end with }.',
+              messages: [{ role: 'user', content: [{ type: 'text', text: VECTOR_SCORING_PROMPT(text) }] }],
+            }, anthropic)
+          ));
+
+          const allScores: Record<string, number>[] = scoreMsgs.map(msg => {
+            try {
+              let raw = msg.content
+                .filter((b: any) => b.type === 'text').map((b: any) => b.text).join('').trim()
+                .replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+              const s = raw.indexOf('{'), e = raw.lastIndexOf('}');
+              if (s !== -1 && e > s) raw = raw.slice(s, e + 1);
+              return JSON.parse(raw);
+            } catch { return {}; }
+          });
+
+          fingerprintVector = serializeVector(allScores[0]);
+
+          if (stabilityPasses > 1) {
+            const threshold = Math.ceil(stabilityPasses / 2);
+            for (const principleId of VECTOR_KEY) {
+              const hits = allScores.filter(scores => (scores[principleId] ?? 0) > 0).length;
+              if (hits > 0) stabilityMap[principleId] = { hits, total: stabilityPasses };
+            }
+            const stableCount    = Object.values(stabilityMap).filter(v => v.hits >= threshold).length;
+            const borderlineCount = Object.values(stabilityMap).filter(v => v.hits < threshold).length;
+            send({ type: 'status', message: `Stability: ${stableCount} high-confidence, ${borderlineCount} borderline` });
+          }
         } catch (err) {
           send({ type: 'status', message: `⚠ Vector scoring failed: ${err instanceof Error ? err.message : String(err)}` });
         }
@@ -270,10 +316,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
               fingerprint_vector        = ?,
               fingerprint_model         = ?,
               fingerprint_pass1_text    = ?,
-              fingerprinted_at          = ?,
-              is_reference              = ?,
-              reference_tradition       = ?,
-              updated_at                = datetime('now')
+              fingerprinted_at                = ?,
+              fingerprint_stability_passes    = ?,
+              fingerprint_stability_map       = ?,
+              is_reference                    = ?,
+              reference_tradition             = ?,
+              updated_at                      = datetime('now')
             WHERE id = ?
           `).bind(
             ezidArk, catalogNumber, accessionNumber,
@@ -287,6 +335,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
             pass1Msg.model,
             pass1Text,
             fingerprintedAt,
+            stabilityPasses,
+            Object.keys(stabilityMap).length > 0 ? JSON.stringify(stabilityMap) : null,
             is_reference ? 1 : 0,
             is_reference ? (reference_tradition ?? null) : null,
             objectId,
@@ -302,6 +352,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
           fingerprint_vector: fingerprintVector ? JSON.parse(fingerprintVector) : null,
           fingerprint_keys: VECTOR_KEY,
           fingerprint_model: pass1Msg.model,
+          fingerprint_stability_passes: stabilityPasses,
+          fingerprint_stability_map: Object.keys(stabilityMap).length > 0 ? stabilityMap : null,
           doc_layers: {
             raw:        docRaw,
             structured: docStructured ? JSON.parse(docStructured) : null,
