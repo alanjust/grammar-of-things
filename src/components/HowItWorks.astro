@@ -25,8 +25,8 @@ const passes = [
     num: '04',
     name: 'Extract',
     tag: 'Structured record',
-    body: 'The analysis output is mapped to a structured record: tradition identification, confidence level, function category, RAP flags, and the full scored vector. This feeds the growing fingerprint database and enables future cross-object comparison.',
-    note: 'The fingerprint from Pass 1 is compared against the documented attribution claim here. A significant mismatch is surfaced as a research flag — not a conclusion.',
+    body: 'Three things happen in parallel. The fingerprint from Pass 1 is compared against the documented attribution claim — a significant mismatch is surfaced as a research flag, not a conclusion. The documentation is assessed for structural integrity: eleven named gap patterns (no institutional anchor, no excavation record, private collection terminus, acquisition chain anomalies, and others). And documentation claims are cross-referenced against the blind Pass 1 observations — explicit contradictions are flagged with severity.',
+    note: 'Output: tradition identification, confidence level, RAP flags, full scored vector, provenance flag array, contradiction flag array — all stored to the object record.',
   },
 ];
 
