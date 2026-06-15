@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { env as cfEnv } from 'cloudflare:workers';
 import { requireAdmin } from '../../lib/auth';
 import { detectMimeFromBytes } from '../../lib/image';
+import { PROVENANCE_INTEGRITY_PROMPT, CONTRADICTION_DETECTION_PROMPT } from '../../lib/authenticity';
 import { VECTOR_SCORING_PROMPT } from '../../lib/principles';
 import { resolveModelConfig, streamModel, callModel } from '../../lib/model-router';
 import { VECTOR_KEY, serializeVector, type DocCanonical } from '../../db/types';
@@ -291,9 +292,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
         let vectorNote: string | null = null;
         let extractionModelUsed: string | null = null;
         let vectorModelUsed: string | null = null;
+        let provenanceFlags: any[] = [];
+        let contradictionFlags: any[] = [];
 
         try {
-          const [extractionResult, vectorResult] = await Promise.allSettled([
+          const [extractionResult, vectorResult, provenanceResult, contradictionResult] = await Promise.allSettled([
             callModel(modelConfig.extraction, {
               max_tokens: 16000,
               system: 'You are a data extraction assistant. Extract structured data from artifact analysis text and output ONLY valid JSON. No markdown fences, no commentary, no extra text. Begin your response with { and end with }.',
@@ -303,6 +306,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
               max_tokens: 512,
               system: 'You are a scoring assistant. Output ONLY a flat JSON object. No markdown, no commentary, no extra text. Begin your response with { and end with }.',
               messages: [{ role: 'user', content: [{ type: 'text', text: VECTOR_SCORING_PROMPT(pass1Text) }] }],
+            }, anthropic),
+            callModel(modelConfig.extraction, {
+              max_tokens: 1024,
+              system: 'You are a provenance analyst. Output ONLY a valid JSON array. No markdown, no commentary. Begin with [ and end with ].',
+              messages: [{ role: 'user', content: [{ type: 'text', text: PROVENANCE_INTEGRITY_PROMPT(object.attribution_culture as string | null, object.doc_canonical as string | null, object.doc_structured as string | null) }] }],
+            }, anthropic),
+            callModel(modelConfig.extraction, {
+              max_tokens: 1024,
+              system: 'You are a research analyst. Output ONLY a valid JSON array. No markdown, no commentary. Begin with [ and end with ].',
+              messages: [{ role: 'user', content: [{ type: 'text', text: CONTRADICTION_DETECTION_PROMPT(object.attribution_culture as string | null, object.doc_canonical as string | null, pass1Text) }] }],
             }, anthropic),
           ]);
 
@@ -330,6 +343,38 @@ export const POST: APIRoute = async ({ request, locals }) => {
             }
           } else {
             vectorNote = `vector API failed: ${vectorResult.reason instanceof Error ? vectorResult.reason.message : String(vectorResult.reason)}`;
+          }
+
+          // Provenance integrity flags
+          if (provenanceResult.status === 'fulfilled') {
+            try {
+              let pText = provenanceResult.value.content
+                .filter((b: any) => b.type === 'text').map((b: any) => b.text).join('').trim()
+                .replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+              const pS = pText.indexOf('['), pE = pText.lastIndexOf(']');
+              if (pS !== -1 && pE > pS) pText = pText.slice(pS, pE + 1);
+              provenanceFlags = JSON.parse(pText);
+              if (!Array.isArray(provenanceFlags)) provenanceFlags = [];
+            } catch { provenanceFlags = []; }
+          }
+
+          // Contradiction flags
+          if (contradictionResult.status === 'fulfilled') {
+            try {
+              let cText = contradictionResult.value.content
+                .filter((b: any) => b.type === 'text').map((b: any) => b.text).join('').trim()
+                .replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+              const cS = cText.indexOf('['), cE = cText.lastIndexOf(']');
+              if (cS !== -1 && cE > cS) cText = cText.slice(cS, cE + 1);
+              const parsed = JSON.parse(cText);
+              if (Array.isArray(parsed)) {
+                // Filter out any "no contradiction" placeholder entries the model may emit
+                contradictionFlags = parsed.filter((f: any) =>
+                  f.severity && f.severity !== 'N/A' &&
+                  f.contradiction && !/no contradiction/i.test(f.contradiction)
+                );
+              }
+            } catch { contradictionFlags = []; }
           }
         } catch (err) {
           send({ type: 'status', message: `⚠ Pass 4 failed: ${err instanceof Error ? err.message : String(err)}` });
@@ -379,8 +424,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
               extraction_json, analysis_vector, fingerprint_flag,
               object_class, tradition, tradition_confidence,
               function_category, production_level, tradition_routing_basis, metadata_completeness,
+              provenance_flags, contradiction_flags,
               created_at
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))
           `).bind(
             object_id,
             isConnections ? 'connections' : 'artifact',
@@ -403,6 +449,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
             structuredRecord?.production_level        ?? null,
             structuredRecord?.tradition_routing_basis ?? null,
             structuredRecord?.metadata_completeness   ?? null,
+            provenanceFlags.length > 0 ? JSON.stringify(provenanceFlags) : null,
+            contradictionFlags.length > 0 ? JSON.stringify(contradictionFlags) : null,
           ).run();
           analysisId = result.meta?.last_row_id ?? null;
         } catch (err) {
@@ -419,6 +467,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
           pass3_text:     pass3Text,
           analysis_vector: analysisVector ? JSON.parse(analysisVector) : null,
           fingerprint_flag: fingerprintFlag,
+          provenance_flags: provenanceFlags.length > 0 ? provenanceFlags : null,
+          contradiction_flags: contradictionFlags.length > 0 ? contradictionFlags : null,
           models_used: {
             pass2:      pass2Msg.model,
             pass3:      pass3Msg.model,

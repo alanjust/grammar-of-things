@@ -272,13 +272,20 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
             <section class="analyses-section">
               <h2>Past analyses <span class="count">({analyses.length})</span></h2>
               <div class="analyses-list">
-                {analyses.map((a: any) => (
+                {analyses.map((a: any) => {
+                  let aProv: any[] = [];
+                  let aContra: any[] = [];
+                  try { if (a.provenance_flags) aProv = JSON.parse(a.provenance_flags); } catch {}
+                  try { if (a.contradiction_flags) aContra = JSON.parse(a.contradiction_flags); } catch {}
+                  return (
                   <div class="analysis-row">
                     <div class="analysis-meta">
                       <span class="analysis-mode">{a.mode}</span>
                       <span class="analysis-audience">{a.audience}</span>
                       {a.tradition && <span class="analysis-tradition">{a.tradition}</span>}
                       {a.tradition_confidence && <span class="conf">({a.tradition_confidence})</span>}
+                      {aProv.length > 0 && <span class="auth-count-badge">{aProv.length} prov. flag{aProv.length !== 1 ? 's' : ''}</span>}
+                      {aContra.length > 0 && <span class="auth-count-badge contra">{aContra.length} contradiction{aContra.length !== 1 ? 's' : ''}</span>}
                       <span class="analysis-date">{new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       <div class="analysis-actions">
                         <a href={`/corpus/${object.id}/analysis/${a.id}`} class="analysis-action-link">View full →</a>
@@ -302,7 +309,8 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
                       ) : null;
                     })()}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           )}
@@ -347,6 +355,14 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
                 <p class="block-label">Heuristic consistency note — provisional</p>
                 <p class="fp-disclaimer">Provisional heuristic only — no validated reference corpus exists yet, so this is not a measured comparison against a real distribution.</p>
                 <div id="runFpFlagContent" class="fp-flag-block"></div>
+              </div>
+              <div id="runProvBlock" style="display:none">
+                <p class="block-label">Provenance assessment</p>
+                <div id="runProvContent" class="run-auth-flags"></div>
+              </div>
+              <div id="runContraBlock" style="display:none">
+                <p class="block-label">Contradiction detection</p>
+                <div id="runContraContent" class="run-auth-flags"></div>
               </div>
             </div>
           </section>
@@ -410,6 +426,68 @@ document.getElementById('audienceGroup')?.addEventListener('click', e => {
   selectedAudience = btn.dataset.value;
 });
 
+// ── Auth flag renderers ────────────────────────────────────────────────────
+
+function buildAuthFlag(f, type) {
+  const wrap = document.createElement('div');
+  wrap.className = `run-auth-flag sev-${f.severity}`;
+
+  const head = document.createElement('div');
+  head.className = 'run-auth-head';
+
+  if (type === 'prov') {
+    const code = document.createElement('span');
+    code.className = 'run-auth-code';
+    code.textContent = f.flag ?? '';
+    head.appendChild(code);
+  }
+
+  const badge = document.createElement('span');
+  badge.className = `run-auth-sev sev-badge-${f.severity}`;
+  badge.textContent = f.severity ?? '';
+  head.appendChild(badge);
+  wrap.appendChild(head);
+
+  const detail = document.createElement('p');
+  detail.className = 'run-auth-detail';
+  detail.textContent = f.detail ?? '';
+  wrap.appendChild(detail);
+
+  return wrap;
+}
+
+function buildContraFlag(f) {
+  const wrap = document.createElement('div');
+  wrap.className = `run-auth-flag sev-${f.severity}`;
+
+  const head = document.createElement('div');
+  head.className = 'run-auth-head';
+  const badge = document.createElement('span');
+  badge.className = `run-auth-sev sev-badge-${f.severity}`;
+  badge.textContent = f.severity ?? '';
+  head.appendChild(badge);
+  wrap.appendChild(head);
+
+  const grid = document.createElement('div');
+  grid.className = 'run-contra-grid';
+
+  [['Claim', f.claim], ['Observed', f.observation], ['Tension', f.contradiction]].forEach(([label, text]) => {
+    const row = document.createElement('div');
+    row.className = label === 'Tension' ? 'run-contra-row run-contra-tension' : 'run-contra-row';
+    const lbl = document.createElement('span');
+    lbl.className = 'run-contra-label';
+    lbl.textContent = label;
+    const p = document.createElement('p');
+    p.className = 'run-contra-text';
+    p.textContent = text ?? '';
+    row.append(lbl, p);
+    grid.appendChild(row);
+  });
+
+  wrap.appendChild(grid);
+  return wrap;
+}
+
 // ── Run analysis ───────────────────────────────────────────────────────────
 
 document.getElementById('runBtn')?.addEventListener('click', async () => {
@@ -432,6 +510,8 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
   pass3Block.style.display = 'none';
   pass3Text.textContent = '';
   fpFlagDiv.style.display = 'none';
+  document.getElementById('runProvBlock').style.display = 'none';
+  document.getElementById('runContraBlock').style.display = 'none';
 
   const addStatus = (msg, isError = false) => {
     const p = document.createElement('p');
@@ -516,6 +596,20 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
             caveat.textContent = flag.caveats ?? '';
 
             fpFlagContent.append(head, reason, caveat);
+          }
+          if (evt.provenance_flags?.length) {
+            const provBlock = document.getElementById('runProvBlock');
+            const provContent = document.getElementById('runProvContent');
+            provBlock.style.display = '';
+            provContent.replaceChildren();
+            evt.provenance_flags.forEach(f => provContent.appendChild(buildAuthFlag(f, 'prov')));
+          }
+          if (evt.contradiction_flags?.length) {
+            const contraBlock = document.getElementById('runContraBlock');
+            const contraContent = document.getElementById('runContraContent');
+            contraBlock.style.display = '';
+            contraContent.replaceChildren();
+            evt.contradiction_flags.forEach(f => contraContent.appendChild(buildContraFlag(f)));
           }
           if (evt.analysis_id) {
             addStatus(`Saved — analysis #${evt.analysis_id}`);
@@ -721,6 +815,43 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
   .pass2-text :global(h2), .pass2-text :global(h3),
   .pass3-text :global(h2), .pass3-text :global(h3) { font-family: var(--font-display); margin: 1em 0 0.3em; }
   .fp-flag-block { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-5); }
+
+  /* Auth flag count badges in analysis cards */
+  .auth-count-badge {
+    font-family: var(--font-mono); font-size: var(--text-xs); font-weight: var(--weight-semibold);
+    padding: 0.1em 0.5em; border-radius: var(--radius-xs);
+    background: var(--theory-bg); color: var(--theory);
+    letter-spacing: var(--tracking-wide);
+  }
+  .auth-count-badge.contra { background: var(--color-warn-bg); color: var(--text-muted); }
+
+  /* Auth flags in live run view */
+  .run-auth-flags { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-6); }
+  .run-auth-flag {
+    border-left: 3px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-3) var(--space-4);
+    background: var(--bg-surface);
+  }
+  .run-auth-flag.sev-high   { border-left-color: var(--theory); background: var(--theory-bg); }
+  .run-auth-flag.sev-medium { border-left-color: var(--color-warn); background: var(--color-warn-bg); }
+  .run-auth-flag.sev-low    { border-left-color: var(--border); background: var(--bg-surface); }
+  .run-auth-head { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+  .run-auth-code { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); letter-spacing: var(--tracking-wide); }
+  .run-auth-sev {
+    font-family: var(--font-mono); font-size: var(--text-xs); font-weight: var(--weight-bold);
+    text-transform: uppercase; letter-spacing: var(--tracking-wide);
+    padding: 0.1em 0.5em; border-radius: var(--radius-xs);
+  }
+  .sev-badge-high   { background: var(--theory-bg); color: var(--theory); }
+  .sev-badge-medium { background: var(--color-warn-bg); color: var(--text-muted); }
+  .sev-badge-low    { background: var(--bg-alt); color: var(--text-muted); }
+  .run-auth-detail { font-size: var(--text-sm); color: var(--text); line-height: var(--leading-body); max-width: 66ch; }
+  .run-contra-grid { display: flex; flex-direction: column; gap: var(--space-2); }
+  .run-contra-row { display: grid; grid-template-columns: 72px 1fr; gap: var(--space-3); align-items: baseline; }
+  .run-contra-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); letter-spacing: var(--tracking-wide); padding-top: 2px; }
+  .run-contra-text { font-size: var(--text-sm); color: var(--text); line-height: var(--leading-body); max-width: none; }
+  .run-contra-tension .run-contra-text { color: var(--theory); font-style: italic; }
 
   @media (max-width: 768px) {
     .object-header { grid-template-columns: 1fr; }

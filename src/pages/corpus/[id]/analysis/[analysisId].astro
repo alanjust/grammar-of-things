@@ -33,6 +33,12 @@ if (object?.doc_canonical) { try { canonical = JSON.parse(object.doc_canonical);
 let fingerprintFlag: any = null;
 if (analysis?.fingerprint_flag) { try { fingerprintFlag = JSON.parse(analysis.fingerprint_flag); } catch {} }
 
+let provenanceFlags: any[] = [];
+if (analysis?.provenance_flags) { try { provenanceFlags = JSON.parse(analysis.provenance_flags); } catch {} }
+
+let contradictionFlags: any[] = [];
+if (analysis?.contradiction_flags) { try { contradictionFlags = JSON.parse(analysis.contradiction_flags); } catch {} }
+
 const ALIGNMENT_TOOLTIPS: Record<string, string> = {
   aligned:      'Fingerprint scores are perceptually consistent with the claimed tradition',
   inconclusive: 'Insufficient signal to draw a conclusion — the default for most objects',
@@ -184,6 +190,62 @@ const readMin = readTime(totalWords);
               <div class="pass-body prose" set:html={renderMarkdown(analysis.pass3_text)} />
             </section>
           )}
+
+          {/* Provenance assessment */}
+          {provenanceFlags.length > 0 && (
+            <section class="pass-section auth-section">
+              <div class="pass-label">
+                <span class="pass-num">Provenance</span>
+                <span class="pass-name">Integrity assessment</span>
+                <span class="pass-note">Documentation gaps and structural anomalies</span>
+              </div>
+              <div class="auth-flags">
+                {provenanceFlags.map((f: any) => (
+                  <div class={`auth-flag sev-${f.severity}`}>
+                    <div class="auth-flag-head">
+                      <span class="auth-flag-code">{f.flag}</span>
+                      <span class={`auth-sev-badge sev-badge-${f.severity}`}>{f.severity}</span>
+                    </div>
+                    <p class="auth-flag-detail">{f.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Contradiction detection */}
+          {contradictionFlags.length > 0 && (
+            <section class="pass-section auth-section">
+              <div class="pass-label">
+                <span class="pass-num">Contradictions</span>
+                <span class="pass-name">Documentation vs. observation</span>
+                <span class="pass-note">Claims in tension with blind Pass 1 findings</span>
+              </div>
+              <div class="auth-flags">
+                {contradictionFlags.map((f: any) => (
+                  <div class={`auth-flag sev-${f.severity}`}>
+                    <div class="auth-flag-head">
+                      <span class={`auth-sev-badge sev-badge-${f.severity}`}>{f.severity}</span>
+                    </div>
+                    <div class="contra-grid">
+                      <div class="contra-row">
+                        <span class="contra-label">Claim</span>
+                        <p class="contra-text">{f.claim}</p>
+                      </div>
+                      <div class="contra-row">
+                        <span class="contra-label">Observed</span>
+                        <p class="contra-text">{f.observation}</p>
+                      </div>
+                      <div class="contra-row contra-tension">
+                        <span class="contra-label">Tension</span>
+                        <p class="contra-text">{f.contradiction}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </>
       )}
     </div>
@@ -266,9 +328,46 @@ const readMin = readTime(totalWords);
   .fp-name  { font-size: var(--text-sm); color: var(--text); text-decoration: none; }
   .fp-name:hover { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; }
 
+  /* Authenticity flag sections */
+  .auth-section {}
+  .auth-flags { display: flex; flex-direction: column; gap: var(--space-3); }
+  .auth-flag {
+    border-left: 3px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-4) var(--space-5);
+    background: var(--bg-surface);
+  }
+  .auth-flag.sev-high   { border-left-color: var(--theory); background: var(--theory-bg); }
+  .auth-flag.sev-medium { border-left-color: var(--color-warn); background: var(--color-warn-bg); }
+  .auth-flag.sev-low    { border-left-color: var(--border); background: var(--bg-surface); }
+
+  .auth-flag-head { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); }
+  .auth-flag-code {
+    font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted);
+    letter-spacing: var(--tracking-wide);
+  }
+  .auth-sev-badge {
+    font-family: var(--font-mono); font-size: var(--text-xs); font-weight: var(--weight-bold);
+    text-transform: uppercase; letter-spacing: var(--tracking-wide);
+    padding: 0.1em 0.5em; border-radius: var(--radius-xs);
+  }
+  .sev-badge-high   { background: var(--theory-bg); color: var(--theory); }
+  .sev-badge-medium { background: var(--color-warn-bg); color: var(--text-muted); }
+  .sev-badge-low    { background: var(--bg-alt); color: var(--text-muted); }
+
+  .auth-flag-detail { font-size: var(--text-sm); color: var(--text); line-height: var(--leading-body); max-width: 68ch; }
+
+  .contra-grid { display: flex; flex-direction: column; gap: var(--space-2); }
+  .contra-row { display: grid; grid-template-columns: 72px 1fr; gap: var(--space-4); align-items: baseline; }
+  .contra-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); letter-spacing: var(--tracking-wide); padding-top: 2px; }
+  .contra-text { font-size: var(--text-sm); color: var(--text); line-height: var(--leading-body); max-width: none; }
+  .contra-tension .contra-text { color: var(--theory); font-style: italic; }
+
   @media (max-width: 640px) {
     .analysis-header { grid-template-columns: 1fr; }
     .header-images { flex-direction: row; }
     .header-images img { aspect-ratio: auto; max-height: 160px; }
+    .contra-row { grid-template-columns: 1fr; gap: var(--space-1); }
+    .contra-label { display: none; }
   }
 </style>
