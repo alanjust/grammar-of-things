@@ -416,7 +416,7 @@ function renderOverview() {
 
 function renderSelector() {
   document.getElementById('selectorSection').style.display = '';
-  const accession = o => o.accession_number ?? o.catalog_number ?? `#${o.id}`;
+  const accession = o => o.catalog_number ?? o.accession_number ?? `#${o.id}`;
   const imgKey = o => o.image_analysis_key?.split(',')[0]?.trim();
   const trad = o => o.attribution_culture ?? 'unknown';
   const tradColor = o => TRAD_COLORS[trad(o)] ?? '#a09487';
@@ -451,7 +451,7 @@ function selectObject(id) {
   document.getElementById('selectorSection').style.display = 'none';
   document.getElementById('overview').style.display = 'none';
 
-  const accession = selected.accession_number ?? selected.catalog_number ?? `#${selected.id}`;
+  const accession = selected.catalog_number ?? selected.accession_number ?? `#${selected.id}`;
   const tradLabel  = TRAD_LABELS[selected.attribution_culture] ?? selected.attribution_culture ?? 'Unknown';
   const tradColor  = TRAD_COLORS[selected.attribution_culture] ?? '#a09487';
 
@@ -484,7 +484,7 @@ function renderMatches(matches) {
   const selectedTrad = selected.attribution_culture ?? 'unknown';
 
   document.getElementById('matchList').innerHTML = matches.map((o, i) => {
-    const accession  = o.accession_number ?? o.catalog_number ?? `#${o.id}`;
+    const accession  = o.catalog_number ?? o.accession_number ?? `#${o.id}`;
     const matchTrad  = o.attribution_culture ?? 'unknown';
     const tradLabel  = TRAD_LABELS[matchTrad] ?? matchTrad;
     const tradColor  = TRAD_COLORS[matchTrad] ?? '#a09487';

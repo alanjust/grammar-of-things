@@ -74,7 +74,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   // Build synthesis prompt
   const objectBlocks = objects.map((o: any, i: number) => {
-    const accession  = o.accession_number ?? o.catalog_number ?? `#${o.id}`;
+    const accession  = o.catalog_number ?? o.accession_number ?? `#${o.id}`;
     const tradition  = o.attribution_culture ?? 'unknown';
     const confidence = o.attribution_confidence ?? 'unknown';
     const pass1      = o.fingerprint_pass1_text
