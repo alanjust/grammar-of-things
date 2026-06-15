@@ -20,6 +20,7 @@ const { content } = Astro.props;
     </div>
     <div class="transfer">
       <p>{content.transfer}</p>
+      <a href="/partners" class="partner-link">Institutional partnership inquiry →</a>
     </div>
   </div>
 </section>
@@ -51,6 +52,24 @@ const { content } = Astro.props;
   .transfer {
     border-top: 1px solid var(--border-strong);
     padding-top: var(--space-8);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    align-items: flex-start;
+  }
+  .partner-link {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    letter-spacing: var(--tracking-wide);
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent);
+    padding-bottom: 1px;
+    transition: color var(--ease), border-color var(--ease);
+  }
+  .partner-link:hover {
+    color: var(--accent-light);
+    border-color: var(--accent-light);
   }
   .transfer p {
     font-family: var(--font-display);

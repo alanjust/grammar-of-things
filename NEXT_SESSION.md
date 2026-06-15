@@ -6,6 +6,20 @@ Updated 2026-06-15.
 
 ## Open Items
 
+### /partners page — DONE (2026-06-15)
+
+- New prerendered page at `/partners` — institutional partnership ask, eight sections
+- Footer link added ("Institutional Partnership")
+- Credibility section on homepage: "Institutional partnership inquiry →" link added after transfer statement
+- Deployed to production
+- `contact@thegrammarofthings.com` set up via Cloudflare Email Routing → forwards to `alan@alanjust.com`
+
+**Two sections need Alan's review before using the URL in outreach:**
+- "What the tool will not claim" — conservative draft; confirm against actual commitments
+- "Governance and tribal consultation" — structural draft; replace generics with specific commitments if/when tribal contacts or advisory board design is decided
+
+---
+
 ### Item 1: Comment / Annotation System — DONE (2026-06-15)
 
 - **1a. Object notes** — `notes TEXT` on `objects`, PATCH `/api/objects/[id]`, admin textarea in `/corpus/[id]`
