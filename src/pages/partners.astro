@@ -3,257 +3,379 @@ export const prerender = true;
 import SiteNav from '../components/SiteNav.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 ---
+
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Institutional Partnership — The Grammar of Things</title>
-  <style is:global>
-    @import url('/src/styles/base.css');
-  </style>
-</head>
-<body>
-  <SiteNav />
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Institutional Partnership — The Grammar of Things</title>
+    <style is:global>
+      @import url('/src/styles/base.css');
+    </style>
+  </head>
+  <body>
+    <SiteNav />
 
-  <div class="partners-page">
-    <div class="container">
-
-      <div class="partners-hero">
-        <p class="overline">Institutional Partnership</p>
-        <h1>We're seeking an anchor collection partner</h1>
-        <p class="lede">
-          The infrastructure for a documented reference corpus for visual-forensic archaeological
-          cataloging is built. What the pilot requires is 150–300 well-documented objects from
-          institutional collections — and a partner with the collection depth to co-build and
-          co-steward the resulting instrument.
-        </p>
-      </div>
-
-      <div class="partners-body">
-
-        <!-- ── What exists ──────────────────────────────────────────────── -->
-        <section class="ps" id="what-exists">
-          <h2>What exists today</h2>
-          <p class="ps-lead">The tool is a working prototype, not a proposal. It has been run on real objects:</p>
-          <ul class="evidence-list">
-            <li>
-              <strong>Smithsonian NMNH A326247</strong> — Mimbres Black-on-white bowl, accession 070367,
-              collected 1923. Full four-pass analysis with blind observation, documentation comparison,
-              RAP Protocol, and complete 27-principle fingerprint. Publicly accessible on this site.
-            </li>
-            <li>
-              <strong>Commercial replica — corpus record 16</strong> — Southwest-style ceramic marketed
-              as contemporary work. Eight independent flags consistent with modern manufacture; none
-              consistent with pre-Columbian production.
-            </li>
-          </ul>
-          <div class="feature-grid">
-            <div class="feature">
-              <p class="feature-label">Three-pass analysis</p>
-              <p>Blind observation → documentation comparison and epistemic labeling → RAP Protocol and provenance assessment. Every claim is anchored to a physical observation or a named primary source.</p>
-            </div>
-            <div class="feature">
-              <p class="feature-label">27-principle fingerprint</p>
-              <p>Each object is scored against 27 perceptual principles drawn from Brody, Shafer, Hegmon, and Schaafsma. Scores are stored as a vector in canonical order, built for similarity search when the corpus reaches density.</p>
-            </div>
-            <div class="feature">
-              <p class="feature-label">Provenance integrity assessment</p>
-              <p>Eleven named structural gap patterns applied to every documentation record — no institutional anchor, no excavation record, private collection terminus, acquisition chain anomalies, and others. Severity-coded HIGH / MEDIUM / LOW.</p>
-            </div>
-            <div class="feature">
-              <p class="feature-label">Contradiction detection</p>
-              <p>Documentation claims are cross-referenced against blind observations. When what the catalog says about construction, condition, or iconography conflicts with what the object shows, the tension is flagged explicitly.</p>
-            </div>
-            <div class="feature">
-              <p class="feature-label">Reference corpus infrastructure</p>
-              <p>Database schema, distribution API, catalog management UI, and corpus access page are complete and live. The corpus itself needs populating — authenticated, well-documented objects from institutional collections. That is what the pilot builds.</p>
-            </div>
-            <div class="feature">
-              <p class="feature-label">Epistemic labeling</p>
-              <p>Every claim in the analysis is marked [OBS], [INTERP], [CONS], or [THEORY] at the sentence level. Interpretive claims require two independent observations. The RAP Protocol flags claims with insufficient anchors — it is structural and cannot be turned off.</p>
-            </div>
-          </div>
-        </section>
-
-        <!-- ── Partner benefits ────────────────────────────────────────── -->
-        <section class="ps" id="partner-gets">
-          <h2>What a partner institution receives</h2>
-          <ul class="benefit-list">
-            <li>
-              <strong>Co-applicant status on the grant.</strong> The partner institution is named as
-              a co-applicant on IMLS, NEH, or NAGPRA documentation grant applications. The
-              institutional affiliation is not cosmetic — it is load-bearing for program officer review.
-            </li>
-            <li>
-              <strong>The complete instrument on project completion.</strong> Full source transfer:
-              prompt architecture, schema, eval harness, fingerprint vectors, and the reference corpus
-              itself. No ongoing licensing fees. No subscription model. The partner institution or
-              named consortium owns the result.
-            </li>
-            <li>
-              <strong>Shared reference corpus.</strong> All authenticated objects contributed by any
-              partner are accessible to all partners. The corpus is a community resource, not a
-              proprietary dataset held against the field.
-            </li>
-            <li>
-              <strong>Right to use, adapt, and extend.</strong> The partner may deploy, modify, and
-              fork the instrument for its own collections workflows. The transfer includes no
-              restrictions on institutional use.
-            </li>
-            <li>
-              <strong>Validated forensic methodology.</strong> Analysis epistemics are being developed
-              in collaboration with a U.S. Fish and Wildlife Service forensic partner. The evidentiary
-              standards built into the tool reflect forensic documentation practice, not informal
-              connoisseurship.
-            </li>
-          </ul>
-        </section>
-
-        <!-- ── Pilot data requirements ─────────────────────────────────── -->
-        <section class="ps" id="pilot-needs">
-          <h2>What the pilot requires from collections</h2>
-          <p class="ps-lead">
-            The reference corpus is a structured data-collection effort, not a raw donation intake.
-            It targets objects that can anchor statistically meaningful comparison across traditions.
+    <div class="partners-page">
+      <div class="container">
+        <div class="partners-hero">
+          <p class="overline">Institutional Partnership</p>
+          <h1>We're seeking an anchor collection partner</h1>
+          <p class="lede">
+            The infrastructure for a documented reference corpus for
+            visual-forensic archaeological cataloging is built. What the pilot
+            requires is 150–300 well-documented objects from institutional
+            collections — and a partner with the collection depth to co-build
+            and co-steward the resulting instrument.
           </p>
-          <div class="req-grid">
-            <div class="req">
-              <p class="req-label">Scale</p>
-              <p>150–300 objects across three traditions — Mimbres, Ancestral Puebloan, Hohokam. Thirty objects per tradition is the minimum for meaningful fingerprint distribution analysis. The pilot targets fifty per tradition.</p>
-            </div>
-            <div class="req">
-              <p class="req-label">Provenience</p>
-              <p>Objects with known provenience: excavation record, institutional anchor, and an unambiguous chain of custody. The reference corpus draws only from documented contexts — Swarts Ruin, NAN Ranch, Pueblo Bonito, and comparable assemblages are the target sources.</p>
-            </div>
-            <div class="req">
-              <p class="req-label">Documentation</p>
-              <p>Existing catalog record with tradition attribution supported by primary sources. Physical analysis data (XRF, petrography, temper) is a strong plus but not a prerequisite for corpus inclusion.</p>
-            </div>
-            <div class="req">
-              <p class="req-label">Custody</p>
-              <p>Objects already in institutional custody. The pilot does not intake undocumented donated material. If the chain of custody is unclear, the object is ineligible for the reference corpus.</p>
-            </div>
-          </div>
-        </section>
+        </div>
 
-        <!-- ── What the tool will not claim ───────────────────────────── -->
-        <!-- REVIEW: Alan to confirm this section before outreach. -->
-        <section class="ps" id="limits">
-          <h2>What the tool will not claim</h2>
-          <p class="ps-lead">
-            The instrument is designed for use as decision support in human review workflows —
-            not as a replacement for human expertise, legal process, or tribal authority.
-          </p>
-          <ul class="limits-list">
-            <li>The tool does not make cultural affiliation determinations. A fingerprint similarity match to a tradition is evidence for a qualified researcher to evaluate — it is not a conclusion.</li>
-            <li>It does not produce findings with legal weight for NAGPRA proceedings. It surfaces candidates for provenience research. The determination remains with the relevant agency, tribe, and qualified human reviewers.</li>
-            <li>It does not authenticate or deauthenticate objects. The RAP Protocol flags claims with insufficient evidentiary anchors and marks them as hypotheses. It does not issue verdicts.</li>
-            <li>Analysis output is labeled by epistemic type at the claim level — observation, interpretation, consilience, theory. The labels are structural and cannot be suppressed.</li>
-            <li>The tool is not a substitute for physical examination. It works from photographs and catalog records. Condition assessment, temper analysis, firing characteristics, and residue analysis require direct physical examination.</li>
-          </ul>
-        </section>
+        <div class="partners-body">
+          <!-- ── What exists ──────────────────────────────────────────────── -->
+          <section class="ps" id="what-exists">
+            <h2>What exists today</h2>
+            <p class="ps-lead">
+              The tool is a working prototype, not a proposal. It has been run
+              on real objects:
+            </p>
+            <ul class="evidence-list">
+              <li>
+                <strong>Smithsonian NMNH A326247</strong> — Mimbres Black-on-white
+                bowl, accession 070367, collected 1923. Full four-pass analysis with
+                blind observation, documentation comparison, RAP Protocol, and complete
+                27-principle fingerprint. Publicly accessible on this site.
+              </li>
+              <li>
+                <strong>Commercial replica — corpus record 16</strong> — Southwest-style
+                ceramic marketed as contemporary work. Eight independent flags consistent
+                with modern manufacture; none consistent with pre-Columbian production.
+              </li>
+            </ul>
+            <div class="feature-grid">
+              <div class="feature">
+                <p class="feature-label">Three-pass analysis</p>
+                <p>
+                  Blind observation → documentation comparison and epistemic
+                  labeling → RAP Protocol and provenance assessment. Every claim
+                  is anchored to a physical observation or a named primary
+                  source.
+                </p>
+              </div>
+              <div class="feature">
+                <p class="feature-label">27-principle fingerprint</p>
+                <p>
+                  Each object is scored against 27 perceptual principles drawn
+                  from Brody, Shafer, Hegmon, and Schaafsma. Scores are stored
+                  as a vector in canonical order, built for similarity search
+                  when the corpus reaches density.
+                </p>
+              </div>
+              <div class="feature">
+                <p class="feature-label">Provenance integrity assessment</p>
+                <p>
+                  Eleven named structural gap patterns applied to every
+                  documentation record — no institutional anchor, no excavation
+                  record, private collection terminus, acquisition chain
+                  anomalies, and others. Severity-coded HIGH / MEDIUM / LOW.
+                </p>
+              </div>
+              <div class="feature">
+                <p class="feature-label">Contradiction detection</p>
+                <p>
+                  Documentation claims are cross-referenced against blind
+                  observations. When what the catalog says about construction,
+                  condition, or iconography conflicts with what the object
+                  shows, the tension is flagged explicitly.
+                </p>
+              </div>
+              <div class="feature">
+                <p class="feature-label">Reference corpus infrastructure</p>
+                <p>
+                  Database schema, distribution API, catalog management UI, and
+                  corpus access page are complete and live. The corpus itself
+                  needs populating — authenticated, well-documented objects from
+                  institutional collections. That is what the pilot builds.
+                </p>
+              </div>
+              <div class="feature">
+                <p class="feature-label">Epistemic labeling</p>
+                <p>
+                  Every claim in the analysis is marked [OBS], [INTERP], [CONS],
+                  or [THEORY] at the sentence level. Interpretive claims require
+                  two independent observations. The RAP Protocol flags claims
+                  with insufficient anchors — it is structural and cannot be
+                  turned off.
+                </p>
+              </div>
+            </div>
+          </section>
 
-        <!-- ── Governance and tribal review ───────────────────────────── -->
-        <!-- REVIEW: Alan to confirm specific commitments before outreach. -->
-        <section class="ps" id="governance">
-          <h2>Governance and tribal consultation</h2>
-          <p class="ps-lead">
-            Any project working with Southwest archaeological collections operates within
-            obligations that are legal, ethical, and relational — to the tribal communities
-            whose cultural heritage these objects represent.
-          </p>
-          <div class="gov-grid">
-            <div class="gov-item">
-              <p class="gov-label">Tribal consultation</p>
-              <p>The project design builds tribal consultation in as a structural requirement. For collections subject to NAGPRA review or culturally sensitive imagery protocols, tribal representatives review methodology before analysis begins on those objects.</p>
-            </div>
-            <div class="gov-item">
-              <p class="gov-label">Advisory review authority</p>
-              <p>The project advisory board includes representatives from tribal communities with cultural connections to the collections being analyzed. Advisory review authority over methodology is substantive.</p>
-            </div>
-            <div class="gov-item">
-              <p class="gov-label">Restricted records handling</p>
-              <p>Analysis records for culturally sensitive objects are handled under the same access controls as the underlying catalog records. Public display of analysis output for sensitive objects requires explicit institutional authorization.</p>
-            </div>
-            <div class="gov-item">
-              <p class="gov-label">Imagery protocols</p>
-              <p>Objects subject to culturally sensitive imagery restrictions are analyzed with those restrictions in force. Analysis of ceremonial objects or objects under tribal protocol is not performed without explicit tribal authorization.</p>
-            </div>
-          </div>
-        </section>
+          <!-- ── Partner benefits ────────────────────────────────────────── -->
+          <section class="ps" id="partner-gets">
+            <h2>What a partner institution receives</h2>
+            <ul class="benefit-list">
+              <li>
+                <strong>Co-applicant status on the grant.</strong> The partner institution
+                is named as a co-applicant on IMLS, NEH, or NAGPRA documentation grant
+                applications. The institutional affiliation is not cosmetic — it is
+                load-bearing for program officer review.
+              </li>
+              <li>
+                <strong>The complete instrument on project completion.</strong> Full
+                source transfer: prompt architecture, schema, eval harness, fingerprint
+                vectors, and the reference corpus itself. No ongoing licensing fees.
+                No subscription model. The partner institution or named consortium
+                owns the result.
+              </li>
+              <li>
+                <strong>Shared reference corpus.</strong> All authenticated objects
+                contributed by any partner are accessible to all partners. The corpus
+                is a community resource, not a proprietary dataset held against the
+                field.
+              </li>
+              <li>
+                <strong>Right to use, adapt, and extend.</strong> The partner may
+                deploy, modify, and fork the instrument for its own collections workflows.
+                The transfer includes no restrictions on institutional use.
+              </li>
+              <li>
+                <strong>Validated forensic methodology.</strong> Analysis epistemics
+                are being developed in collaboration with a practicing forensic scientist.
+                The evidentiary standards built into the tool reflect forensic documentation
+                practice, not informal connoisseurship.
+              </li>
+            </ul>
+          </section>
 
-        <!-- ── Transfer and stewardship ────────────────────────────────── -->
-        <section class="ps" id="stewardship">
-          <h2>Transfer and long-term stewardship</h2>
-          <p>
-            The design intention is explicit: build the instrument, validate it against a documented corpus,
-            and transfer stewardship to a museum, tribal organization, or research consortium with long-term
-            care capacity. Funders own the result.
-          </p>
-          <p>
-            On project completion, the full instrument transfers to the anchor institution or a named research
-            consortium: source code, prompt architecture, schema, eval harness, and the reference corpus itself.
-            No ongoing licensing fees. No subscription model. No dependency on the original developer.
-          </p>
-          <p>
-            Long-term stewardship candidates include a museum with existing Southwest collections, a university-based
-            research center in archaeology or materials science, or a tribal organization with collections management
-            capacity. The partner institution and the development team identify the steward jointly during the pilot phase.
-          </p>
-        </section>
-
-        <!-- ── Funding lanes ───────────────────────────────────────────── -->
-        <section class="ps" id="funding">
-          <h2>Funding lanes</h2>
-          <p class="ps-lead">Three established federal programs align directly with this project's scope:</p>
-          <div class="lane-list">
-            <div class="lane">
-              <p class="lane-label">IMLS — Collections Stewardship</p>
-              <p>
-                Institute of Museum and Library Services Collections Stewardship grants fund exactly this:
-                infrastructure to document, authenticate, and care for institutional collections. A shared
-                reference corpus and fingerprint instrument for Southwest ceramics is squarely within scope.
-              </p>
+          <!-- ── Pilot data requirements ─────────────────────────────────── -->
+          <section class="ps" id="pilot-needs">
+            <h2>What the pilot requires from collections</h2>
+            <p class="ps-lead">
+              The reference corpus is a structured data-collection effort, not a
+              raw donation intake. It targets objects that can anchor
+              statistically meaningful comparison across traditions.
+            </p>
+            <div class="req-grid">
+              <div class="req">
+                <p class="req-label">Scale</p>
+                <p>
+                  150–300 objects across three traditions — Mimbres, Ancestral
+                  Puebloan, Hohokam. Thirty objects per tradition is the minimum
+                  for meaningful fingerprint distribution analysis. The pilot
+                  targets fifty per tradition.
+                </p>
+              </div>
+              <div class="req">
+                <p class="req-label">Provenience</p>
+                <p>
+                  Objects with known provenience: excavation record,
+                  institutional anchor, and an unambiguous chain of custody. The
+                  reference corpus draws only from documented contexts — Swarts
+                  Ruin, NAN Ranch, Pueblo Bonito, and comparable assemblages are
+                  the target sources.
+                </p>
+              </div>
+              <div class="req">
+                <p class="req-label">Documentation</p>
+                <p>
+                  Existing catalog record with tradition attribution supported
+                  by primary sources. Physical analysis data (XRF, petrography,
+                  temper) is a strong plus but not a prerequisite for corpus
+                  inclusion.
+                </p>
+              </div>
+              <div class="req">
+                <p class="req-label">Custody</p>
+                <p>
+                  Objects already in institutional custody. The pilot does not
+                  intake undocumented donated material. If the chain of custody
+                  is unclear, the object is ineligible for the reference corpus.
+                </p>
+              </div>
             </div>
-            <div class="lane">
-              <p class="lane-label">NEH — Preservation and Access</p>
-              <p>
-                National Endowment for the Humanities Preservation and Access grants cover documentation
-                methodology and digital infrastructure for collections with humanities significance.
-                The analytical framework — grounded in Brody, Shafer, Hegmon, and Schaafsma — situates
-                this within humanistic scholarship on material culture.
-              </p>
-            </div>
-            <div class="lane">
-              <p class="lane-label">NAGPRA documentation grants</p>
-              <p>
-                NAGPRA documentation funding specifically supports projects that build the evidentiary
-                record for repatriation review. This tool produces NAGPRA-relevant documentation as a
-                direct output: provenance gap assessments, contradiction flags between catalog attribution
-                and physical evidence, and fingerprint alignment with tradition assemblages. A project
-                that surfaces repatriation candidates systematically is directly fundable under this program.
-              </p>
-            </div>
-          </div>
-        </section>
+          </section>
 
-        <!-- ── Contact ─────────────────────────────────────────────────── -->
-        <section class="ps partners-contact" id="contact">
-          <h2>Get in touch</h2>
-          <p>
-            If you are a collections director, program officer, or institutional researcher evaluating whether
-            this project is worth a conversation, the right next step is a direct email.
-          </p>
-          <a href="mailto:contact@thegrammarofthings.com" class="contact-cta">contact@thegrammarofthings.com</a>
-        </section>
+          <!-- ── What the tool will not claim ───────────────────────────── -->
+          <!-- REVIEW: Alan to confirm this section before outreach. -->
+          <section class="ps" id="limits">
+            <h2>What the tool will not claim</h2>
+            <p class="ps-lead">
+              The instrument is designed for use as decision support in human
+              review workflows — not as a replacement for human expertise, legal
+              process, or tribal authority.
+            </p>
+            <ul class="limits-list">
+              <li>
+                The tool does not make cultural affiliation determinations. A
+                fingerprint similarity match to a tradition is evidence for a
+                qualified researcher to evaluate — it is not a conclusion.
+              </li>
+              <li>
+                It does not produce findings with legal weight for NAGPRA
+                proceedings. It surfaces candidates for provenience research.
+                The determination remains with the relevant agency, tribe, and
+                qualified human reviewers.
+              </li>
+              <li>
+                It does not authenticate or deauthenticate objects. The RAP
+                Protocol flags claims with insufficient evidentiary anchors and
+                marks them as hypotheses. It does not issue verdicts.
+              </li>
+              <li>
+                Analysis output is labeled by epistemic type at the claim level
+                — observation, interpretation, consilience, theory. The labels
+                are structural and cannot be suppressed.
+              </li>
+              <li>
+                The tool is not a substitute for physical examination. It works
+                from photographs and catalog records. Condition assessment,
+                temper analysis, firing characteristics, and residue analysis
+                require direct physical examination.
+              </li>
+            </ul>
+          </section>
 
+          <!-- ── Governance and tribal review ───────────────────────────── -->
+          <!-- REVIEW: Alan to confirm specific commitments before outreach. -->
+          <section class="ps" id="governance">
+            <h2>Governance and tribal consultation</h2>
+            <p class="ps-lead">
+              Any project working with Southwest archaeological collections
+              operates within obligations that are legal, ethical, and
+              relational — to the tribal communities whose cultural heritage
+              these objects represent.
+            </p>
+            <div class="gov-grid">
+              <div class="gov-item">
+                <p class="gov-label">Tribal consultation</p>
+                <p>
+                  The project design builds tribal consultation in as a
+                  structural requirement. For collections subject to NAGPRA
+                  review or culturally sensitive imagery protocols, tribal
+                  representatives review methodology before analysis begins on
+                  those objects.
+                </p>
+              </div>
+              <div class="gov-item">
+                <p class="gov-label">Advisory review authority</p>
+                <p>
+                  The project advisory board includes representatives from
+                  tribal communities with cultural connections to the
+                  collections being analyzed. Advisory review authority over
+                  methodology is substantive.
+                </p>
+              </div>
+              <div class="gov-item">
+                <p class="gov-label">Restricted records handling</p>
+                <p>
+                  Analysis records for culturally sensitive objects are handled
+                  under the same access controls as the underlying catalog
+                  records. Public display of analysis output for sensitive
+                  objects requires explicit institutional authorization.
+                </p>
+              </div>
+              <div class="gov-item">
+                <p class="gov-label">Imagery protocols</p>
+                <p>
+                  Objects subject to culturally sensitive imagery restrictions
+                  are analyzed with those restrictions in force. Analysis of
+                  ceremonial objects or objects under tribal protocol is not
+                  performed without explicit tribal authorization.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── Transfer and stewardship ────────────────────────────────── -->
+          <section class="ps" id="stewardship">
+            <h2>Transfer and long-term stewardship</h2>
+            <p>
+              The design intention is explicit: build the instrument, validate
+              it against a documented corpus, and transfer stewardship to a
+              museum, tribal organization, or research consortium with long-term
+              care capacity. Funders own the result.
+            </p>
+            <p>
+              On project completion, the full instrument transfers to the anchor
+              institution or a named research consortium: source code, prompt
+              architecture, schema, eval harness, and the reference corpus
+              itself. No ongoing licensing fees. No subscription model. No
+              dependency on the original developer.
+            </p>
+            <p>
+              Long-term stewardship candidates include a museum with existing
+              Southwest collections, a university-based research center in
+              archaeology or materials science, or a tribal organization with
+              collections management capacity. The partner institution and the
+              development team identify the steward jointly during the pilot
+              phase.
+            </p>
+          </section>
+
+          <!-- ── Funding lanes ───────────────────────────────────────────── -->
+          <section class="ps" id="funding">
+            <h2>Funding lanes</h2>
+            <p class="ps-lead">
+              Three established federal programs align directly with this
+              project's scope:
+            </p>
+            <div class="lane-list">
+              <div class="lane">
+                <p class="lane-label">IMLS — Collections Stewardship</p>
+                <p>
+                  Institute of Museum and Library Services Collections
+                  Stewardship grants fund exactly this: infrastructure to
+                  document, authenticate, and care for institutional
+                  collections. A shared reference corpus and fingerprint
+                  instrument for Southwest ceramics is squarely within scope.
+                </p>
+              </div>
+              <div class="lane">
+                <p class="lane-label">NEH — Preservation and Access</p>
+                <p>
+                  National Endowment for the Humanities Preservation and Access
+                  grants cover documentation methodology and digital
+                  infrastructure for collections with humanities significance.
+                  The analytical framework — grounded in Brody, Shafer, Hegmon,
+                  and Schaafsma — situates this within humanistic scholarship on
+                  material culture.
+                </p>
+              </div>
+              <div class="lane">
+                <p class="lane-label">NAGPRA documentation grants</p>
+                <p>
+                  NAGPRA documentation funding specifically supports projects
+                  that build the evidentiary record for repatriation review.
+                  This tool produces NAGPRA-relevant documentation as a direct
+                  output: provenance gap assessments, contradiction flags
+                  between catalog attribution and physical evidence, and
+                  fingerprint alignment with tradition assemblages. A project
+                  that surfaces repatriation candidates systematically is
+                  directly fundable under this program.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- ── Contact ─────────────────────────────────────────────────── -->
+          <section class="ps partners-contact" id="contact">
+            <h2>Get in touch</h2>
+            <p>
+              If you are a collections director, program officer, or
+              institutional researcher evaluating whether this project is worth
+              a conversation, the right next step is a direct email.
+            </p>
+            <a href="mailto:contact@thegrammarofthings.com" class="contact-cta"
+              >contact@thegrammarofthings.com</a
+            >
+          </section>
+        </div>
       </div>
     </div>
-  </div>
 
-  <SiteFooter />
-</body>
+    <SiteFooter />
+  </body>
 </html>
 
 <style>
@@ -319,14 +441,19 @@ import SiteFooter from '../components/SiteFooter.astro';
     max-width: 72ch;
     margin-bottom: var(--space-8);
   }
-  .ps p:not(.ps-lead):not(.feature-label):not(.req-label):not(.gov-label):not(.lane-label) {
+  .ps
+    p:not(.ps-lead):not(.feature-label):not(.req-label):not(.gov-label):not(
+      .lane-label
+    ) {
     font-size: var(--text-base);
     color: var(--text-muted);
     line-height: var(--leading-body);
     max-width: 76ch;
     margin-bottom: var(--space-4);
   }
-  .ps p:last-child { margin-bottom: 0; }
+  .ps p:last-child {
+    margin-bottom: 0;
+  }
 
   /* Evidence list */
   .evidence-list {
@@ -345,7 +472,9 @@ import SiteFooter from '../components/SiteFooter.astro';
     line-height: var(--leading-body);
     color: var(--text-muted);
   }
-  .evidence-list li strong { color: var(--text); }
+  .evidence-list li strong {
+    color: var(--text);
+  }
 
   /* Feature grid */
   .feature-grid {
@@ -391,7 +520,9 @@ import SiteFooter from '../components/SiteFooter.astro';
     line-height: var(--leading-body);
     color: var(--text-muted);
   }
-  .benefit-list li strong { color: var(--text); }
+  .benefit-list li strong {
+    color: var(--text);
+  }
 
   /* Requirements grid */
   .req-grid {
@@ -516,7 +647,9 @@ import SiteFooter from '../components/SiteFooter.astro';
     border: 1px solid var(--border) !important;
     border-bottom: 1px solid var(--border) !important;
   }
-  .partners-contact h2 { margin-bottom: var(--space-4); }
+  .partners-contact h2 {
+    margin-bottom: var(--space-4);
+  }
   .contact-cta {
     display: inline-block;
     margin-top: var(--space-6);
@@ -527,7 +660,9 @@ import SiteFooter from '../components/SiteFooter.astro';
     text-decoration: none;
     border-bottom: 1px solid var(--accent);
     padding-bottom: 1px;
-    transition: color var(--ease), border-color var(--ease);
+    transition:
+      color var(--ease),
+      border-color var(--ease);
   }
   .contact-cta:hover {
     color: var(--accent-light);
@@ -537,7 +672,11 @@ import SiteFooter from '../components/SiteFooter.astro';
   @media (max-width: 900px) {
     .feature-grid,
     .req-grid,
-    .gov-grid { grid-template-columns: 1fr; }
-    .partners-hero { margin-bottom: var(--space-12); }
+    .gov-grid {
+      grid-template-columns: 1fr;
+    }
+    .partners-hero {
+      margin-bottom: var(--space-12);
+    }
   }
 </style>

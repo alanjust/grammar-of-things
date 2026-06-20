@@ -2,10 +2,10 @@
 // IMLS framing: collections stewardship, institutional transfer, museum-field needs.
 
 export interface CredibilityContent {
-  headline:   string;
-  subhead:    string;
-  items:      { title: string; body: string }[];
-  transfer:   string;   // build-and-transfer / sustainability statement
+  headline: string;
+  subhead: string;
+  items: { title: string; body: string }[];
+  transfer: string;   // build-and-transfer / sustainability statement
 }
 
 export const credibility: CredibilityContent = {
@@ -24,7 +24,7 @@ export const credibility: CredibilityContent = {
     {
       title: 'Forensic-science partnership',
       body:
-        'Methodology is being validated in collaboration with a U.S. Fish and Wildlife Service '
+        'Methodology is being validated in collaboration with a practicing '
         + 'forensic partner. The epistemic labeling system and RAP Protocol enforce the same '
         + 'evidentiary standards applied in forensic documentation.',
     },
