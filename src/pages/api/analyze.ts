@@ -250,7 +250,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const pass2Stream = streamModel(modelConfig.pass2, {
           max_tokens: 8000,
           system: isConnections ? PASS2_SYSTEM_CONNECTIONS : PASS2_SYSTEM_ARTIFACT,
-          messages: [{ role: 'user', content: [...imageBlocks, { type: 'text', text: pass2UserText }] }],
+          messages: [{ role: 'user', content: [{ type: 'text', text: pass2UserText }] }],
         }, anthropic);
 
         for await (const event of pass2Stream) {
