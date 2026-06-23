@@ -260,7 +260,10 @@ const radarSvg = fpVec.length > 0 ? buildRadar(fpVec) : '';
 
               {object.fingerprint_pass1_text && (
                 <div class="fp-pass1">
-                  <p class="fp-pass1-label">Pass 1 — blind observation</p>
+                  <p class="fp-pass1-label">
+                    Pass 1 — blind observation
+                    {object.pass1_truncated ? <span class="fp-pass1-truncated">incomplete — re-ingest to refresh</span> : null}
+                  </p>
                   <div class="fp-pass1-text prose" set:html={renderMarkdown(object.fingerprint_pass1_text)} />
                 </div>
               )}
@@ -798,7 +801,8 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
   .fp-name  { font-size: var(--text-sm); color: var(--text); text-decoration: none; }
   .fp-name:hover { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; }
   .fp-pass1 { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-6); }
-  .fp-pass1-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent); letter-spacing: var(--tracking-wider); text-transform: uppercase; margin-bottom: var(--space-4); max-width: none; }
+  .fp-pass1-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--accent); letter-spacing: var(--tracking-wider); text-transform: uppercase; margin-bottom: var(--space-4); max-width: none; display: flex; align-items: center; gap: var(--space-3); }
+  .fp-pass1-truncated { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-error); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-wider); text-transform: uppercase; }
   .fp-pass1-text { font-size: var(--text-base); line-height: var(--leading-relaxed); color: var(--text-muted); max-height: 320px; overflow-y: auto; }
   .fp-pass1-text :global(ul),
   .fp-pass1-text :global(ol) { padding-left: 1.4em; }

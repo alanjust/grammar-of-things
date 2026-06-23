@@ -161,7 +161,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           : PASS1_PROMPT_MULTI(normalized.length, ARTIFACT_PRINCIPLE_NAMES, APPLICABLE_TIER_A_NAMES);
 
         const pass1MsgParams = {
-          max_tokens: 2048,
+          max_tokens: 4096,
           system: PASS1_SYSTEM,
           messages: [{ role: 'user', content: [...imageBlocks, { type: 'text', text: pass1Prompt }] }],
         };
@@ -203,6 +203,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
             msg.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n\n')
           ),
         ];
+        const pass1Truncated = (
+          pass1Msg.stop_reason === 'max_tokens' ||
+          extraMsgs.some(m => m.stop_reason === 'max_tokens')
+        ) ? 1 : 0;
 
         send({ type: 'status', message: stabilityPasses > 1
           ? `Track A — scoring fingerprint across ${stabilityPasses} passes…`
@@ -319,6 +323,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
               fingerprinted_at                = ?,
               fingerprint_stability_passes    = ?,
               fingerprint_stability_map       = ?,
+              pass1_truncated                 = ?,
               is_reference                    = ?,
               reference_tradition             = ?,
               updated_at                      = datetime('now')
@@ -337,6 +342,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             fingerprintedAt,
             stabilityPasses,
             Object.keys(stabilityMap).length > 0 ? JSON.stringify(stabilityMap) : null,
+            pass1Truncated,
             is_reference ? 1 : 0,
             is_reference ? (reference_tradition ?? null) : null,
             objectId,
