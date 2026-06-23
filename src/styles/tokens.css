@@ -28,6 +28,7 @@
   --white:          #ffffff;   /* Pure white — button text on accent, form inputs */
   --color-error:    #c0392b;   /* Destructive / error */
   --color-error-soft: #e07070; /* Soft error — status messages, non-critical warnings */
+  --color-error-bg: #fdf0f0;   /* Error background — warning panels, truncation notices */
   --color-warn:     #e5c68a;   /* Caution border — amber */
   --color-warn-bg:  #fef3c7;   /* Caution background */
   --color-diff-bg:  #fffdf5;   /* Mismatch / diff surface */

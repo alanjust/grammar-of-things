@@ -263,6 +263,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const pass2Text = pass2Msg.content
           .filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n\n');
         const pass2CacheRead = (pass2Msg.usage as any).cache_read_input_tokens ?? 0;
+        const pass2Truncated = pass2Msg.stop_reason === 'max_tokens' ? 1 : 0;
+        if (pass2Truncated) send({ type: 'status', message: '⚠ Pass 2 reached token limit — analysis may be incomplete' });
 
         // ----------------------------------------------------------------
         // Pass 3 — competency / takeaway
@@ -281,6 +283,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         const pass3Text = pass3Msg.content
           .filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n\n');
+        const pass3Truncated = pass3Msg.stop_reason === 'max_tokens' ? 1 : 0;
+        if (pass3Truncated) send({ type: 'status', message: '⚠ Pass 3 reached token limit — takeaway may be incomplete' });
 
         // ----------------------------------------------------------------
         // Pass 4 — extraction + analysis vector (parallel)
@@ -425,8 +429,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
               object_class, tradition, tradition_confidence,
               function_category, production_level, tradition_routing_basis, metadata_completeness,
               provenance_flags, contradiction_flags,
+              pass2_truncated, pass3_truncated,
               created_at
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))
           `).bind(
             object_id,
             isConnections ? 'connections' : 'artifact',
@@ -451,6 +456,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
             structuredRecord?.metadata_completeness   ?? null,
             provenanceFlags.length > 0 ? JSON.stringify(provenanceFlags) : null,
             contradictionFlags.length > 0 ? JSON.stringify(contradictionFlags) : null,
+            pass2Truncated,
+            pass3Truncated,
           ).run();
           analysisId = result.meta?.last_row_id ?? null;
         } catch (err) {

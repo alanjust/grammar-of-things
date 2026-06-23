@@ -178,6 +178,9 @@ const readMin = readTime(totalWords);
                 <span class="pass-num">Pass 2</span>
                 <span class="pass-name">{analysis.mode === 'connections' ? 'Cultural connections' : 'Artifact analysis'}</span>
               </div>
+              {analysis.pass2_truncated ? (
+                <p class="truncated-note">This analysis reached the output limit and may be cut short. Re-run analysis for a complete result.</p>
+              ) : null}
               <div class="pass-body prose" set:html={renderMarkdown(analysis.pass2_text)} />
             </section>
           )}
@@ -189,6 +192,9 @@ const readMin = readTime(totalWords);
                 <span class="pass-num">Pass 3</span>
                 <span class="pass-name">What to take forward</span>
               </div>
+              {analysis.pass3_truncated ? (
+                <p class="truncated-note">This section reached the output limit and may be cut short. Re-run analysis for a complete result.</p>
+              ) : null}
               <div class="pass-body prose" set:html={renderMarkdown(analysis.pass3_text)} />
             </section>
           )}
@@ -432,6 +438,16 @@ if (isAdmin) {
   .notes-status { font-family: var(--font-mono); font-size: var(--text-xs); }
   .notes-saved { color: var(--cons); }
   .notes-error { color: var(--color-error); }
+
+  .truncated-note {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--color-error);
+    background: var(--color-error-bg);
+    border-left: 2px solid var(--color-error);
+    border-radius: var(--radius-sm);
+    margin: 0 0 var(--space-6);
+  }
 
   @media (max-width: 640px) {
     .analysis-header { grid-template-columns: 1fr; }
