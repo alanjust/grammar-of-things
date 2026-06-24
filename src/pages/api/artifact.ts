@@ -983,8 +983,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         send({ type: 'status', message: 'Pass 1 — formal observation…' });
 
         const pass1MsgParams = {
-          max_tokens: 2048,
-          system: 'You are a trained artifact observer. Report only what is directly present and physically observable. Read surface features as production evidence. No interpretation, no cultural attribution, no quality judgments.',
+          max_tokens: 4096,
+          system: 'You have completed a close examination of this artifact. Report what you found.',
           messages: [{
             role: 'user' as const,
             content: [

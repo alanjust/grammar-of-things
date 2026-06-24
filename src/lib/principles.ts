@@ -37,44 +37,34 @@ export const TIER_A_PRINCIPLE_REF = (principlesData.principles as any[])
 // ---------------------------------------------------------------------------
 
 export const PASS1_PROMPT_SINGLE = (artifactPrincipleNames: string[], applicableTierANames: string[]) =>
-  `Describe only what you can directly observe in this artifact image. Pure observation — no interpretation, no cultural attribution, no quality judgments.
+  `You have examined this artifact closely. Report what the examination found — first person, specific, in the order things became clear. Not an inventory of categories; the conclusions of a systematic examination. No interpretation, no cultural attribution, no quality judgments. Only what is directly observable.
 
-Cover systematically:
-- Overall form: what the object is, its general shape, orientation, and scale
-- Surface features: every mark, line, texture, and irregularity — read these as production evidence, not just surface description
-- Material boundaries: where one material or surface treatment ends and another begins
-- Color zones: what colors are present and how they are distributed across the object
-- Wear and condition: where surfaces appear more abraded, worn, polished, or eroded than others, and where they do not
-- Evidence of attachment or joining: holes, channels, residue, binding marks, inset cavities, grooves
-- Proportions: thickness, depth, wall relationships, scale relative to other features
-- Anything incomplete, interrupted, or where a gap in the surface suggests something is absent
+Move through: what the overall form is — shape, orientation, scale. What the surface holds: every mark, line, texture, and irregularity read as production evidence. Where material boundaries fall — where one material or surface treatment ends and another begins. What colors are present and how they distribute. Where surfaces show differential wear: more abraded, worn, polished, or eroded than adjacent areas, and where they do not. What the evidence of attachment or joining looks like: holes, channels, residue, binding marks, inset cavities, grooves. How proportions work: thickness, depth, wall relationships, scale relative to other features. What is incomplete, interrupted, or where a gap suggests something absent.
 
-Be specific and granular. Work systematically across the object from one end to the other.
+Be specific and granular.
 
-ARTIFACT PERCEPTUAL PRINCIPLES: When your observation corresponds to one of the following, use the exact name and follow it immediately with what you specifically observe:
+ARTIFACT PERCEPTUAL PRINCIPLES: When what you found corresponds to one of the following named mechanisms, use the exact name and follow it immediately with the specific thing you observed. Use the name only when the mechanism is genuinely active — do not force mentions:
 
 ${artifactPrincipleNames.join(', ')}
 
-UNIVERSAL VISUAL PRINCIPLES: These apply to all artifact observation regardless of object type or domain. When your observation engages any of the following, use the exact name and follow it immediately with what you specifically observe:
+UNIVERSAL VISUAL PRINCIPLES: These apply to all artifact observation regardless of object type or domain. When what you found engages any of the following, use the exact name and follow it immediately with the specific thing you observed:
 
 ${applicableTierANames.join(', ')}
 
 ARTIFACT-DOMAIN APPLICATION OF TIER A PRINCIPLES: When applying Tier A principles alongside the 15 Artifact Perceptual Principles, do not use studioTool framing — do not ask what an artist did to a viewer. Ask what the mechanism reveals about the object. Edge Detection reads line quality as production evidence; Figure-Ground reads positive-negative design strategy; Color Opponent Channels reads zone organization logic; Closure reads whether negative space is designed or residual; and so on for each active principle.`;
 
 export const PASS1_PROMPT_MULTI = (count: number, artifactPrincipleNames: string[], applicableTierANames: string[]) =>
-  `You are looking at ${count} images of the same artifact. Each image is labeled with its view. Work through each view in sequence, using the label as a header.
+  `You have examined ${count} views of the same artifact. Report what the examination found, view by view, using the image label as a header.
 
-For each view, describe only what you can directly observe — pure observation, no interpretation, no cultural attribution, no quality judgments.
-
-For each view cover: surface features visible from this angle (marks, lines, textures, irregularities read as production evidence), material boundaries, color zones and their distribution, wear and condition differential, evidence of attachment or joining, proportions and scale cues specific to this view.
+For each view, report only what was directly observable — first person, specific, no interpretation, no cultural attribution, no quality judgments. Move through: surface features visible from this angle (marks, lines, textures, irregularities read as production evidence), material boundaries, color zones and their distribution, wear and condition differential, evidence of attachment or joining, proportions and scale cues specific to this view.
 
 After covering all views, note any features that are only visible — or that read differently — from specific views.
 
-ARTIFACT PERCEPTUAL PRINCIPLES: When your observation corresponds to one of the following, use the exact name and follow it immediately with what you specifically observe:
+ARTIFACT PERCEPTUAL PRINCIPLES: When what you found corresponds to one of the following named mechanisms, use the exact name and follow it immediately with the specific thing you observed. Use the name only when the mechanism is genuinely active — do not force mentions:
 
 ${artifactPrincipleNames.join(', ')}
 
-UNIVERSAL VISUAL PRINCIPLES: These apply to all artifact observation regardless of object type or domain. When your observation engages any of the following, use the exact name and follow it immediately with what you specifically observe:
+UNIVERSAL VISUAL PRINCIPLES: These apply to all artifact observation regardless of object type or domain. When what you found engages any of the following, use the exact name and follow it immediately with the specific thing you observed:
 
 ${applicableTierANames.join(', ')}
 

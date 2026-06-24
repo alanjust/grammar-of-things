@@ -16,7 +16,7 @@ export const prerender = false;
 // ---------------------------------------------------------------------------
 // Pass 1 system prompt — static, eligible for caching in a future A1 pass
 // ---------------------------------------------------------------------------
-const PASS1_SYSTEM = 'You are a trained artifact observer. Report only what is directly present and physically observable. Read surface features as production evidence. No interpretation, no cultural attribution, no quality judgments.';
+const PASS1_SYSTEM = 'You have completed a close examination of this artifact. Report what you found.';
 
 // ---------------------------------------------------------------------------
 // POST /api/ingest
