@@ -6,7 +6,11 @@ import {
   ARTIFACT_PRINCIPLE_NAMES, APPLICABLE_TIER_A_NAMES,
   PASS1_PROMPT_SINGLE, PASS1_PROMPT_MULTI, VECTOR_SCORING_PROMPT,
 } from '../../lib/principles';
-import { resolveModelConfig, streamModel, callModel } from '../../lib/model-router';
+import {
+  resolveModelConfig, streamModel, callModel,
+  resolveStabilityConfigs, callModelNeutral,
+  type NeutralRequest,
+} from '../../lib/model-router';
 import { normalizeImage, dataUrlToBlob, IMAGE_SPEC } from '../../lib/image';
 import { extractDocLayers } from '../../lib/doc-extract';
 import { VECTOR_KEY, serializeVector } from '../../db/types';
@@ -166,21 +170,46 @@ export const POST: APIRoute = async ({ request, locals }) => {
           messages: [{ role: 'user', content: [...imageBlocks, { type: 'text', text: pass1Prompt }] }],
         };
 
-        // Extra Pass 1 runs start concurrently with the stream so they overlap
-        const extraRunPromises: Promise<Anthropic.Message>[] = stabilityPasses > 1
-          ? Array.from({ length: stabilityPasses - 1 }, () =>
-              callModel(modelConfig.pass1, pass1MsgParams as any, anthropic)
-            )
-          : [];
+        // Neutral request shape for multi-provider runs
+        const imageData = normalized[0].dataUrl.split(',')[1];
+        const imageMime = normalized[0].mimeType;
+        const neutralPass1Req: NeutralRequest = {
+          system: PASS1_SYSTEM,
+          prompt: pass1Prompt,
+          maxTokens: 4096,
+          image: { mediaType: imageMime, data: imageData },
+        };
 
-        send({ type: 'status', message: stabilityPasses > 1
-          ? `Track A — Pass 1 blind observation (${stabilityPasses} parallel runs)…`
-          : 'Track A — Pass 1 blind observation…'
-        });
+        const stabilityCfgs  = resolveStabilityConfigs(env);
+        const activeProviders = ['anthropic', 'gemini', 'openai'] as const;
 
-        // Pass 1 run 1 — streams deltas to the client
+        // Launch all non-primary runs concurrently before streaming so they overlap with Run 1
+        // Claude runs 2+3 — silent concurrent
+        const claudeSilentPromises = Array.from({ length: stabilityPasses - 1 }, () =>
+          callModel(modelConfig.pass1, pass1MsgParams as any, anthropic).then(
+            msg => msg.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n\n')
+          ).catch(() => null as string | null)
+        );
+
+        // Gemini runs — silent concurrent (graceful: missing API key → null)
+        const geminiPromises = Array.from({ length: stabilityPasses }, () =>
+          callModelNeutral(stabilityCfgs.gemini, neutralPass1Req, env)
+            .then(r => r.text)
+            .catch(() => null as string | null)
+        );
+
+        // OpenAI runs — silent concurrent
+        const openaiPromises = Array.from({ length: stabilityPasses }, () =>
+          callModelNeutral(stabilityCfgs.openai, neutralPass1Req, env)
+            .then(r => r.text)
+            .catch(() => null as string | null)
+        );
+
+        const totalProviderRuns = stabilityPasses + stabilityCfgs.gemini.model ? stabilityPasses : 0;
+        send({ type: 'status', message: `Track A — Pass 1 blind observation (${activeProviders.length} providers × ${stabilityPasses} runs)…` });
+
+        // Claude run 1 — streams live to client
         const pass1Stream = streamModel(modelConfig.pass1, pass1MsgParams as any, anthropic);
-
         for await (const event of pass1Stream) {
           if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
             send({ type: 'pass1_delta', text: event.delta.text });
@@ -195,23 +224,41 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         send({ type: 'pass1_complete', pass1: pass1Text });
 
-        // Await extra runs (likely already done) then score all N in parallel
-        const extraMsgs = await Promise.all(extraRunPromises);
-        const allPass1Texts = [
-          pass1Text,
-          ...extraMsgs.map(msg =>
-            msg.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n\n')
-          ),
-        ];
-        const pass1Truncated = (
-          pass1Msg.stop_reason === 'max_tokens' ||
-          extraMsgs.some(m => m.stop_reason === 'max_tokens')
-        ) ? 1 : 0;
+        // Collect all runs — Claude silent runs, Gemini, OpenAI
+        const [claudeSilentResults, geminiResults, openaiResults] = await Promise.all([
+          Promise.all(claudeSilentPromises),
+          Promise.all(geminiPromises),
+          Promise.all(openaiPromises),
+        ]);
 
-        send({ type: 'status', message: stabilityPasses > 1
-          ? `Track A — scoring fingerprint across ${stabilityPasses} passes…`
-          : 'Track A — scoring fingerprint vector…'
-        });
+        const pass1Truncated = pass1Msg.stop_reason === 'max_tokens' ? 1 : 0;
+
+        // Build labeled run list for storage and synthesis
+        type LabeledRun = { provider: string; run: number; text: string };
+        const labeledRuns: LabeledRun[] = [
+          { provider: 'claude', run: 1, text: pass1Text },
+          ...claudeSilentResults.filter((t): t is string => t !== null).map((text, i) => ({
+            provider: 'claude', run: i + 2, text,
+          })),
+          ...geminiResults.filter((t): t is string => t !== null).map((text, i) => ({
+            provider: 'gemini', run: i + 1, text,
+          })),
+          ...openaiResults.filter((t): t is string => t !== null).map((text, i) => ({
+            provider: 'openai', run: i + 1, text,
+          })),
+        ];
+
+        const allPass1Texts = labeledRuns.map(r => r.text);
+
+        const providerCounts: Record<string, number> = {};
+        for (const r of labeledRuns) providerCounts[r.provider] = (providerCounts[r.provider] ?? 0) + 1;
+        const providerSummary = Object.entries(providerCounts).map(([p, n]) => `${p} ×${n}`).join(', ');
+        send({ type: 'status', message: `Track A — collected ${labeledRuns.length} observations (${providerSummary})` });
+
+        // ----------------------------------------------------------------
+        // Fingerprint vector — score all runs, take Run 1 (Claude) scores
+        // ----------------------------------------------------------------
+        send({ type: 'status', message: `Track A — scoring fingerprint across ${labeledRuns.length} passes…` });
 
         let fingerprintVector: string | null = null;
         type StabilityMap = Record<string, { hits: number; total: number }>;
@@ -239,18 +286,70 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
           fingerprintVector = serializeVector(allScores[0]);
 
-          if (stabilityPasses > 1) {
-            const threshold = Math.ceil(stabilityPasses / 2);
-            for (const principleId of VECTOR_KEY) {
-              const hits = allScores.filter(scores => (scores[principleId] ?? 0) > 0).length;
-              if (hits > 0) stabilityMap[principleId] = { hits, total: stabilityPasses };
-            }
-            const stableCount    = Object.values(stabilityMap).filter(v => v.hits >= threshold).length;
-            const borderlineCount = Object.values(stabilityMap).filter(v => v.hits < threshold).length;
-            send({ type: 'status', message: `Stability: ${stableCount} high-confidence, ${borderlineCount} borderline` });
+          const threshold = Math.ceil(allPass1Texts.length / 2);
+          for (const principleId of VECTOR_KEY) {
+            const hits = allScores.filter(scores => (scores[principleId] ?? 0) > 0).length;
+            if (hits > 0) stabilityMap[principleId] = { hits, total: allPass1Texts.length };
           }
+          const stableCount     = Object.values(stabilityMap).filter(v => v.hits >= threshold).length;
+          const borderlineCount = Object.values(stabilityMap).filter(v => v.hits < threshold).length;
+          send({ type: 'status', message: `Stability: ${stableCount} high-confidence, ${borderlineCount} borderline across ${labeledRuns.length} runs` });
         } catch (err) {
           send({ type: 'status', message: `⚠ Vector scoring failed: ${err instanceof Error ? err.message : String(err)}` });
+        }
+
+        // ----------------------------------------------------------------
+        // Synthesis — text-level cross-model observation classification
+        // ----------------------------------------------------------------
+        let pass1Synthesized: string | null = null;
+
+        if (labeledRuns.length > 1) {
+          send({ type: 'status', message: 'Track A — synthesizing cross-model observations…' });
+          try {
+            const providersPresent = [...new Set(labeledRuns.map(r => r.provider))];
+            const labeledBlock = labeledRuns
+              .map(r => `--- ${r.provider.toUpperCase()}, Run ${r.run} ---\n${r.text}`)
+              .join('\n\n');
+
+            const synthesisPrompt = `You are synthesizing ${labeledRuns.length} independent blind observations of the same artifact. These observations were produced by ${providersPresent.length} different AI model families (${providersPresent.join(', ')}), with ${stabilityPasses} runs each.
+
+Your task: classify each substantive observation claim by how reliably it appeared across models and runs. Report only what the observations say — do not add your own visual readings.
+
+OBSERVATION TEXTS:
+${labeledBlock}
+
+---
+
+OUTPUT FORMAT — structured markdown, exactly these three sections, no other text:
+
+## Stable observations
+Claims that appear in the majority of runs AND in at least ${Math.min(2, providersPresent.length)} of the ${providersPresent.length} model families. One bullet per claim. Specific and concrete. This section is the reliable foundation for analysis.
+
+## Thin observations
+Claims that appear in majority of runs within one model family but are absent from others. Include provider attribution in brackets: e.g., "Beak-like projecting element at upper center [claude 3/${stabilityPasses}; absent gemini, openai]". These are possible systematic model biases — Pass 2 should treat them with lower confidence.
+
+## Contradicted observations
+Claims where different model families actively disagree. State both readings explicitly with source labels: e.g., "Figure identification: claude → avian/bird (beak + wing forms); gemini → amphibian/frog (plan view overhead); openai → zoomorphic". Pass 2 must hold these open rather than resolving them.
+
+Rules:
+- If all models agree on a claim, it belongs in Stable
+- An empty section is acceptable — write "None identified" rather than forcing entries
+- Keep bullets specific: avoid summary language like "overall form is consistent across runs"
+- Do not editorialize about which reading is more likely correct`;
+
+            const synthesisMsg = await callModel(modelConfig.pass1, {
+              max_tokens: 3000,
+              system: 'You are synthesizing multiple independent visual observations. Report only what the observations contain. Do not add your own visual readings.',
+              messages: [{ role: 'user', content: [{ type: 'text', text: synthesisPrompt }] }],
+            }, anthropic);
+
+            pass1Synthesized = synthesisMsg.content
+              .filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n\n');
+
+            send({ type: 'status', message: 'Track A — synthesis complete' });
+          } catch (err) {
+            send({ type: 'status', message: `⚠ Synthesis failed: ${err instanceof Error ? err.message : String(err)}` });
+          }
         }
 
         // ----------------------------------------------------------------
@@ -319,14 +418,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
               image_spec                = ?,
               fingerprint_vector        = ?,
               fingerprint_model         = ?,
-              fingerprint_pass1_text    = ?,
-              fingerprinted_at                = ?,
-              fingerprint_stability_passes    = ?,
-              fingerprint_stability_map       = ?,
-              pass1_truncated                 = ?,
-              is_reference                    = ?,
-              reference_tradition             = ?,
-              updated_at                      = datetime('now')
+              fingerprint_pass1_text         = ?,
+              fingerprint_stability_runs     = ?,
+              fingerprint_pass1_synthesized  = ?,
+              fingerprinted_at               = ?,
+              fingerprint_stability_passes   = ?,
+              fingerprint_stability_map      = ?,
+              pass1_truncated                = ?,
+              is_reference                   = ?,
+              reference_tradition            = ?,
+              updated_at                     = datetime('now')
             WHERE id = ?
           `).bind(
             ezidArk, catalogNumber, accessionNumber,
@@ -339,8 +440,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
             fingerprintVector,
             pass1Msg.model,
             pass1Text,
+            labeledRuns.length > 0 ? JSON.stringify(labeledRuns.map(r => ({ provider: r.provider, run: r.run, text: r.text }))) : null,
+            pass1Synthesized,
             fingerprintedAt,
-            stabilityPasses,
+            labeledRuns.length,
             Object.keys(stabilityMap).length > 0 ? JSON.stringify(stabilityMap) : null,
             pass1Truncated,
             is_reference ? 1 : 0,
@@ -358,8 +461,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
           fingerprint_vector: fingerprintVector ? JSON.parse(fingerprintVector) : null,
           fingerprint_keys: VECTOR_KEY,
           fingerprint_model: pass1Msg.model,
-          fingerprint_stability_passes: stabilityPasses,
+          fingerprint_stability_passes: labeledRuns.length,
           fingerprint_stability_map: Object.keys(stabilityMap).length > 0 ? stabilityMap : null,
+          fingerprint_stability_runs: labeledRuns.length,
+          fingerprint_pass1_synthesized: pass1Synthesized ? true : false,
           doc_layers: {
             raw:        docRaw,
             structured: docStructured ? JSON.parse(docStructured) : null,

@@ -212,7 +212,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         // ----------------------------------------------------------------
         // Build documentation context (Track B output, now available)
         // ----------------------------------------------------------------
-        const pass1Text = object.fingerprint_pass1_text as string;
+        const pass1Text = (object.fingerprint_pass1_synthesized || object.fingerprint_pass1_text) as string;
         const viewLabels: string[] = imageKeys.map(k =>
           k.split('/').pop()?.replace(/-analysis\.jpg$/, '') ?? 'view'
         );
