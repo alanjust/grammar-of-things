@@ -82,7 +82,7 @@ export const GET: APIRoute = async ({ params, request }) => {
 
   // ── Markdown format ───────────────────────────────────────────────────────
 
-  const accession = object?.accession_number ?? object?.catalog_number ?? `Object ${analysis.object_id}`;
+  const accession = object?.catalog_number ?? object?.accession_number ?? `Object ${analysis.object_id}`;
   const date      = new Date(analysis.created_at as string).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
   let md = `# Analysis — ${accession}\n\n`;
@@ -99,7 +99,7 @@ export const GET: APIRoute = async ({ params, request }) => {
   if (object?.accession_number)      md += `- **Accession:** ${object.accession_number}\n`;
   if (object?.catalog_number)        md += `- **Catalog:** ${object.catalog_number}\n`;
   if (object?.source_institution)    md += `- **Institution:** ${object.source_institution}\n`;
-  if (object?.ezid_ark)              md += `- **EZID/ARK:** http://${object.ezid_ark}\n`;
+  if (object?.ezid_ark)              md += `- **EZID/ARK:** ${String(object.ezid_ark).startsWith('http') ? '' : 'http://'}${object.ezid_ark}\n`;
   md += '\n---\n\n';
 
   // Pass 1
@@ -109,10 +109,11 @@ export const GET: APIRoute = async ({ params, request }) => {
     md += `${analysis.pass1_text}\n\n---\n\n`;
   }
 
-  // Pass 2
+  // Pass 2 — strip Step 5b handoff section (internal prompt to Pass 3, redundant in export)
   if (analysis.pass2_text) {
+    const pass2Clean = (analysis.pass2_text as string).replace(/\n+#{1,3} Step 5b[\s\S]*$/, '').trimEnd();
     md += `## Pass 2 — ${analysis.mode === 'connections' ? 'Cultural Connections' : 'Artifact Analysis'}\n\n`;
-    md += `${analysis.pass2_text}\n\n---\n\n`;
+    md += `${pass2Clean}\n\n---\n\n`;
   }
 
   // Pass 3
