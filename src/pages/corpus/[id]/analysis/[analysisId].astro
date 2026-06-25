@@ -181,7 +181,13 @@ const readMin = readTime(totalWords);
               {analysis.pass2_truncated ? (
                 <p class="truncated-note">This analysis reached the output limit and may be cut short. Re-run analysis for a complete result.</p>
               ) : null}
-              <div class="pass-body prose" set:html={renderMarkdown(analysis.pass2_text)} />
+              <div class="pass2-layout">
+                <div class="pass-body prose" id="pass2-body" set:html={renderMarkdown(analysis.pass2_text)} />
+                <nav class="toc-rail" id="toc-rail" aria-label="Document outline">
+                  <p class="toc-heading">Contents</p>
+                  <ol class="toc-list" id="toc-list"></ol>
+                </nav>
+              </div>
             </section>
           )}
 
@@ -277,6 +283,47 @@ const readMin = readTime(totalWords);
 </html>
 
 <script define:vars={{ analysisId, isAdmin: admin }}>
+// Build Pass 2 TOC
+(function () {
+  const body = document.getElementById('pass2-body');
+  const list = document.getElementById('toc-list');
+  if (!body || !list) return;
+
+  const headings = body.querySelectorAll('h2, h3');
+  if (headings.length === 0) {
+    document.getElementById('toc-rail').style.display = 'none';
+    return;
+  }
+
+  headings.forEach(function (h, i) {
+    const slug = 'p2-' + i + '-' + h.textContent.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, '').slice(0, 48);
+    h.id = slug;
+    const li = document.createElement('li');
+    li.className = h.tagName === 'H3' ? 'toc-h3' : 'toc-h2';
+    const a = document.createElement('a');
+    a.href = '#' + slug;
+    a.textContent = h.textContent;
+    li.appendChild(a);
+    list.appendChild(li);
+  });
+
+  const links = list.querySelectorAll('a');
+  const observer = new IntersectionObserver(
+    function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        const target = list.querySelector('a[href="#' + entry.target.id + '"]');
+        if (!target) return;
+        links.forEach(function (l) { l.classList.remove('toc-active'); });
+        target.classList.add('toc-active');
+      });
+    },
+    { rootMargin: '-8% 0% -80% 0%', threshold: 0 }
+  );
+
+  headings.forEach(function (h) { observer.observe(h); });
+})();
+
 if (isAdmin) {
   document.getElementById('saveNotesBtn')?.addEventListener('click', async () => {
     const btn    = document.getElementById('saveNotesBtn');
@@ -416,6 +463,62 @@ if (isAdmin) {
   .contra-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); letter-spacing: var(--tracking-wide); padding-top: 2px; }
   .contra-text { font-size: var(--text-sm); color: var(--text); line-height: var(--leading-body); max-width: none; }
   .contra-tension .contra-text { color: var(--theory); font-style: italic; }
+
+  /* Pass 2 two-column layout */
+  .pass2-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 196px;
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  .toc-rail {
+    position: sticky;
+    top: var(--space-8);
+    max-height: calc(100vh - var(--space-16));
+    overflow-y: auto;
+    padding-left: var(--space-5);
+    border-left: 1px solid var(--border);
+  }
+
+  .toc-heading {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+    margin-bottom: var(--space-3);
+  }
+
+  .toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .toc-list li a {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    line-height: var(--leading-normal);
+    color: var(--text-muted);
+    text-decoration: none;
+    padding-block: 2px;
+    transition: color var(--ease-fast);
+  }
+
+  .toc-list li a:hover { color: var(--text); }
+  .toc-list li a.toc-active { color: var(--accent); }
+
+  .toc-list li.toc-h3 { padding-left: var(--space-3); }
+
+  @media (max-width: 800px) {
+    .pass2-layout { grid-template-columns: 1fr; }
+    .toc-rail { display: none; }
+  }
 
   /* Notes */
   .notes-section { margin-bottom: var(--space-16); padding-bottom: var(--space-12); border-bottom: 1px solid var(--border); }
