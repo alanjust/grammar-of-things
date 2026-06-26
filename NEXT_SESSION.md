@@ -1,10 +1,30 @@
 # Grammar of Things — Next Session
 
-Updated 2026-06-15.
+Updated 2026-06-25.
 
 ---
 
 ## Open Items
+
+### Hidden Grammar of Art — cross-model stability synthesis — DONE (2026-06-25)
+
+Ported GoT stability synthesis to HGA. Both projects now run 9-run cross-model Pass 1 (Claude ×3, Gemini ×3, OpenAI ×3) with two independent steps:
+
+- **Step A — Vector scoring:** all 9 runs scored by Haiku → hit map → `stabilityNote` preamble → stored `stabilityMap`
+- **Step B — Synthesis:** Claude Sonnet reads all 9 labeled observations → Stable / Thin / Contradicted classification → `pass1Synthesized` → stored on `artworks.fingerprint_pass1_synthesized` for fast-path reuse
+
+HGA architectural difference from GoT: stability runs at **analysis time** (`analyze.ts`), not ingest time. Synthesis is written back to the artwork row after first run so future analyses use the stored synthesis.
+
+`fingerprintVector` is derived from Run 1 (Claude) scores only — intentional for now, but worth revisiting when building gallery compare/contrast features.
+
+Art lover prompt voice also tightened (commit `00cb0b0`) — explicit Ira Glass-style instruction added: conversational, build-then-land, no lecture-hall register.
+
+**Verification query:**
+```
+npx wrangler d1 execute hidden-grammar-of-art --remote --command "SELECT id, fingerprint_pass1_synthesized IS NOT NULL as has_synthesis FROM artworks ORDER BY id DESC LIMIT 5"
+```
+
+---
 
 ### /partners page — DONE (2026-06-15)
 
