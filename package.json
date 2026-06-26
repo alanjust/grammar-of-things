@@ -20,7 +20,7 @@
     "astro": "^6.4.3",
     "marked": "^18.0.5",
     "openai": "^6.45.0",
-    "wrangler": "^4.97.0"
+    "wrangler": "^4.105.0"
   },
   "overrides": {
     "vite": "^7"
