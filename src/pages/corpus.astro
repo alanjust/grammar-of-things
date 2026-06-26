@@ -60,6 +60,8 @@ import SiteFooter from '../components/SiteFooter.astro';
   <SiteFooter />
 
 <script>
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
 // ── State ───────────────────────────────────────────────────────────────────
 let allObjects = [];
 let selectMode = false;
@@ -111,8 +113,8 @@ function renderGrid() {
   grid.innerHTML = displayObjects.map(obj => {
     const imgKey  = obj.image_analysis_key?.split(',')[0]?.trim();
     const imgSrc  = imgKey ? `/api/image/${imgKey}` : null;
-    const culture = obj.attribution_culture ?? '—';
-    const displayId = obj.catalog_number ?? `#${obj.id}`;
+    const culture = esc(obj.attribution_culture ?? '—');
+    const displayId = esc(obj.catalog_number ?? `#${obj.id}`);
     const hasFingerprint = !!obj.fingerprinted_at;
     const date = obj.created_at
       ? new Date(obj.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })

@@ -127,6 +127,7 @@ import AdminGate from '../components/AdminGate.astro';
 <script>
 import { renderMarkdown } from '../lib/markdown';
 window.__marked = (md) => renderMarkdown(md);
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -400,7 +401,7 @@ function renderOverview() {
   document.getElementById('tradBars').innerHTML = Object.entries(tradCounts)
     .sort((a, b) => b[1] - a[1])
     .map(([t, n]) => {
-      const label = TRAD_LABELS[t] ?? t;
+      const label = esc(TRAD_LABELS[t] ?? t);
       const color = TRAD_COLORS[t] ?? '#a09487';
       return `<div class="trad-row">
         <span class="trad-name">${label}</span>
@@ -416,11 +417,11 @@ function renderOverview() {
 
 function renderSelector() {
   document.getElementById('selectorSection').style.display = '';
-  const accession = o => o.catalog_number ?? o.accession_number ?? `#${o.id}`;
+  const accession = o => esc(o.catalog_number ?? o.accession_number ?? `#${o.id}`);
   const imgKey = o => o.image_analysis_key?.split(',')[0]?.trim();
   const trad = o => o.attribution_culture ?? 'unknown';
   const tradColor = o => TRAD_COLORS[trad(o)] ?? '#a09487';
-  const tradLabel = o => TRAD_LABELS[trad(o)] ?? trad(o);
+  const tradLabel = o => esc(TRAD_LABELS[trad(o)] ?? trad(o));
 
   document.getElementById('objectGrid').innerHTML = objects.map(o => `
     <button class="obj-card" data-id="${o.id}" aria-label="Select ${accession(o)}">
@@ -451,14 +452,14 @@ function selectObject(id) {
   document.getElementById('selectorSection').style.display = 'none';
   document.getElementById('overview').style.display = 'none';
 
-  const accession = selected.catalog_number ?? selected.accession_number ?? `#${selected.id}`;
-  const tradLabel  = TRAD_LABELS[selected.attribution_culture] ?? selected.attribution_culture ?? 'Unknown';
+  const accession = esc(selected.catalog_number ?? selected.accession_number ?? `#${selected.id}`);
+  const tradLabel  = esc(TRAD_LABELS[selected.attribution_culture] ?? selected.attribution_culture ?? 'Unknown');
   const tradColor  = TRAD_COLORS[selected.attribution_culture] ?? '#a09487';
 
   document.getElementById('selectedInfo').innerHTML = `
     <p class="sel-acc">${accession}</p>
-    <p class="sel-trad" style="color:${tradColor}">${tradLabel}${selected.attribution_confidence ? ` <span class="sel-conf">(${selected.attribution_confidence})</span>` : ''}</p>
-    <p class="sel-model">Fingerprinted${selected.fingerprint_model ? ' · ' + selected.fingerprint_model : ''}</p>`;
+    <p class="sel-trad" style="color:${tradColor}">${tradLabel}${selected.attribution_confidence ? ` <span class="sel-conf">(${esc(selected.attribution_confidence)})</span>` : ''}</p>
+    <p class="sel-model">Fingerprinted${selected.fingerprint_model ? ' · ' + esc(selected.fingerprint_model) : ''}</p>`;
 
   // Images
   const imgKeys = selected.image_analysis_key?.split(',').map(k => k.trim()).filter(Boolean) ?? [];
@@ -484,9 +485,9 @@ function renderMatches(matches) {
   const selectedTrad = selected.attribution_culture ?? 'unknown';
 
   document.getElementById('matchList').innerHTML = matches.map((o, i) => {
-    const accession  = o.catalog_number ?? o.accession_number ?? `#${o.id}`;
+    const accession  = esc(o.catalog_number ?? o.accession_number ?? `#${o.id}`);
     const matchTrad  = o.attribution_culture ?? 'unknown';
-    const tradLabel  = TRAD_LABELS[matchTrad] ?? matchTrad;
+    const tradLabel  = esc(TRAD_LABELS[matchTrad] ?? matchTrad);
     const tradColor  = TRAD_COLORS[matchTrad] ?? '#a09487';
     const pct        = Math.round(o.similarity * 100);
     const imgKey     = o.image_analysis_key?.split(',')[0]?.trim();
@@ -511,7 +512,7 @@ function renderMatches(matches) {
           <div class="match-info">
             <p class="match-acc"><a href="/corpus/${o.id}">${accession}</a></p>
             <p class="match-trad" style="color:${tradColor}">${tradLabel}</p>
-            ${o.source_institution ? `<p class="match-inst">${o.source_institution}</p>` : ''}
+            ${o.source_institution ? `<p class="match-inst">${esc(o.source_institution)}</p>` : ''}
           </div>
           <div class="match-score">
             <p class="score-pct">${pct}%</p>
@@ -525,7 +526,7 @@ function renderMatches(matches) {
         ${tradMismatch ? `
           <div class="mismatch-flag">
             <span class="flag-badge">⚠ Attribution differs</span>
-            <span class="flag-text">Fingerprint similarity ${pct}% — documented traditions differ (${TRAD_LABELS[selectedTrad] ?? selectedTrad} vs. ${tradLabel}). Warrants closer examination.</span>
+            <span class="flag-text">Fingerprint similarity ${pct}% — documented traditions differ (${esc(TRAD_LABELS[selectedTrad] ?? selectedTrad)} vs. ${tradLabel}). Warrants closer examination.</span>
           </div>` : ''}
 
         ${bigDiffs.length > 0 ? `
