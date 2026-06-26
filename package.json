@@ -14,7 +14,7 @@
     "deploy": "astro build && wrangler deploy --cwd dist/server --config wrangler.json"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.100.1",
+    "@anthropic-ai/sdk": "^0.106.0",
     "@astrojs/cloudflare": "^13.6.1",
     "@google/generative-ai": "^0.24.1",
     "astro": "^6.4.3",
