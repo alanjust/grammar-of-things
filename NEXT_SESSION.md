@@ -1,6 +1,6 @@
 # Grammar of Things — Next Session
 
-Updated 2026-06-25.
+Updated 2026-06-25 (evening).
 
 ---
 
@@ -77,11 +77,14 @@ Point it at real outputs or stored analyses — findings become visible without 
 
 ---
 
-### Item 3: Security Follow-ups — LOW PRIORITY
+### Item 3: Security Follow-ups — PARTIALLY DONE (2026-06-25)
 
-From the 2026-06-12 security hardening pass. Not urgent for a pitch PoC.
+- `corpus.astro` and `compare.astro` innerHTML XSS — **FIXED** (commit `4dc0da0`). All DB-sourced values (catalog_number, attribution_culture, attribution_confidence, fingerprint_model, source_institution) now HTML-escaped via `esc()` helper before insertion into innerHTML template literals. Deployed to production.
+- Dependabot enabled on all three repos (GoT, HGA, VLM Lab) — **DONE**
+- CodeQL workflow added to all three repos — runs on GoT (public); skips cleanly on HGA/VLM Lab (private, requires GitHub Advanced Security to upload results)
+- Branch protection on GoT main (no force-push, no deletion) — **DONE**; HGA/VLM Lab require GitHub Pro for private repos
 
-- `corpus.astro` and `compare.astro` — object-grid renders museum metadata (accession/culture labels) via `innerHTML`; lower severity than model output but worth sweeping when convenient
+**Still open:**
 - Accessibility sweep: `aria-pressed` on toggle buttons, radar SVG `<title>`/`<desc>`, soften "Every claim is anchored" and "resolves immediately" copy in credibility section
 
 ---
