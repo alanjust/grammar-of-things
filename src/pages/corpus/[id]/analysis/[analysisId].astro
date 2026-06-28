@@ -151,7 +151,7 @@ const readMin = readTime(totalWords);
 
           {/* Pass 1 */}
           {analysis.pass1_text && (
-            <section class="pass-section">
+            <section class="pass-section" id="pass1-section">
               <div class="pass-label">
                 <span class="pass-num">Pass 1</span>
                 <span class="pass-name">Blind observation</span>
@@ -186,7 +186,7 @@ const readMin = readTime(totalWords);
 
           {/* Pass 2 */}
           {analysis.pass2_text && (
-            <section class="pass-section">
+            <section class="pass-section" id="pass2-section">
               <div class="pass-label">
                 <span class="pass-num">Pass 2</span>
                 <span class="pass-name">{analysis.mode === 'connections' ? 'Cultural connections' : 'Artifact analysis'}</span>
@@ -586,6 +586,8 @@ if (isAdmin) {
     .notes-section,
     .pass-note,
     #fingerprint-section,
+    #pass1-section,
+    #pass2-section .pass-label,
     .truncated-note { display: none !important; }
 
     /* Reset page container */
