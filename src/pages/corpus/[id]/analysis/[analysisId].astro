@@ -95,6 +95,11 @@ const readMin = readTime(totalWords);
   <style is:global>
     @import url('/src/styles/base.css');
   </style>
+  <style is:global>
+    @media print {
+      nav, footer { display: none !important; }
+    }
+  </style>
 </head>
 <body>
   <SiteNav />
@@ -158,7 +163,7 @@ const readMin = readTime(totalWords);
 
           {/* Fingerprint */}
           {vec.length > 0 && (
-            <section class="pass-section">
+            <section class="pass-section" id="fingerprint-section">
               <div class="pass-label">
                 <span class="pass-num">Fingerprint</span>
                 <span class="pass-name">27-principle perceptual vector</span>
@@ -576,12 +581,11 @@ if (isAdmin) {
     @page { margin: 0.85in 0.9in; size: letter; }
 
     /* Hide screen chrome */
-    nav,
-    footer,
     .top-bar,
     .toc-rail,
     .notes-section,
     .pass-note,
+    #fingerprint-section,
     .truncated-note { display: none !important; }
 
     /* Reset page container */
