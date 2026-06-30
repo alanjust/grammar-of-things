@@ -61,6 +61,21 @@ At the start of your first reply in each session, greet me as "Mr. Fuzzface" and
 
 
 
+## Decision Log
+
+Settled architectural choices — do not re-litigate without a concrete new requirement.
+
+**Why D1 over Durable Objects / KV / Hyperdrive+Postgres:**
+The data model requires multi-table relational queries (objects → analyses joins), FTS5 full-text search (a SQLite extension), and vector storage alongside relational metadata — all in one place. KV is flat key-value with no query capability. Durable Objects are coordination actors, not relational stores. D1 is the native SQLite-on-Cloudflare option; its FTS5 support (added in migration 0017) confirms the choice was right. No explicit rationale is recorded in commits — inferrable from the schema structure.
+
+**Why markdown rendering is centralized in `src/lib/markdown.ts`:**
+An external code review (commit `3bc2684`) flagged dispersed `marked.parse()` calls across pages as an XSS vector — each call site had to remember to sanitize, and none uniformly did. One hardened renderer (HTML escaping + URL scheme allowlist) is auditable in one place. Every page that sets innerHTML from model or scraped output now routes through it.
+
+**Why auth uses three layers (`requireAdmin` + `isAdmin` + `AdminGate.astro`):**
+Astro mixes SSR and prerendered pages, and they need different mechanisms. SSR pages run server code per request — `requireAdmin(request)` blocks mutations, `isAdmin(Astro.request)` gates rendering. Prerendered pages are compiled at build time and cannot run server code at request time — `AdminGate.astro` + `body[data-admin="1"]` CSS handles client-side gating there. The three layers are not redundant; they cover different rendering paths. Introduced by commit `3bc2684` (external code review).
+
+---
+
 ## Architecture
 
 Key files:
