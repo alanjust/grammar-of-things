@@ -89,6 +89,17 @@ Point it at real outputs or stored analyses — findings become visible without 
 
 ---
 
+### CLAUDE.md decision log — DONE (2026-06-30)
+
+Added `## Decision Log` section to CLAUDE.md documenting settled architectural choices:
+- Why D1 (relational model + FTS5 + vector storage; KV too flat; DOs are coordination actors)
+- Why centralized markdown renderer (external code review flagged XSS risk from dispersed `marked.parse()` calls; commit `3bc2684`)
+- Why three-layer auth (SSR vs. prerendered pages need different mechanisms — not redundant; commit `3bc2684`)
+
+Task 1 from the brief (numbered Invariants section) was consciously rejected — duplication risk, CLAUDE.md is short enough. Brief updated to record this decision; won't re-run.
+
+---
+
 ### Keyword search — DONE (2026-06-29)
 
 - `/search` page with live search (300ms debounce), shareable `?q=` URLs, nav link added
