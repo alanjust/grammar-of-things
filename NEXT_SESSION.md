@@ -34,9 +34,9 @@ npx wrangler d1 execute hidden-grammar-of-art --remote --command "SELECT id, fin
 - Deployed to production
 - `contact@thegrammarofthings.com` set up via Cloudflare Email Routing → forwards to `alan@alanjust.com`
 
-**Two sections need Alan's review before using the URL in outreach:**
-- "What the tool will not claim" — conservative draft; confirm against actual commitments
-- "Governance and tribal consultation" — structural draft; replace generics with specific commitments if/when tribal contacts or advisory board design is decided
+**Both flagged sections reviewed and resolved 2026-06-25:**
+- "What the tool will not claim" — confirmed accurate; no changes needed
+- "Governance and tribal consultation" — softened to design intentions (commit `6377806`); advisory board and tribal consultation language now describes what the tool is built to support, not commitments made; partner/steward determines actual structure
 
 ---
 
@@ -86,6 +86,23 @@ Point it at real outputs or stored analyses — findings become visible without 
 
 **Still open:**
 - Accessibility sweep: `aria-pressed` on toggle buttons, radar SVG `<title>`/`<desc>`, soften "Every claim is anchored" and "resolves immediately" copy in credibility section
+
+---
+
+### Keyword search — DONE (2026-06-29)
+
+- `/search` page with live search (300ms debounce), shareable `?q=` URLs, nav link added
+- `/api/search` endpoint: FTS5 MATCH with porter stemmer + prefix matching (`term*`)
+- Migration `0017_search.sql`: `objects_fts` FTS5 virtual table, rowid = object.id, backfilled 17 objects
+- Fields indexed: `catalog_number`, `accession_number`, `attribution_culture`, `source_institution`, `fingerprint_pass1_text`, `fingerprint_pass1_synthesized`
+- FTS kept in sync from both ingest paths (`mcp-ingest.ts`, `ingest.ts`)
+- Excerpts use FTS5 `snippet()` with `[[M]]`/`[[/M]]` markers → client escapes + replaces with `<mark>`
+
+---
+
+### PDF download — DONE (2026-06-28)
+
+`↓ PDF` button on every analysis page (commit `db4f2cb`). Calls `window.print()` with a `@media print` stylesheet that hides nav, footer, TOC rail, notes section, and radar chart. Preserves: object image, all pass text, fingerprint bar grid (scores + principle names), provenance flags, contradiction flags. Two-button top bar: `↓ .md` and `↓ PDF`.
 
 ---
 

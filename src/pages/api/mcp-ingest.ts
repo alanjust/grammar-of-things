@@ -178,6 +178,13 @@ export const POST: APIRoute = async ({ request }) => {
             record.claim.attribution.culture, record.claim.raw,
             JSON.stringify(record.claim.structured)).run();
 
+    await db.prepare(`
+      INSERT INTO objects_fts(rowid, object_id, catalog_number, accession_number, attribution_culture, source_institution, fingerprint_pass1_text, fingerprint_pass1_synthesized)
+      VALUES (?, ?, ?, ?, ?, ?, null, null)
+    `).bind(refObjectId, refObjectId,
+            record.claim.identifiers.catalog_number, refAccession,
+            record.claim.attribution.culture, record.claim.source.institution).run();
+
     return json({
       created:      true,
       object_id:    refObjectId,
@@ -294,6 +301,18 @@ export const POST: APIRoute = async ({ request }) => {
     JSON.stringify(record.claim.structured),
   ).run();
 
+  // Seed the FTS entry with metadata available now — pass1 text added after fingerprinting
+  await db.prepare(`
+    INSERT INTO objects_fts(rowid, object_id, catalog_number, accession_number, attribution_culture, source_institution, fingerprint_pass1_text, fingerprint_pass1_synthesized)
+    VALUES (?, ?, ?, ?, ?, ?, null, null)
+  `).bind(
+    objectId, objectId,
+    record.claim.identifiers.catalog_number,
+    accessionNumber,
+    record.claim.attribution.culture,
+    record.claim.source.institution,
+  ).run();
+
   // ── Step 5: Fetch image → R2 ─────────────────────────────────────────────
   const imageUrl    = record.image.best_long_edge_url ?? record.image.original_url;
   let originalKey: string | null = null;
@@ -381,6 +400,22 @@ export const POST: APIRoute = async ({ request }) => {
             updated_at             = datetime('now')
           WHERE id = ?
         `).bind(fingerprintVector, fingerprintModel, fingerprintPass1, objectId).run();
+
+        // Rebuild FTS entry now that pass1 text is available
+        await db.batch([
+          db.prepare('DELETE FROM objects_fts WHERE rowid = ?').bind(objectId),
+          db.prepare(`
+            INSERT INTO objects_fts(rowid, object_id, catalog_number, accession_number, attribution_culture, source_institution, fingerprint_pass1_text, fingerprint_pass1_synthesized)
+            VALUES (?, ?, ?, ?, ?, ?, ?, null)
+          `).bind(
+            objectId, objectId,
+            record.claim.identifiers.catalog_number,
+            accessionNumber,
+            record.claim.attribution.culture,
+            record.claim.source.institution,
+            fingerprintPass1,
+          ),
+        ]);
       }
     } catch (fpErr) {
       console.error('[mcp-ingest] fingerprint failed:', fpErr);

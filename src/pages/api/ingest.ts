@@ -450,6 +450,20 @@ Rules:
             is_reference ? (reference_tradition ?? null) : null,
             objectId,
           ).run();
+
+          // Upsert FTS entry with all searchable fields
+          await db.batch([
+            db.prepare('DELETE FROM objects_fts WHERE rowid = ?').bind(objectId),
+            db.prepare(`
+              INSERT INTO objects_fts(rowid, object_id, catalog_number, accession_number, attribution_culture, source_institution, fingerprint_pass1_text, fingerprint_pass1_synthesized)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `).bind(
+              objectId, objectId,
+              catalogNumber, accessionNumber,
+              attributionCulture, sourceInstitution,
+              pass1Text, pass1Synthesized ?? null,
+            ),
+          ]);
         } else if (!db) {
           send({ type: 'status', message: '⚠ DB binding unavailable — run wrangler d1 create and apply migration' });
         }
