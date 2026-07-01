@@ -353,6 +353,56 @@ Rules:
         }
 
         // ----------------------------------------------------------------
+        // Save Track A results now, before Track B runs. Track B (doc
+        // extraction) has its own failure modes, including ones that abort
+        // the request outright — a completed blind fingerprint must not be
+        // lost because the unrelated documentation step failed afterward.
+        // ----------------------------------------------------------------
+
+        const fingerprintedAt = new Date().toISOString();
+
+        if (db && objectId !== null) {
+          send({ type: 'status', message: 'Saving fingerprint…' });
+          await db.prepare(`
+            UPDATE objects SET
+              image_original_key           = ?,
+              image_analysis_key           = ?,
+              image_spec                   = ?,
+              fingerprint_vector           = ?,
+              fingerprint_model            = ?,
+              fingerprint_pass1_text       = ?,
+              fingerprint_stability_runs   = ?,
+              fingerprint_pass1_synthesized = ?,
+              fingerprinted_at             = ?,
+              fingerprint_stability_passes = ?,
+              fingerprint_stability_map    = ?,
+              pass1_truncated              = ?,
+              is_reference                 = ?,
+              reference_tradition          = ?,
+              updated_at                   = datetime('now')
+            WHERE id = ?
+          `).bind(
+            originalKeys.join(',') || null,
+            analysisKeys.join(',')  || null,
+            IMAGE_SPEC,
+            fingerprintVector,
+            pass1Msg.model,
+            pass1Text,
+            labeledRuns.length > 0 ? JSON.stringify(labeledRuns.map(r => ({ provider: r.provider, run: r.run, text: r.text }))) : null,
+            pass1Synthesized,
+            fingerprintedAt,
+            labeledRuns.length,
+            Object.keys(stabilityMap).length > 0 ? JSON.stringify(stabilityMap) : null,
+            pass1Truncated,
+            is_reference ? 1 : 0,
+            is_reference ? (reference_tradition ?? null) : null,
+            objectId,
+          ).run();
+        } else if (!db) {
+          send({ type: 'status', message: '⚠ DB binding unavailable — run wrangler d1 create and apply migration' });
+        }
+
+        // ----------------------------------------------------------------
         // Track B — documentation only (no images, no Pass 1 text)
         // ----------------------------------------------------------------
 
@@ -393,13 +443,11 @@ Rules:
         }
 
         // ----------------------------------------------------------------
-        // Write to D1
+        // Write Track B (documentation) fields
         // ----------------------------------------------------------------
 
-        const fingerprintedAt = new Date().toISOString();
-
         if (db && objectId !== null) {
-          send({ type: 'status', message: 'Saving to database…' });
+          send({ type: 'status', message: 'Saving documentation…' });
           await db.prepare(`
             UPDATE objects SET
               ezid_ark                  = ?,
@@ -413,41 +461,13 @@ Rules:
               doc_canonical             = ?,
               source_institution        = ?,
               source_url                = ?,
-              image_original_key        = ?,
-              image_analysis_key        = ?,
-              image_spec                = ?,
-              fingerprint_vector        = ?,
-              fingerprint_model         = ?,
-              fingerprint_pass1_text         = ?,
-              fingerprint_stability_runs     = ?,
-              fingerprint_pass1_synthesized  = ?,
-              fingerprinted_at               = ?,
-              fingerprint_stability_passes   = ?,
-              fingerprint_stability_map      = ?,
-              pass1_truncated                = ?,
-              is_reference                   = ?,
-              reference_tradition            = ?,
-              updated_at                     = datetime('now')
+              updated_at                = datetime('now')
             WHERE id = ?
           `).bind(
             ezidArk, catalogNumber, accessionNumber,
             attributionCulture, attributionConfidence, attributionNotes,
             docRaw, docStructured, docCanonical,
             sourceInstitution, sourceUrl,
-            originalKeys.join(',') || null,
-            analysisKeys.join(',')  || null,
-            IMAGE_SPEC,
-            fingerprintVector,
-            pass1Msg.model,
-            pass1Text,
-            labeledRuns.length > 0 ? JSON.stringify(labeledRuns.map(r => ({ provider: r.provider, run: r.run, text: r.text }))) : null,
-            pass1Synthesized,
-            fingerprintedAt,
-            labeledRuns.length,
-            Object.keys(stabilityMap).length > 0 ? JSON.stringify(stabilityMap) : null,
-            pass1Truncated,
-            is_reference ? 1 : 0,
-            is_reference ? (reference_tradition ?? null) : null,
             objectId,
           ).run();
 
@@ -464,8 +484,6 @@ Rules:
               pass1Text, pass1Synthesized ?? null,
             ),
           ]);
-        } else if (!db) {
-          send({ type: 'status', message: '⚠ DB binding unavailable — run wrangler d1 create and apply migration' });
         }
 
         send({
