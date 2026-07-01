@@ -339,7 +339,7 @@ Rules:
 - Do not editorialize about which reading is more likely correct`;
 
             const synthesisMsg = await callModel(modelConfig.pass1, {
-              max_tokens: 8000,
+              max_tokens: 16000,
               system: 'You are synthesizing multiple independent visual observations. Report only what the observations contain. Do not add your own visual readings.',
               messages: [{ role: 'user', content: [{ type: 'text', text: synthesisPrompt }] }],
             }, anthropic);
@@ -349,7 +349,8 @@ Rules:
 
             synthesisTruncated = synthesisMsg.stop_reason === 'max_tokens' ? 1 : 0;
             if (!pass1Synthesized.trim() || synthesisTruncated) {
-              send({ type: 'status', message: `⚠ Synthesis truncated or empty (stop_reason: ${synthesisMsg.stop_reason})` });
+              const blockTypes = synthesisMsg.content.map((b: any) => b.type).join(', ') || 'none';
+              send({ type: 'status', message: `⚠ Synthesis truncated or empty (stop_reason: ${synthesisMsg.stop_reason}, blocks: ${blockTypes})` });
               synthesisTruncated = 1;
             } else {
               send({ type: 'status', message: 'Track A — synthesis complete' });
