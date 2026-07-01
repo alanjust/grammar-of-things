@@ -248,7 +248,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           : buildArtifactPass2UserText(pass1Text, docFields, audience, viewLabels) + refBlock;
 
         const pass2Stream = streamModel(modelConfig.pass2, {
-          max_tokens: 8000,
+          max_tokens: 16000,
           system: isConnections ? PASS2_SYSTEM_CONNECTIONS : PASS2_SYSTEM_ARTIFACT,
           messages: [{ role: 'user', content: [{ type: 'text', text: pass2UserText }] }],
         }, anthropic);
