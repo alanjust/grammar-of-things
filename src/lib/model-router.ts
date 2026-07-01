@@ -19,9 +19,9 @@ export interface ModelConfig {
 }
 
 const DEFAULTS: ModelConfig = {
-  pass1:      { provider: 'anthropic', model: 'claude-sonnet-4-6' },
-  pass2:      { provider: 'anthropic', model: 'claude-sonnet-4-6' },
-  pass3:      { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+  pass1:      { provider: 'anthropic', model: 'claude-sonnet-5' },
+  pass2:      { provider: 'anthropic', model: 'claude-sonnet-5' },
+  pass3:      { provider: 'anthropic', model: 'claude-sonnet-5' },
   extraction: { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
   vector:     { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
 };
