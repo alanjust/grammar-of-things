@@ -661,7 +661,11 @@ PERCEPTUAL PRINCIPLES REFERENCE: Where your analysis references a perceptual mec
 
 Universal perceptual principles: ${principleNames.join(', ')}
 
-Artifact observation principles: ${artifactPrincipleNames.join(', ')}`;
+Artifact observation principles: ${artifactPrincipleNames.join(', ')}
+
+---
+
+OUTPUT FORMAT: Format each major section (one per Step above) as a Markdown H2 heading ("##"), e.g. "## Step 2 — Object Class and Tradition Identification". Use H3 ("###") for named sub-boxes within a section — theory callouts, checklists, and similar. Do not use H1 ("#") anywhere in your response.`;
 };
 
 export const COMPETENCY_PROMPT = (pass1: string, pass2: string, audience: string): string => {
