@@ -83,7 +83,7 @@ export async function extractDocLayers(
   // Layer 2 — structured extraction
   const layer2Msg = await anthropic.messages.create({
     model,
-    max_tokens: 2048,
+    max_tokens: 8000,
     system: 'You are a data extraction assistant. Output ONLY valid JSON. No markdown, no commentary.',
     messages: [{ role: 'user', content: [{ type: 'text', text: LAYER2_PROMPT(raw) }] }],
   });
@@ -98,7 +98,7 @@ export async function extractDocLayers(
   // Layer 3 — canonical mapping
   const layer3Msg = await anthropic.messages.create({
     model,
-    max_tokens: 1024,
+    max_tokens: 8000,
     system: 'You are a data mapping assistant. Output ONLY valid JSON. No markdown, no commentary.',
     messages: [{ role: 'user', content: [{ type: 'text', text: LAYER3_PROMPT(structured) }] }],
   });

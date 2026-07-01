@@ -276,7 +276,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           : COMPETENCY_PROMPT(pass1Text, pass2Text, audience);
 
         const pass3Msg = await callModel(modelConfig.pass3, {
-          max_tokens: 1500,
+          max_tokens: 8000,
           system: 'You are an educator writing for someone curious and smart who wants to understand how to look at artifacts. Write the way Ira Glass tells a story: open with something concrete and recognizable, move toward the insight, land it plainly. If you use a technical term, follow it immediately with plain English. The goal is to leave the reader thinking "I can do that next time." Do not use fine art vocabulary: no aesthetic, painterly, compositional tension, formal innovation, artistic achievement, or language from museum wall text or gallery criticism. Do not frame the object as made for contemplation or visual pleasure. Takeaways must be grounded in what the material evidence showed — what the production traces revealed, what the design system did, what the cultural context made legible. The habits you identify should be habits of looking at physical evidence, not habits of aesthetic appreciation.',
           messages: [{ role: 'user', content: [...imageBlocks, { type: 'text', text: pass3PromptText }] }],
         }, anthropic);
@@ -307,17 +307,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
               messages: [{ role: 'user', content: [{ type: 'text', text: EXTRACTION_PROMPT(pass1Text, pass2Text, docFields, isConnections ? 'connections' : 'artifact') }] }],
             }, anthropic),
             callModel(modelConfig.vector, {
-              max_tokens: 512,
+              max_tokens: 8000,
               system: 'You are a scoring assistant. Output ONLY a flat JSON object. No markdown, no commentary, no extra text. Begin your response with { and end with }.',
               messages: [{ role: 'user', content: [{ type: 'text', text: VECTOR_SCORING_PROMPT(pass1Text) }] }],
             }, anthropic),
             callModel(modelConfig.extraction, {
-              max_tokens: 1024,
+              max_tokens: 8000,
               system: 'You are a provenance analyst. Output ONLY a valid JSON array. No markdown, no commentary. Begin with [ and end with ].',
               messages: [{ role: 'user', content: [{ type: 'text', text: PROVENANCE_INTEGRITY_PROMPT(object.attribution_culture as string | null, object.doc_canonical as string | null, object.doc_structured as string | null) }] }],
             }, anthropic),
             callModel(modelConfig.extraction, {
-              max_tokens: 1024,
+              max_tokens: 8000,
               system: 'You are a research analyst. Output ONLY a valid JSON array. No markdown, no commentary. Begin with [ and end with ].',
               messages: [{ role: 'user', content: [{ type: 'text', text: CONTRADICTION_DETECTION_PROMPT(object.attribution_culture as string | null, object.doc_canonical as string | null, pass1Text) }] }],
             }, anthropic),
@@ -398,7 +398,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           send({ type: 'status', message: 'Comparing fingerprint to attribution claim…' });
           try {
             const flagMsg = await callModel(modelConfig.extraction, {
-              max_tokens: 512,
+              max_tokens: 8000,
               system: 'You are a research analyst. Output ONLY valid JSON. No markdown, no commentary. Begin with { and end with }.',
               messages: [{ role: 'user', content: [{ type: 'text', text: FINGERPRINT_COMPARISON_PROMPT(fingerprint, culture, confidence ?? '') }] }],
             }, anthropic);

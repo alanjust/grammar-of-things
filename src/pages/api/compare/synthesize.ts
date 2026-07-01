@@ -123,7 +123,7 @@ Address the research question directly. Compare across all ${objects.length} obj
       try {
         const msgStream = anthropic.messages.stream({
           model:      modelConfig.pass2.model,
-          max_tokens: 4000,
+          max_tokens: 8000,
           system:     systemPrompt,
           messages: [{ role: 'user', content: userPrompt }],
         });

@@ -365,7 +365,7 @@ export const POST: APIRoute = async ({ request }) => {
         ];
 
         const pass1Stream = streamModel(modelConfig.pass1, {
-          max_tokens: 2048,
+          max_tokens: 8000,
           system:     PASS1_SYSTEM,
           messages:   [{ role: 'user', content: [...imageBlocks, { type: 'text', text: PASS1_PROMPT_SINGLE(ARTIFACT_PRINCIPLE_NAMES, APPLICABLE_TIER_A_NAMES) }] }],
         }, anthropic);
@@ -381,7 +381,7 @@ export const POST: APIRoute = async ({ request }) => {
         fingerprintPass1 = pass1Acc;
 
         const vectorMsg = await callModel(modelConfig.vector, {
-          max_tokens: 512,
+          max_tokens: 8000,
           system:     'Output ONLY a flat JSON object. Begin with { and end with }.',
           messages:   [{ role: 'user', content: [{ type: 'text', text: VECTOR_SCORING_PROMPT(pass1Acc) }] }],
         }, anthropic);

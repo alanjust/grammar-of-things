@@ -983,7 +983,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         send({ type: 'status', message: 'Pass 1 — formal observation…' });
 
         const pass1MsgParams = {
-          max_tokens: 4096,
+          max_tokens: 8000,
           system: 'You have completed a close examination of this artifact. Report what you found.',
           messages: [{
             role: 'user' as const,
@@ -1043,7 +1043,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
           const scoreMsgs = await Promise.all(allPass1Texts.map(text =>
             callModel(modelConfig.vector, {
-              max_tokens: 512,
+              max_tokens: 8000,
               system: 'You are a scoring assistant. Output ONLY a flat JSON object. No markdown, no commentary, no extra text. Begin your response with { and end with }.',
               messages: [{ role: 'user' as const, content: [{ type: 'text' as const, text: VECTOR_SCORING_PROMPT(text) }] }],
             }, anthropic)
@@ -1133,7 +1133,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           : COMPETENCY_PROMPT(pass1Text, pass2Text, audience || '');
 
         const pass3Msg = await callModel(modelConfig.pass3, {
-          max_tokens: 1500,
+          max_tokens: 8000,
           system: 'You are an educator writing for someone curious and smart who wants to understand how to look at artifacts. Write the way Ira Glass tells a story: open with something concrete and recognizable, move toward the insight, land it plainly. If you use a technical term, follow it immediately with plain English. The goal is to leave the reader thinking "I can do that next time." Do not use fine art vocabulary: no aesthetic, painterly, compositional tension, formal innovation, artistic achievement, or language from museum wall text or gallery criticism. Do not frame the object as made for contemplation or visual pleasure. Takeaways must be grounded in what the material evidence showed — what the production traces revealed, what the design system did, what the cultural context made legible. The habits you identify should be habits of looking at physical evidence, not habits of aesthetic appreciation.',
           messages: [{
             role: 'user',
@@ -1168,7 +1168,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
               ],
             }, anthropic),
             callModel(modelConfig.vector, {
-              max_tokens: 512,
+              max_tokens: 8000,
               system: 'You are a scoring assistant. Output ONLY a flat JSON object. No markdown, no commentary, no extra text. Begin your response with { and end with }.',
               messages: [
                 { role: 'user', content: [{ type: 'text', text: VECTOR_SCORING_PROMPT(pass1Text) }] },

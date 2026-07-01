@@ -165,7 +165,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           : PASS1_PROMPT_MULTI(normalized.length, ARTIFACT_PRINCIPLE_NAMES, APPLICABLE_TIER_A_NAMES);
 
         const pass1MsgParams = {
-          max_tokens: 4096,
+          max_tokens: 8000,
           system: PASS1_SYSTEM,
           messages: [{ role: 'user', content: [...imageBlocks, { type: 'text', text: pass1Prompt }] }],
         };
@@ -176,7 +176,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const neutralPass1Req: NeutralRequest = {
           system: PASS1_SYSTEM,
           prompt: pass1Prompt,
-          maxTokens: 4096,
+          maxTokens: 8000,
           image: { mediaType: imageMime, data: imageData },
         };
 
@@ -267,7 +267,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         try {
           const scoreMsgs = await Promise.all(allPass1Texts.map(text =>
             callModel(modelConfig.vector, {
-              max_tokens: 512,
+              max_tokens: 8000,
               system: 'You are a scoring assistant. Output ONLY a flat JSON object. No markdown, no commentary. Begin with { and end with }.',
               messages: [{ role: 'user', content: [{ type: 'text', text: VECTOR_SCORING_PROMPT(text) }] }],
             }, anthropic)
@@ -302,6 +302,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         // Synthesis — text-level cross-model observation classification
         // ----------------------------------------------------------------
         let pass1Synthesized: string | null = null;
+        let synthesisTruncated = 0;
 
         if (labeledRuns.length > 1) {
           send({ type: 'status', message: 'Track A — synthesizing cross-model observations…' });
@@ -338,7 +339,7 @@ Rules:
 - Do not editorialize about which reading is more likely correct`;
 
             const synthesisMsg = await callModel(modelConfig.pass1, {
-              max_tokens: 3000,
+              max_tokens: 8000,
               system: 'You are synthesizing multiple independent visual observations. Report only what the observations contain. Do not add your own visual readings.',
               messages: [{ role: 'user', content: [{ type: 'text', text: synthesisPrompt }] }],
             }, anthropic);
@@ -346,7 +347,13 @@ Rules:
             pass1Synthesized = synthesisMsg.content
               .filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n\n');
 
-            send({ type: 'status', message: 'Track A — synthesis complete' });
+            synthesisTruncated = synthesisMsg.stop_reason === 'max_tokens' ? 1 : 0;
+            if (!pass1Synthesized.trim() || synthesisTruncated) {
+              send({ type: 'status', message: `⚠ Synthesis truncated or empty (stop_reason: ${synthesisMsg.stop_reason})` });
+              synthesisTruncated = 1;
+            } else {
+              send({ type: 'status', message: 'Track A — synthesis complete' });
+            }
           } catch (err) {
             send({ type: 'status', message: `⚠ Synthesis failed: ${err instanceof Error ? err.message : String(err)}` });
           }
@@ -377,6 +384,7 @@ Rules:
               fingerprint_stability_passes = ?,
               fingerprint_stability_map    = ?,
               pass1_truncated              = ?,
+              fingerprint_synthesis_truncated = ?,
               is_reference                 = ?,
               reference_tradition          = ?,
               updated_at                   = datetime('now')
@@ -394,6 +402,7 @@ Rules:
             labeledRuns.length,
             Object.keys(stabilityMap).length > 0 ? JSON.stringify(stabilityMap) : null,
             pass1Truncated,
+            synthesisTruncated,
             is_reference ? 1 : 0,
             is_reference ? (reference_tradition ?? null) : null,
             objectId,
