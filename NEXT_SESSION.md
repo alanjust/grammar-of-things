@@ -16,11 +16,16 @@ Found while reviewing a grounding-tier tagging brief for `artifact-principles.js
 
 **Real fix, scoped as its own follow-up (not folded into the grounding-tier tagging task):** restructure Step B so it emits a structured, principle-indexed object — one of `stable / thin / contradicted / unclassified` per principle id, with evidence — instead of freeform prose an LLM chooses bullets for. Generate the human-readable Stable/Thin/Contradicted markdown *from* that structured object, not the other way around. This makes `unclassified` a real, visible state (distinct from "checked, and not stable") and gives any future scoring/caveat logic something unambiguous to key off, instead of two signals that can silently disagree the way they do today. This is a real data-model/pipeline change to `ingest.ts`'s synthesis step, bigger than a scoring-formula decision — start here next session before wiring anything into an eval harness.
 
-### Grounding-tier tagging for `artifact-principles.json` — REVIEWED, NOT YET IMPLEMENTED (2026-07-02)
+### Grounding-tier tagging for `artifact-principles.json` — DONE (2026-07-02, commit `8ec1dd0`)
 
-Proposal (from a claude.ai brief) to add `observationTier` (`grounded/partial/ungrounded`) and `inferenceTier` (`verifiable/plausible-untested/speculative`) fields to each of the 15 artifact principles, to distinguish real VLM visual grounding from plausible-sounding confabulation. Reviewed against the actual code and production data — schema addition is safe (purely additive, nothing currently reads it), the 15 proposed tags are broadly well-reasoned, one flagged disagreement: Sequence Inference tagged `grounded` via analogy to Overlap/Occlusion (hg-principles.json id 13, Tier A, V2/V3) — that research is about object-level scene depth ordering, not obviously transferable to fine surface-mark superposition at a much smaller spatial scale; recommend `partial` or an explicit caveat instead. The brief's own hedge on Reduction vs. Construction (weakest "partial" in the set) is reasonable as written.
+Added `grounding: {observationTier, inferenceTier, note}` to all 15 artifact principles, distinguishing real VLM visual grounding from plausible-sounding confabulation. Purely additive — `description`/`howToApply`/`applicableTo` untouched, `hg-principles.json` untouched, nothing in `principles.ts` reads the new field yet (prep work for the eval harness, not wired into scoring).
 
-Also surfaced the two-signal disagreement documented above — the brief's proposed scoring-formula combination assumed a single clean "runtime corroboration tier" that turns out not to exist as one thing. Not implemented pending Alan's go-ahead; when it proceeds, apply the Sequence Inference adjustment and keep `hg-principles.json` untouched per the brief's own scope.
+Two adjustments from the reviewed brief, both confirmed with Alan before implementing:
+- **Sequence Inference** downgraded from the brief's `grounded` to `partial` — the Overlap/Occlusion (hg-principles.json id 13, Tier A, V2/V3) analogy is object-level scene depth ordering, not confirmed to transfer to fine surface-mark superposition at a much smaller spatial scale.
+- **Symmetry as Evidence** and **Proportion as Encoding** both tagged `speculative` for `inferenceTier` (Alan's call) — the brief proposed a split ("verifiable for detection, speculative for cause") the flat schema can't represent; `speculative` was chosen as the conservative default since these principles are invoked in Pass 1 to support the causal/functional claim, the riskier part, with the note explaining the detection itself is independently checkable via geometry.
+- **Investment Gradient**'s note cites the `A326247-0-25` empirical finding directly (see the corroboration-signal-gap item above).
+
+Deployed to production same day.
 
 ### Multi-provider Pass 1 single-image bug — FIXED AND VERIFIED (2026-07-02, commit `3ca6029`)
 
