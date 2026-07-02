@@ -1,10 +1,21 @@
 # Grammar of Things — Next Session
 
-Updated 2026-06-25 (evening).
+Updated 2026-07-02.
 
 ---
 
 ## Open Items
+
+### Multi-provider Pass 1 single-image bug — FIXED (2026-07-02, commit `3ca6029`)
+
+Gemini and OpenAI's Pass 1 stability runs only ever received `normalized[0]` (the first uploaded image), no matter how many images were uploaded or how many stability passes ran. Claude's native path already used every image via `imageBlocks = normalized.flatMap(...)`. Confirmed against object 30 (`A326247-0`, two images — interior + exterior): Claude's Pass 1 runs described a matching interior/exterior crack across both views; Gemini and OpenAI's stored runs explicitly self-reported receiving only one image (e.g. "As only one image was provided for examination…").
+
+- `model-router.ts`: `NeutralRequest.image` (singular) → `images: Array<{mediaType, data}>`; all three provider adapters (`callAnthropic`, `callGemini`, `callOpenAI`) now loop over every image instead of reading one.
+- `ingest.ts`: `neutralPass1Req.images` now built from all of `normalized`, matching Claude's native `imageBlocks` path.
+- Added `images_sent: number` to each `labeledRuns` entry and to the stored `fingerprint_stability_runs` JSON, taken from the actual request payload rather than inferred from model self-reports — makes a future regression of this kind diagnosable from data instead of re-reading transcripts.
+- Deployed to production same day.
+
+**Corpus data-quality flag — decision, no schema change:** every multi-image object fingerprinted before this fix has the same asymmetry baked into its stored `fingerprint_pass1_synthesized` — Claude systematically saw more than Gemini/OpenAI, so "thin [claude only]" tags on those objects may reflect that information gap rather than a genuine cross-model perceptual difference. Chose a **timestamp cutoff over a new `pre_multiimage_fix` column**: compare an object's `fingerprinted_at` against this fix's deploy time (2026-07-02) to know if it predates the fix — zero migration cost. Do not silently re-run old multi-image objects and treat the new run as comparable to the old one without noting this gap.
 
 ### Hidden Grammar of Art — cross-model stability synthesis — DONE (2026-06-25)
 
