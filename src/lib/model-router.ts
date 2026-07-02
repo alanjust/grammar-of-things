@@ -65,7 +65,7 @@ export interface NeutralRequest {
   system: string;
   prompt: string;
   maxTokens: number;
-  image?: { mediaType: string; data: string };
+  images?: Array<{ mediaType: string; data: string }>;
 }
 
 export interface NeutralResponse {
@@ -97,10 +97,10 @@ async function callAnthropic(cfg: PassConfig, req: NeutralRequest, env: Record<s
 
   type AnthropicMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
   const content: Anthropic.ContentBlockParam[] = [];
-  if (req.image) {
+  for (const img of req.images ?? []) {
     content.push({
       type: 'image',
-      source: { type: 'base64', media_type: req.image.mediaType as AnthropicMediaType, data: req.image.data },
+      source: { type: 'base64', media_type: img.mediaType as AnthropicMediaType, data: img.data },
     });
   }
   content.push({ type: 'text', text: req.prompt });
@@ -122,8 +122,8 @@ async function callGemini(cfg: PassConfig, req: NeutralRequest, env: Record<stri
 
   type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
   const parts: GeminiPart[] = [];
-  if (req.image) {
-    parts.push({ inlineData: { mimeType: req.image.mediaType, data: req.image.data } });
+  for (const img of req.images ?? []) {
+    parts.push({ inlineData: { mimeType: img.mediaType, data: img.data } });
   }
   parts.push({ text: req.prompt });
 
@@ -147,8 +147,8 @@ async function callOpenAI(cfg: PassConfig, req: NeutralRequest, env: Record<stri
 
   type OpenAIUserPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } };
   const content: OpenAIUserPart[] = [];
-  if (req.image) {
-    content.push({ type: 'image_url', image_url: { url: `data:${req.image.mediaType};base64,${req.image.data}` } });
+  for (const img of req.images ?? []) {
+    content.push({ type: 'image_url', image_url: { url: `data:${img.mediaType};base64,${img.data}` } });
   }
   content.push({ type: 'text', text: req.prompt });
 

@@ -170,14 +170,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
           messages: [{ role: 'user', content: [...imageBlocks, { type: 'text', text: pass1Prompt }] }],
         };
 
-        // Neutral request shape for multi-provider runs
-        const imageData = normalized[0].dataUrl.split(',')[1];
-        const imageMime = normalized[0].mimeType;
+        // Neutral request shape for multi-provider runs — every image, matching Claude's native path
         const neutralPass1Req: NeutralRequest = {
           system: PASS1_SYSTEM,
           prompt: pass1Prompt,
           maxTokens: 8000,
-          image: { mediaType: imageMime, data: imageData },
+          images: normalized.map(img => ({
+            mediaType: img.mimeType,
+            data: img.dataUrl.split(',')[1],
+          })),
         };
 
         const stabilityCfgs  = resolveStabilityConfigs(env);
@@ -234,17 +235,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const pass1Truncated = pass1Msg.stop_reason === 'max_tokens' ? 1 : 0;
 
         // Build labeled run list for storage and synthesis
-        type LabeledRun = { provider: string; run: number; text: string };
+        // images_sent is taken from the actual request payload (normalized.length), not
+        // inferred from the model's self-reported text — that inference is exactly what
+        // made the single-image regression hard to catch the first time.
+        type LabeledRun = { provider: string; run: number; text: string; images_sent: number };
         const labeledRuns: LabeledRun[] = [
-          { provider: 'claude', run: 1, text: pass1Text },
+          { provider: 'claude', run: 1, text: pass1Text, images_sent: normalized.length },
           ...claudeSilentResults.filter((t): t is string => t !== null).map((text, i) => ({
-            provider: 'claude', run: i + 2, text,
+            provider: 'claude', run: i + 2, text, images_sent: normalized.length,
           })),
           ...geminiResults.filter((t): t is string => t !== null).map((text, i) => ({
-            provider: 'gemini', run: i + 1, text,
+            provider: 'gemini', run: i + 1, text, images_sent: normalized.length,
           })),
           ...openaiResults.filter((t): t is string => t !== null).map((text, i) => ({
-            provider: 'openai', run: i + 1, text,
+            provider: 'openai', run: i + 1, text, images_sent: normalized.length,
           })),
         ];
 
@@ -397,7 +401,7 @@ Rules:
             fingerprintVector,
             pass1Msg.model,
             pass1Text,
-            labeledRuns.length > 0 ? JSON.stringify(labeledRuns.map(r => ({ provider: r.provider, run: r.run, text: r.text }))) : null,
+            labeledRuns.length > 0 ? JSON.stringify(labeledRuns.map(r => ({ provider: r.provider, run: r.run, text: r.text, images_sent: r.images_sent }))) : null,
             pass1Synthesized,
             fingerprintedAt,
             labeledRuns.length,
