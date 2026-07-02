@@ -6,7 +6,7 @@ Updated 2026-07-02.
 
 ## Open Items
 
-### Multi-provider Pass 1 single-image bug — FIXED (2026-07-02, commit `3ca6029`)
+### Multi-provider Pass 1 single-image bug — FIXED AND VERIFIED (2026-07-02, commit `3ca6029`)
 
 Gemini and OpenAI's Pass 1 stability runs only ever received `normalized[0]` (the first uploaded image), no matter how many images were uploaded or how many stability passes ran. Claude's native path already used every image via `imageBlocks = normalized.flatMap(...)`. Confirmed against object 30 (`A326247-0`, two images — interior + exterior): Claude's Pass 1 runs described a matching interior/exterior crack across both views; Gemini and OpenAI's stored runs explicitly self-reported receiving only one image (e.g. "As only one image was provided for examination…").
 
@@ -16,6 +16,8 @@ Gemini and OpenAI's Pass 1 stability runs only ever received `normalized[0]` (th
 - Deployed to production same day.
 
 **Corpus data-quality flag — decision, no schema change:** every multi-image object fingerprinted before this fix has the same asymmetry baked into its stored `fingerprint_pass1_synthesized` — Claude systematically saw more than Gemini/OpenAI, so "thin [claude only]" tags on those objects may reflect that information gap rather than a genuine cross-model perceptual difference. Chose a **timestamp cutoff over a new `pre_multiimage_fix` column**: compare an object's `fingerprinted_at` against this fix's deploy time (2026-07-02) to know if it predates the fix — zero migration cost. Do not silently re-run old multi-image objects and treat the new run as comparable to the old one without noting this gap.
+
+**Verification (2026-07-02):** re-ran ingest against production using object 30's original two images (interior + exterior R2 keys). Created object **id 31** (left in place intentionally, as a live before/after reference — not a cleanup artifact). All 9 stability runs show `images_sent: 2`. Gemini now reports "Image 1" / "Image 2" with a "Cross-View Observations" section tracing the same fracture from interior to exterior; OpenAI reports "View 1" / "View 2" with a "Features only visible, or reading differently, by view" section. Neither self-reports "only one image provided" anymore. Fix confirmed working end-to-end, not just at the type level.
 
 ### Hidden Grammar of Art — cross-model stability synthesis — DONE (2026-06-25)
 
