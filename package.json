@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
-    "@astrojs/cloudflare": "^13.6.1",
+    "@astrojs/cloudflare": "^14.1.1",
     "@google/generative-ai": "^0.24.1",
     "astro": "^6.4.3",
     "marked": "^18.0.5",
