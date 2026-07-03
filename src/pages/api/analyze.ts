@@ -4,7 +4,7 @@ import { env as cfEnv } from 'cloudflare:workers';
 import { requireAdmin } from '../../lib/auth';
 import { detectMimeFromBytes } from '../../lib/image';
 import { PROVENANCE_INTEGRITY_PROMPT, CONTRADICTION_DETECTION_PROMPT } from '../../lib/authenticity';
-import { VECTOR_SCORING_PROMPT } from '../../lib/principles';
+import { VECTOR_SCORING_PROMPT, VECTOR_KEY_NAMES, ARTIFACT_GROUNDING } from '../../lib/principles';
 import { resolveModelConfig, streamModel, callModel } from '../../lib/model-router';
 import { VECTOR_KEY, serializeVector, type DocCanonical } from '../../db/types';
 import { buildSearchQuery, retrievePassages, formatReferences } from '../../lib/retrieval';
@@ -16,6 +16,62 @@ import {
 } from './artifact';
 
 export const prerender = false;
+
+// ---------------------------------------------------------------------------
+// Verification caveats — "convergent, unconfirmed signal"
+//
+// A principle's static grounding tag (from artifact-principles.json) says
+// whether a VLM plausibly has real training-data support for the claim TYPE.
+// The object's synthesis classification (from Step B at ingest time) says
+// whether THIS SPECIFIC claim, on THIS object, converged across independent
+// model families. Neither alone tells you if the claim is actually correct —
+// cross-model agreement rules out one model inventing it, not shared
+// training-data bias. This caveat fires only where both signals point the
+// same way: a claim the models agree on, that the models have no real basis
+// for detecting reliably in the first place. Deterministic — generated in
+// code, appended after Pass 2 finishes, never asked of an LLM to preserve,
+// so it can't be softened or dropped by the model that wrote the analysis.
+// ---------------------------------------------------------------------------
+function buildVerificationCaveats(
+  synthesisClassificationRaw: string | null,
+  stabilityMapRaw: string | null,
+  stabilityRunsRaw: string | null,
+): string {
+  if (!synthesisClassificationRaw || !stabilityRunsRaw) return '';
+
+  let classification: Record<string, { tier: string; evidence: string }>;
+  let runs: Array<{ provider: string }>;
+  let stabilityMap: Record<string, { hits: number; total: number }>;
+  try {
+    classification = JSON.parse(synthesisClassificationRaw);
+    runs = JSON.parse(stabilityRunsRaw);
+    stabilityMap = stabilityMapRaw ? JSON.parse(stabilityMapRaw) : {};
+  } catch {
+    return '';
+  }
+
+  const totalFamilies = new Set(runs.map(r => r.provider)).size;
+  if (totalFamilies === 0) return '';
+
+  const flagged = VECTOR_KEY.filter(k => {
+    const grounding = ARTIFACT_GROUNDING[k];
+    const entry = classification[k];
+    return grounding && entry?.tier === 'stable' &&
+      (grounding.inferenceTier === 'speculative' || grounding.inferenceTier === 'plausible-untested');
+  });
+  if (flagged.length === 0) return '';
+
+  const blocks = flagged.map(k => {
+    const name = VECTOR_KEY_NAMES[k];
+    const claim = classification[k].evidence;
+    const stat = stabilityMap[k];
+    const runLine = stat ? `${stat.hits} of ${stat.total} runs` : 'a majority of runs';
+
+    return `**Convergent, unconfirmed signal — ${name}.** ${runLine} across ${totalFamilies} independently trained model families agree: ${claim} Independent agreement across separately trained systems is real evidence against one model inventing this — but it isn't yet evidence that the explanation attached to it is correct, because ${name} has no dedicated training data confirming what the models are actually detecting. Two explanations are live and currently indistinguishable from model output alone: the models may be tracking a genuine, consistent physical property of the object that hasn't been verified by direct inspection yet — or they may be converging on a shared descriptive habit inherited from overlapping training material, agreeing on the word without independently verifying the fact. Distinguishing these requires a reference library of comparison objects with lab-confirmed ground truth for this specific principle, which doesn't exist yet for this domain. Building that library is ongoing work, not a resolved gap. Treat this as a flagged direction for verification, not a settled observation.`;
+  });
+
+  return `## Verification Flags\n\n${blocks.join('\n\n')}`;
+}
 
 // ---------------------------------------------------------------------------
 // Fingerprint vs. attribution comparison
@@ -266,6 +322,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const pass2Truncated = pass2Msg.stop_reason === 'max_tokens' ? 1 : 0;
         if (pass2Truncated) send({ type: 'status', message: '⚠ Pass 2 reached token limit — analysis may be incomplete' });
 
+        // Verification caveats — deterministic, generated in code from the object's
+        // stored fingerprint data, never passed to Pass 2/3/4 as input. Appended only
+        // to what gets stored/streamed to the researcher, so downstream passes keep
+        // working from Pass 2's clean output.
+        const verificationCaveats = buildVerificationCaveats(
+          object.fingerprint_synthesis_classification as string | null,
+          object.fingerprint_stability_map as string | null,
+          object.fingerprint_stability_runs as string | null,
+        );
+        const pass2TextForDisplay = verificationCaveats ? `${pass2Text}\n\n${verificationCaveats}` : pass2Text;
+        if (verificationCaveats) {
+          send({ type: 'delta', text: `\n\n${verificationCaveats}` });
+        }
+
         // ----------------------------------------------------------------
         // Pass 3 — competency / takeaway
         // ----------------------------------------------------------------
@@ -442,7 +512,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             extractionModelUsed,
             vectorModelUsed,
             pass1Text,
-            pass2Text,
+            pass2TextForDisplay,
             pass3Text,
             structuredRecord ? JSON.stringify(structuredRecord) : null,
             analysisVector,
@@ -470,7 +540,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           analysis_id:    analysisId,
           object_id,
           mode,
-          pass2_text:     pass2Text,
+          pass2_text:     pass2TextForDisplay,
           pass3_text:     pass3Text,
           analysis_vector: analysisVector ? JSON.parse(analysisVector) : null,
           fingerprint_flag: fingerprintFlag,

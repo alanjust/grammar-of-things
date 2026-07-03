@@ -46,6 +46,17 @@ export const VECTOR_KEY_NAMES: Record<string, string> = {
   ),
 };
 
+// principleId (ap_N only — hg-principles.json's ta_* Tier A principles have no
+// grounding tag; that's a separate, not-yet-assessed question) -> VLM grounding
+// assessment for that principle: observationTier/inferenceTier/note. See
+// artifact-principles.json's "grounding" field on each principle object.
+export const ARTIFACT_GROUNDING: Record<string, { observationTier: string; inferenceTier: string; note: string }> =
+  Object.fromEntries(
+    (artifactPrinciplesData.principles as any[])
+      .filter((p: any) => p.grounding)
+      .map((p: any) => [`ap_${p.id}`, p.grounding])
+  );
+
 // ---------------------------------------------------------------------------
 // Pass 1 prompt builders
 // ---------------------------------------------------------------------------
