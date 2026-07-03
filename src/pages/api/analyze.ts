@@ -34,22 +34,26 @@ export const prerender = false;
 // ---------------------------------------------------------------------------
 function buildVerificationCaveats(
   synthesisClassificationRaw: string | null,
-  stabilityMapRaw: string | null,
   stabilityRunsRaw: string | null,
 ): string {
   if (!synthesisClassificationRaw || !stabilityRunsRaw) return '';
 
   let classification: Record<string, { tier: string; evidence: string }>;
   let runs: Array<{ provider: string }>;
-  let stabilityMap: Record<string, { hits: number; total: number }>;
   try {
     classification = JSON.parse(synthesisClassificationRaw);
     runs = JSON.parse(stabilityRunsRaw);
-    stabilityMap = stabilityMapRaw ? JSON.parse(stabilityMapRaw) : {};
   } catch {
     return '';
   }
 
+  // Family count comes from the same run list Step B classified against — not
+  // fingerprint_stability_map, which is a different, noisier per-run signal that
+  // can disagree with the "stable" classification itself (confirmed empirically:
+  // a principle classified stable showed a 3-of-9 hit-count on the same object).
+  // No per-principle run fraction is shown here for that reason — the evidence
+  // text below is the only claim about agreement, sourced from the process that
+  // actually decided "stable".
   const totalFamilies = new Set(runs.map(r => r.provider)).size;
   if (totalFamilies === 0) return '';
 
@@ -61,16 +65,13 @@ function buildVerificationCaveats(
   });
   if (flagged.length === 0) return '';
 
-  const blocks = flagged.map(k => {
-    const name = VECTOR_KEY_NAMES[k];
-    const claim = classification[k].evidence;
-    const stat = stabilityMap[k];
-    const runLine = stat ? `${stat.hits} of ${stat.total} runs` : 'a majority of runs';
+  const intro = `**Convergent, unconfirmed signals.** Across ${totalFamilies} independently trained model families, the observations below converge on specific claims — real evidence against any one model inventing them. That isn't yet evidence the claims are correct: none of the flagged principles has dedicated training data confirming what the models are actually detecting. Two explanations are live and currently indistinguishable from model output alone: the models may be tracking a genuine, consistent physical property of the object that hasn't been verified by direct inspection yet — or they may be converging on a shared descriptive habit inherited from overlapping training material, agreeing on the word without independently verifying the fact. Distinguishing these requires a reference library of comparison objects with lab-confirmed ground truth for these principles, which doesn't exist yet for this domain. Treat each item below as a flagged direction for verification, not a settled observation.`;
 
-    return `**Convergent, unconfirmed signal — ${name}.** ${runLine} across ${totalFamilies} independently trained model families agree: ${claim} Independent agreement across separately trained systems is real evidence against one model inventing this — but it isn't yet evidence that the explanation attached to it is correct, because ${name} has no dedicated training data confirming what the models are actually detecting. Two explanations are live and currently indistinguishable from model output alone: the models may be tracking a genuine, consistent physical property of the object that hasn't been verified by direct inspection yet — or they may be converging on a shared descriptive habit inherited from overlapping training material, agreeing on the word without independently verifying the fact. Distinguishing these requires a reference library of comparison objects with lab-confirmed ground truth for this specific principle, which doesn't exist yet for this domain. Building that library is ongoing work, not a resolved gap. Treat this as a flagged direction for verification, not a settled observation.`;
-  });
+  const bullets = flagged
+    .map(k => `- **${VECTOR_KEY_NAMES[k]}** — ${classification[k].evidence}`)
+    .join('\n');
 
-  return `## Verification Flags\n\n${blocks.join('\n\n')}`;
+  return `## Verification Flags\n\n${intro}\n\n${bullets}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -328,7 +329,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
         // working from Pass 2's clean output.
         const verificationCaveats = buildVerificationCaveats(
           object.fingerprint_synthesis_classification as string | null,
-          object.fingerprint_stability_map as string | null,
           object.fingerprint_stability_runs as string | null,
         );
         const pass2TextForDisplay = verificationCaveats ? `${pass2Text}\n\n${verificationCaveats}` : pass2Text;
