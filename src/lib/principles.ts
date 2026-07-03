@@ -32,6 +32,20 @@ export const TIER_A_PRINCIPLE_REF = (principlesData.principles as any[])
   .map((p: any) => `${p.name} (id:${p.id})`)
   .join(', ');
 
+// principleId (VECTOR_KEY format, e.g. "ap_4"/"ta_13") -> display name.
+// Derived from the same two JSON sources as everything above, so it can't drift
+// from VECTOR_KEY's ap_1..ap_15 / ta_* order in db/types.ts.
+export const VECTOR_KEY_NAMES: Record<string, string> = {
+  ...Object.fromEntries(
+    (artifactPrinciplesData.principles as any[]).map((p: any) => [`ap_${p.id}`, p.name as string])
+  ),
+  ...Object.fromEntries(
+    (principlesData.principles as any[])
+      .filter((p: any) => APPLICABLE_TIER_A_IDS.has(p.id))
+      .map((p: any) => [`ta_${p.id}`, p.name as string])
+  ),
+};
+
 // ---------------------------------------------------------------------------
 // Pass 1 prompt builders
 // ---------------------------------------------------------------------------

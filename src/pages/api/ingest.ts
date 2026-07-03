@@ -5,6 +5,7 @@ import { requireAdmin } from '../../lib/auth';
 import {
   ARTIFACT_PRINCIPLE_NAMES, APPLICABLE_TIER_A_NAMES,
   PASS1_PROMPT_SINGLE, PASS1_PROMPT_MULTI, VECTOR_SCORING_PROMPT,
+  VECTOR_KEY_NAMES,
 } from '../../lib/principles';
 import {
   resolveModelConfig, streamModel, callModel,
@@ -21,6 +22,97 @@ export const prerender = false;
 // Pass 1 system prompt — static, eligible for caching in a future A1 pass
 // ---------------------------------------------------------------------------
 const PASS1_SYSTEM = 'You have completed a close examination of this artifact. Report what you found.';
+
+// ---------------------------------------------------------------------------
+// Step B synthesis classification — machine-readable per-principle corroboration
+//
+// Replaces freeform Stable/Thin/Contradicted prose as the source of truth. The
+// synthesis LLM classifies specific claims per principle id instead of writing
+// bullets it selects itself; any principle it doesn't return defaults to
+// "unclassified" here, in code — not left ambiguous, and not conflated with
+// "checked, and found nothing." The human-readable markdown is generated FROM
+// this structured object, not the other way around.
+// ---------------------------------------------------------------------------
+type SynthesisTier = 'stable' | 'thin' | 'contradicted' | 'unclassified';
+type SynthesisEntry = { tier: SynthesisTier; evidence: string };
+type SynthesisClassification = Record<string, SynthesisEntry>;
+
+function buildSynthesisClassificationPrompt(
+  labeledRuns: Array<{ provider: string; run: number; text: string }>,
+  stabilityPasses: number,
+): string {
+  const providersPresent = [...new Set(labeledRuns.map(r => r.provider))];
+  const labeledBlock = labeledRuns
+    .map(r => `--- ${r.provider.toUpperCase()}, Run ${r.run} ---\n${r.text}`)
+    .join('\n\n');
+  const principleReference = Object.entries(VECTOR_KEY_NAMES)
+    .map(([id, name]) => `${id}: ${name}`)
+    .join('\n');
+  const stableThreshold = Math.min(2, providersPresent.length);
+
+  return `You are classifying observation claims from ${labeledRuns.length} independent blind observations of the same artifact. These observations were produced by ${providersPresent.length} different AI model families (${providersPresent.join(', ')}), with ${stabilityPasses} runs each.
+
+Your task: for each principle below, determine whether the observations contain a specific, checkable claim about it, and if so, classify how reliably that claim appeared across models and runs. Report only what the observations say — do not add your own visual readings. Omit a principle entirely if the observations don't discuss it or don't converge on anything specific enough to classify — do not force coverage of all principles.
+
+OBSERVATION TEXTS:
+${labeledBlock}
+
+---
+
+PRINCIPLES (id: name):
+${principleReference}
+
+---
+
+TIER DEFINITIONS:
+- "stable": the claim appears in the majority of runs AND in at least ${stableThreshold} of the ${providersPresent.length} model families. This is the reliable foundation for analysis.
+- "thin": the claim appears in a majority of one model family's runs but is absent from others — a possible systematic model bias. Evidence must name which families agree and which are silent, in this format: "[claude 3/${stabilityPasses}; absent gemini, openai]".
+- "contradicted": different model families actively disagree about the same feature. Evidence must state each reading with a source label, e.g. "claude → deep recessional space; gemini → compressed, shallow plane; openai → ambiguous".
+
+OUTPUT FORMAT — a JSON array, one entry per principle you can classify:
+[{ "principleId": "ap_4", "tier": "stable", "evidence": "Wear is concentrated centrally, while painted zones nearer the rim/walls retain denser, more intact pigment — reported in all 9 runs." }]
+
+Rules:
+- Only include a principle if a specific, checkable claim exists for it — omission means unclassified, don't force an entry
+- Keep each evidence string specific and concrete — avoid summary language like "overall form is consistent across runs"
+- Do not editorialize about which reading is more likely correct
+- Output ONLY the JSON array. No markdown, no commentary, no preamble.`;
+}
+
+function parseSynthesisClassification(raw: string): SynthesisClassification {
+  const classification: SynthesisClassification = {};
+  for (const key of VECTOR_KEY) classification[key] = { tier: 'unclassified', evidence: '' };
+
+  let text = raw.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+  const s = text.indexOf('['), e = text.lastIndexOf(']');
+  if (s !== -1 && e > s) text = text.slice(s, e + 1);
+
+  const entries = JSON.parse(text) as Array<{ principleId: string; tier: string; evidence: string }>;
+  for (const entry of entries) {
+    if (
+      (VECTOR_KEY as readonly string[]).includes(entry.principleId) &&
+      (['stable', 'thin', 'contradicted'] as string[]).includes(entry.tier)
+    ) {
+      classification[entry.principleId] = { tier: entry.tier as SynthesisTier, evidence: String(entry.evidence ?? '') };
+    }
+  }
+  return classification;
+}
+
+function renderSynthesisMarkdown(classification: SynthesisClassification): string {
+  const section = (title: string, tier: SynthesisTier) => {
+    const keys = VECTOR_KEY.filter(k => classification[k].tier === tier);
+    const body = keys.length > 0
+      ? keys.map(k => `- **${VECTOR_KEY_NAMES[k]}** — ${classification[k].evidence}`).join('\n')
+      : 'None identified';
+    return `## ${title}\n${body}`;
+  };
+  return [
+    section('Stable observations', 'stable'),
+    section('Thin observations', 'thin'),
+    section('Contradicted observations', 'contradicted'),
+  ].join('\n\n');
+}
 
 // ---------------------------------------------------------------------------
 // POST /api/ingest
@@ -303,61 +395,43 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
 
         // ----------------------------------------------------------------
-        // Synthesis — text-level cross-model observation classification
+        // Synthesis — structured per-principle corroboration classification
         // ----------------------------------------------------------------
         let pass1Synthesized: string | null = null;
+        let synthesisClassification: SynthesisClassification | null = null;
         let synthesisTruncated = 0;
 
         if (labeledRuns.length > 1) {
           send({ type: 'status', message: 'Track A — synthesizing cross-model observations…' });
           try {
-            const providersPresent = [...new Set(labeledRuns.map(r => r.provider))];
-            const labeledBlock = labeledRuns
-              .map(r => `--- ${r.provider.toUpperCase()}, Run ${r.run} ---\n${r.text}`)
-              .join('\n\n');
-
-            const synthesisPrompt = `You are synthesizing ${labeledRuns.length} independent blind observations of the same artifact. These observations were produced by ${providersPresent.length} different AI model families (${providersPresent.join(', ')}), with ${stabilityPasses} runs each.
-
-Your task: classify each substantive observation claim by how reliably it appeared across models and runs. Report only what the observations say — do not add your own visual readings.
-
-OBSERVATION TEXTS:
-${labeledBlock}
-
----
-
-OUTPUT FORMAT — structured markdown, exactly these three sections, no other text:
-
-## Stable observations
-Claims that appear in the majority of runs AND in at least ${Math.min(2, providersPresent.length)} of the ${providersPresent.length} model families. One bullet per claim. Specific and concrete. This section is the reliable foundation for analysis.
-
-## Thin observations
-Claims that appear in majority of runs within one model family but are absent from others. Include provider attribution in brackets: e.g., "Beak-like projecting element at upper center [claude 3/${stabilityPasses}; absent gemini, openai]". These are possible systematic model biases — Pass 2 should treat them with lower confidence.
-
-## Contradicted observations
-Claims where different model families actively disagree. State both readings explicitly with source labels: e.g., "Figure identification: claude → avian/bird (beak + wing forms); gemini → amphibian/frog (plan view overhead); openai → zoomorphic". Pass 2 must hold these open rather than resolving them.
-
-Rules:
-- If all models agree on a claim, it belongs in Stable
-- An empty section is acceptable — write "None identified" rather than forcing entries
-- Keep bullets specific: avoid summary language like "overall form is consistent across runs"
-- Do not editorialize about which reading is more likely correct`;
-
             const synthesisMsg = await callModel(modelConfig.pass1, {
               max_tokens: 16000,
-              system: 'You are synthesizing multiple independent visual observations. Report only what the observations contain. Do not add your own visual readings.',
-              messages: [{ role: 'user', content: [{ type: 'text', text: synthesisPrompt }] }],
+              system: 'You are classifying multiple independent visual observations. Output ONLY the JSON array requested. Report only what the observations contain — do not add your own visual readings.',
+              messages: [{ role: 'user', content: [{ type: 'text', text: buildSynthesisClassificationPrompt(labeledRuns, stabilityPasses) }] }],
             }, anthropic);
 
-            pass1Synthesized = synthesisMsg.content
-              .filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n\n');
+            const rawSynthesisText = synthesisMsg.content
+              .filter((b: any) => b.type === 'text').map((b: any) => b.text).join('');
 
             synthesisTruncated = synthesisMsg.stop_reason === 'max_tokens' ? 1 : 0;
-            if (!pass1Synthesized.trim() || synthesisTruncated) {
-              const blockTypes = synthesisMsg.content.map((b: any) => b.type).join(', ') || 'none';
-              send({ type: 'status', message: `⚠ Synthesis truncated or empty (stop_reason: ${synthesisMsg.stop_reason}, blocks: ${blockTypes})` });
-              synthesisTruncated = 1;
-            } else {
-              send({ type: 'status', message: 'Track A — synthesis complete' });
+            if (synthesisTruncated) {
+              send({ type: 'status', message: `⚠ Synthesis truncated (stop_reason: max_tokens)` });
+            }
+
+            try {
+              synthesisClassification = parseSynthesisClassification(rawSynthesisText);
+            } catch (parseErr) {
+              send({ type: 'status', message: `⚠ Synthesis JSON parse failed: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}` });
+              synthesisClassification = null;
+            }
+
+            if (synthesisClassification) {
+              pass1Synthesized = renderSynthesisMarkdown(synthesisClassification);
+              const counts = VECTOR_KEY.reduce(
+                (acc, k) => { acc[synthesisClassification![k].tier]++; return acc; },
+                { stable: 0, thin: 0, contradicted: 0, unclassified: 0 } as Record<SynthesisTier, number>,
+              );
+              send({ type: 'status', message: `Track A — synthesis complete (${counts.stable} stable, ${counts.thin} thin, ${counts.contradicted} contradicted)` });
             }
           } catch (err) {
             send({ type: 'status', message: `⚠ Synthesis failed: ${err instanceof Error ? err.message : String(err)}` });
@@ -390,6 +464,7 @@ Rules:
               fingerprint_stability_map    = ?,
               pass1_truncated              = ?,
               fingerprint_synthesis_truncated = ?,
+              fingerprint_synthesis_classification = ?,
               is_reference                 = ?,
               reference_tradition          = ?,
               updated_at                   = datetime('now')
@@ -408,6 +483,7 @@ Rules:
             Object.keys(stabilityMap).length > 0 ? JSON.stringify(stabilityMap) : null,
             pass1Truncated,
             synthesisTruncated,
+            synthesisClassification ? JSON.stringify(synthesisClassification) : null,
             is_reference ? 1 : 0,
             is_reference ? (reference_tradition ?? null) : null,
             objectId,
@@ -511,6 +587,7 @@ Rules:
           fingerprint_stability_map: Object.keys(stabilityMap).length > 0 ? stabilityMap : null,
           fingerprint_stability_runs: labeledRuns.length,
           fingerprint_pass1_synthesized: pass1Synthesized ? true : false,
+          fingerprint_synthesis_classification: synthesisClassification,
           doc_layers: {
             raw:        docRaw,
             structured: docStructured ? JSON.parse(docStructured) : null,
