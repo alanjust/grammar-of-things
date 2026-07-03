@@ -1,20 +1,22 @@
 # Grammar of Things — Next Session
 
-Updated 2026-07-02.
+Updated 2026-07-03.
 
 ---
 
 ## Open Items
 
-### 🔴 PRIORITY FOR NEXT SESSION — Restructure Step B synthesis to structured per-principle output
+### Step B synthesis restructured to structured per-principle classification — DONE (2026-07-03, commit `0ac11c8`)
 
-Found while reviewing a grounding-tier tagging brief for `artifact-principles.json` (not yet implemented — see next item). Two runtime signals meant to indicate "did independent model runs corroborate this claim" actually disagree with each other, and nothing in the pipeline can currently tell you which one is right.
+Was tagged 🔴 priority after reviewing the grounding-tier tagging brief for `artifact-principles.json` surfaced that two runtime signals meant to indicate "did independent model runs corroborate this claim" actually disagreed with each other: `fingerprint_stability_map` (mechanical per-run Haiku hit-count, no cross-run comparison) vs. the old freeform Stable/Thin/Contradicted synthesis prose (a genuine cross-run claim-convergence read, but incomplete — no "checked and found nothing" state). Confirmed on `A326247-0-25`: Investment Gradient looked corroborated by hit-count (8/9) and completely uncorroborated by synthesis prose (zero mentions) — the two signals gave opposite answers for the same claim.
 
-**The two signals, and why they diverge:** `fingerprint_stability_map` (the numeric hit-count) scores each of the 9 runs independently against all 27 principles via Haiku — this only checks "does this run's text contain *something* Haiku considers relevant to principle X," with zero comparison across runs. The Step B synthesis (Stable/Thin/Contradicted prose) is a genuine cross-run read — an LLM looks for the *same specific claim* repeated across independent runs. Confirmed on object 30 / analysis 25 (`A326247-0-25`): Investment Gradient scored 2 with an **8/9 hit-count** (looks well-corroborated) but **zero mentions anywhere** in the synthesis prose or the final rendered report (looks completely uncorroborated). High topic-overlap, zero claim-overlap — the hit-count is not a valid corroboration signal, it just looks like one at a glance.
+**Fix:** Step B (`ingest.ts`) now asks the synthesis model for a structured JSON array (`{principleId, tier: stable|thin|contradicted, evidence}`) instead of freeform bullets it chooses itself. Any of the 27 principles the model doesn't return defaults to `unclassified` in code — a real, distinguishable state, not silent absence. The human-readable Stable/Thin/Contradicted markdown (`fingerprint_pass1_synthesized`) is now generated *from* this structured object via `renderSynthesisMarkdown()`, not the other way around. New `fingerprint_synthesis_classification` column (migration `0019`) stores the structured data for any future scoring/caveat logic to read directly and unambiguously — resolving the reason the interim "read synthesis Stable-section only, never the hit-count" rule was needed in the first place.
 
-**Decision for now (apply today, no pipeline change):** any future corroboration-based caveat logic (e.g. the "convergent, unconfirmed signal" report caveat proposed alongside the grounding-tier work) must read the synthesis's explicit Stable-section membership only — **never** the raw hit-count. This under-fires (may miss real convergence the synthesis writer didn't surface into a bullet) rather than over-fires (falsely implying cross-model agreement that's really just incidental topic overlap). Under-firing is the safer failure direction for something meant to stop researchers from over-trusting a score.
+New export `VECTOR_KEY_NAMES` in `principles.ts` (id → name, derived from the same `artifact-principles.json`/`hg-principles.json` sources as everything else in that file — no hardcoded duplicate list).
 
-**Real fix, scoped as its own follow-up (not folded into the grounding-tier tagging task):** restructure Step B so it emits a structured, principle-indexed object — one of `stable / thin / contradicted / unclassified` per principle id, with evidence — instead of freeform prose an LLM chooses bullets for. Generate the human-readable Stable/Thin/Contradicted markdown *from* that structured object, not the other way around. This makes `unclassified` a real, visible state (distinct from "checked, and not stable") and gives any future scoring/caveat logic something unambiguous to key off, instead of two signals that can silently disagree the way they do today. This is a real data-model/pipeline change to `ingest.ts`'s synthesis step, bigger than a scoring-formula decision — start here next session before wiring anything into an eval harness.
+**Verified live** (2026-07-03, object 35, `A326274-0`): all 27 principles present in the stored classification (12 stable, 3 thin, 0 contradicted, 12 unclassified), evidence text specific and provider-attributed (e.g. `[openai 3/3; absent claude, gemini]`), generated markdown reads naturally as Pass 2 evidence — same quality bar as the old freeform version, now with guaranteed structure behind it.
+
+**Note:** an accidental duplicate (object 34) was created testing against the not-yet-deployed code before this was live — deleted (D1 + R2). Object 33 (pre-restructure, old-style synthesis) was kept as a before/after reference alongside object 35 (post-restructure), per Alan's call.
 
 ### Grounding-tier tagging for `artifact-principles.json` — DONE (2026-07-02, commit `8ec1dd0`)
 
