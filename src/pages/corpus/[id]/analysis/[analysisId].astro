@@ -151,23 +151,25 @@ const readMin = readTime(totalWords);
 
           {/* Pass 1 */}
           {analysis.pass1_text && (
-            <section class="pass-section" id="pass1-section">
-              <div class="pass-label">
+            <details class="pass-section pass-collapsible" id="pass1-section">
+              <summary class="pass-label">
                 <span class="pass-num">Pass 1</span>
                 <span class="pass-name">Blind observation</span>
                 <span class="pass-note">Documentation excluded — image only</span>
-              </div>
+                <span class="pass-toggle" aria-hidden="true"></span>
+              </summary>
               <div class="pass-body prose" set:html={renderMarkdown(analysis.pass1_text)} />
-            </section>
+            </details>
           )}
 
           {/* Fingerprint */}
           {vec.length > 0 && (
-            <section class="pass-section" id="fingerprint-section">
-              <div class="pass-label">
+            <details class="pass-section pass-collapsible" id="fingerprint-section">
+              <summary class="pass-label">
                 <span class="pass-num">Fingerprint</span>
                 <span class="pass-name">27-principle perceptual vector</span>
-              </div>
+                <span class="pass-toggle" aria-hidden="true"></span>
+              </summary>
               <div class="fp-grid">
                 {VECTOR_KEY.map((k, i) => {
                   const s = vec[i] ?? 0;
@@ -181,7 +183,7 @@ const readMin = readTime(totalWords);
                   );
                 })}
               </div>
-            </section>
+            </details>
           )}
 
           {/* Pass 2 */}
@@ -423,6 +425,14 @@ if (isAdmin) {
   .pass-num  { font-family: var(--font-mono); font-size: var(--text-sm); font-weight: var(--weight-bold); color: var(--accent); letter-spacing: var(--tracking-wide); text-transform: uppercase; }
   .pass-name { font-family: var(--font-display); font-size: var(--text-xl); color: var(--text); }
   .pass-note { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); margin-left: auto; }
+
+  /* Collapsible pass sections (Pass 1, Fingerprint) */
+  .pass-collapsible:not([open]) > :not(summary) { display: none; }
+  .pass-collapsible > summary.pass-label { cursor: pointer; list-style: none; }
+  .pass-collapsible > summary.pass-label::-webkit-details-marker { display: none; }
+  .pass-toggle { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); margin-left: var(--space-4); }
+  .pass-toggle::before { content: '+ show'; }
+  .pass-collapsible[open] .pass-toggle::before { content: '− hide'; }
   .pass-body { max-width: 74ch; }
   .pass-body :global(p)  { font-size: var(--text-lg); line-height: var(--leading-loose); color: var(--text); margin-bottom: 1em; }
   .pass-body :global(h1),
