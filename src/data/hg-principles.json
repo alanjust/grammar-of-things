@@ -1,6 +1,6 @@
 {
   "meta": {
-    "epistemicNotice": "These 54 principles are perceptual mechanisms that influence what gets noticed, how forms organize, and how space is inferred - all before conscious interpretation. They do not determine meaning.",
+    "epistemicNotice": "These 58 principles are perceptual mechanisms that influence what gets noticed, how forms organize, and how space is inferred - all before conscious interpretation. They do not determine meaning.",
     "influences": [
       "what gets noticed first",
       "how forms group, separate, and stabilize",
@@ -679,6 +679,54 @@
       "howToUse": "For maximum recognizability use canonical view. For specific effects: profile = emblematic, less personal; frontal = confrontational, iconic; extreme angles = dramatic but may sacrifice recognition; 3/4 = balanced, most versatile. If abstraction/defamiliarization is goal — avoid canonical view.",
       "studioUse": "For maximum recognizability use canonical view. For specific effects: profile = emblematic, less personal; frontal = confrontational, iconic; extreme angles = dramatic but may sacrifice recognition; 3/4 = balanced, most versatile. If abstraction/defamiliarization is goal - avoid canonical view.",
       "combineWith": ["Embodied Perspective / Eye-Level Effects", "Edge Detection", "Simultaneity vs. Sequence"]
+    },
+    {
+      "id": 55,
+      "name": "Agency Attribution",
+      "subtitle": "intention read into form",
+      "tier": "A",
+      "claimType": "Perceptual/attentional mechanism",
+      "neuralFact": "Heider and Simmel (1944) showed that people automatically narrate intention, goal, and social relationship onto simple moving shapes — triangles and circles read as 'chasing,' 'bullying,' or 'hiding' with no biological features at all. This activates the same mentalizing network (superior temporal sulcus, temporoparietal junction, medial prefrontal cortex) engaged when reading real people's intentions. It requires no face, no eyes, no lifelike motion — only a spatial relationship between forms with an implied vector: one approaches, one blocks, one recedes, one is pursued.",
+      "studioTool": "Agency reads from relationship, not likeness. Two forms with an implied directional relationship — one oriented toward another, one positioned as obstacle, one trailing another's implied path — get read as agents with wants, even in fully abstract work. This is the perceptual root of narrative: not motion itself, not gaze itself, but the inferred want behind a form's position relative to another.",
+      "howToUse": "To imply intention: give a form orientation relative to another (facing, reaching, blocking, withdrawing), and leave the relationship incomplete rather than resolved — a form mid-approach or blocked-short reads as wanting something more strongly than one that has arrived. Works in pure abstraction: two shapes with a converging vector and an obstacle between them will be read as a thwarted goal by nearly any viewer, with no figuration required.",
+      "studioUse": "To imply intention: give a form orientation relative to another (facing, reaching, blocking, withdrawing), and leave the relationship incomplete rather than resolved — a form mid-approach or blocked-short reads as wanting something more strongly than one that has arrived. Works in pure abstraction: two shapes with a converging vector and an obstacle between them will be read as a thwarted goal by nearly any viewer, with no figuration required.",
+      "combineWith": ["Directional Force/Implied Movement", "Gaze Direction / Social Attention", "Biological Motion Detection", "Implied Time/Narrative Sequence"]
+    },
+    {
+      "id": 56,
+      "name": "Postural Affect",
+      "subtitle": "emotion read from the body, no face required",
+      "tier": "A",
+      "claimType": "Perceptual/affective mechanism",
+      "neuralFact": "A static body posture resolves into a felt emotional state before the face is even parsed — often faster, and sometimes overriding the face when the two conflict. De Gelder's work shows that fear, dominance, threat, and grief read directly from the configuration of a body: a raised shoulder, a recoiling torso, a collapsed spine. This runs on a dedicated pathway — the extrastriate and fusiform body areas coding body form, with the superior temporal sulcus and amygdala assigning emotional and social meaning. It is fast, largely automatic, and holds up across cultures. Crucially it needs no motion and no visible face, which is exactly why it survives in a still image on a gallery wall.",
+      "studioTool": "The body is a face. A figure's emotional charge is carried in posture — the angle of a spine, the set of the shoulders, the closing or opening of the limbs — independent of, and sometimes louder than, its facial expression. A turned-away or faceless figure is not emotionally mute; its posture is doing the reading. This is why a figure seen from behind, or with the face in shadow, can still land a specific feeling.",
+      "howToUse": "To set an emotional register without relying on the face: shape the whole body. Compression (drawn-in limbs, lowered head, curved spine) reads as fear, submission, or grief; expansion (raised chin, squared shoulders, open stance) reads as dominance or confidence. When the face is absent, obscured, or neutral, posture carries the entire affective load — and when face and body conflict, the body often wins the first read. Works in figuration and in near-abstract figures alike.",
+      "studioUse": "To set an emotional register without relying on the face: shape the whole body. Compression (drawn-in limbs, lowered head, curved spine) reads as fear, submission, or grief; expansion (raised chin, squared shoulders, open stance) reads as dominance or confidence. When the face is absent, obscured, or neutral, posture carries the entire affective load — and when face and body conflict, the body often wins the first read. Works in figuration and in near-abstract figures alike.",
+      "combineWith": ["Face Detection", "Biological Motion Detection", "Agency Attribution", "Gaze Direction / Social Attention"]
+    },
+    {
+      "id": 57,
+      "name": "Embodied Simulation",
+      "subtitle": "the mark re-enacted in the viewer's body",
+      "tier": "B",
+      "claimType": "Perceptual/motor mechanism (embodied simulation)",
+      "neuralFact": "Viewing an action — or the physical trace of one — activates the observer's own motor system, as if lightly rehearsing the movement. Freedberg and Gallese (2007) extended this from depicted actions to the artist's gesture itself: the slash of a blade, the drag of a loaded brush, the drip of thrown paint recruit motor and premotor areas in the viewer via the mirror system. Part of what a gestural mark 'means' is felt as a faint motor echo of making it. This is the mechanism behind why physical brushwork reads as energy rather than as mere texture. Honest caveat: the strong version — that inert marks reliably drive motor cortex — has mixed replication, which is why this sits in Tier B rather than A.",
+      "studioTool": "A mark carries the memory of the hand that made it. Visible, directional, effortful marks — a fast drag, a scraped edge, a flung line — get partly re-enacted in the viewer's motor system, reading as kinetic energy and bodily presence. This is why a gesturally worked surface feels alive in a way a flat, anonymous fill does not: the viewer is faintly making the mark alongside you.",
+      "howToUse": "To make a surface feel physical rather than depicted: leave the gesture legible. Preserve directional drag, pressure variation, and the speed of a stroke instead of blending it out. A mark that clearly encodes how the hand moved invites the viewer to re-enact it and reads as energy; a mark scrubbed of its making reads as inert. Strongest where the gesture is large, directional, and singular enough to be 'felt' as one movement.",
+      "studioUse": "To make a surface feel physical rather than depicted: leave the gesture legible. Preserve directional drag, pressure variation, and the speed of a stroke instead of blending it out. A mark that clearly encodes how the hand moved invites the viewer to re-enact it and reads as energy; a mark scrubbed of its making reads as inert. Strongest where the gesture is large, directional, and singular enough to be 'felt' as one movement.",
+      "combineWith": ["Directional Force/Implied Movement", "Biological Motion Detection", "Postural Affect", "Agency Attribution"]
+    },
+    {
+      "id": 58,
+      "name": "Empathic Resonance",
+      "subtitle": "sharing a depicted body's pain or effort",
+      "tier": "C",
+      "claimType": "Affective-empathy mechanism (not theory-of-mind)",
+      "neuralFact": "Seeing another body in pain, strain, or physical effort activates part of the viewer's own affective and somatosensory response — anterior insula and anterior cingulate cortex for shared distress (Singer and colleagues), with somatosensory involvement when the depicted contact or wound is specific. This is a real, measurable resonance, and it is what gives images of suffering (a Crucifixion, a Goya, war photography) their bodily grip. Two honest qualifications: this is the affective-empathy network, not the theory-of-mind / mentalizing network — a different system from Agency Attribution and Gaze Direction — and its strength is more variable across viewers and more culturally mediated, which places it in Tier C.",
+      "studioTool": "Depicted pain and effort are felt, not just seen. A specific, legible wound, strain, or weight in a depicted body produces a faint answering response in the viewer's own body — a wince, a bracing. Specificity drives it: a precise site of contact or injury resonates far more than a generic or symbolic one. This is a real lever for images meant to implicate the viewer physically rather than address them at arm's length.",
+      "howToUse": "To make a viewer feel a depicted body rather than observe it: be specific and somatic. Locate the strain, the wound, or the weight precisely — a defined point of contact, a clear line of tension — rather than gesturing at suffering symbolically. Vulnerable or exposed body zones amplify the response. Use sparingly and deliberately; the effect is strong but variable across viewers, and overuse reads as manipulation rather than empathy.",
+      "studioUse": "To make a viewer feel a depicted body rather than observe it: be specific and somatic. Locate the strain, the wound, or the weight precisely — a defined point of contact, a clear line of tension — rather than gesturing at suffering symbolically. Vulnerable or exposed body zones amplify the response. Use sparingly and deliberately; the effect is strong but variable across viewers, and overuse reads as manipulation rather than empathy.",
+      "combineWith": ["Postural Affect", "Face Detection", "Biological Motion Detection", "Agency Attribution"]
     }
   ]
 }

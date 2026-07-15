@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import Anthropic from '@anthropic-ai/sdk';
 import { env as cfEnv } from 'cloudflare:workers';
 import { requireAdmin } from '../../lib/auth';
-import { detectMimeFromBytes } from '../../lib/image';
+import { loadImageFromR2 } from '../../lib/image';
 import { PROVENANCE_INTEGRITY_PROMPT, CONTRADICTION_DETECTION_PROMPT } from '../../lib/authenticity';
 import { VECTOR_SCORING_PROMPT, VECTOR_KEY_NAMES, ARTIFACT_GROUNDING } from '../../lib/principles';
 import { resolveModelConfig, streamModel, callModel } from '../../lib/model-router';
@@ -106,7 +106,7 @@ const FINGERPRINT_COMPARISON_PROMPT = (
 
   return `A blind perceptual fingerprint was computed from an artifact image alone — no cultural documentation was available during that step.
 
-BLIND FINGERPRINT (27 principles scored 0–3, image only):
+BLIND FINGERPRINT (${VECTOR_KEY.length} principles scored 0–3, image only):
 ${named}
 
 DOCUMENTED ATTRIBUTION: ${culture} (confidence: ${confidence || 'unknown'})
@@ -128,29 +128,6 @@ Rules:
 - Never assert authenticity, inauthenticity, misattribution, or that the fingerprint "matches" or "contradicts" the attribution.
 - "flag_strength: none" is valid and expected for most objects.`;
 };
-
-// ---------------------------------------------------------------------------
-// Image loading from R2
-// ---------------------------------------------------------------------------
-
-async function loadImageFromR2(r2: any, key: string): Promise<string | null> {
-  try {
-    const obj = await r2.get(key);
-    if (!obj) return null;
-    const buffer = await obj.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    const chunk = 8192;
-    for (let i = 0; i < bytes.length; i += chunk) {
-      binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + chunk, bytes.length)));
-    }
-    const declared: string = obj.httpMetadata?.contentType ?? 'image/jpeg';
-    const contentType = detectMimeFromBytes(bytes) ?? declared;
-    return `data:${contentType};base64,${btoa(binary)}`;
-  } catch {
-    return null;
-  }
-}
 
 // ---------------------------------------------------------------------------
 // POST /api/analyze

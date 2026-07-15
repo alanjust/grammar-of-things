@@ -32,7 +32,7 @@ import SiteFooter from '../components/SiteFooter.astro';
           <li><a href="#workflow">Step-by-step workflow</a></li>
           <li><a href="#reading-results">Reading your analysis</a></li>
           <li><a href="#authenticity">Provenance and contradiction flags</a></li>
-          <li><a href="#principles">The 27 principles</a></li>
+          <li><a href="#principles">The 29 principles</a></li>
           <li><a href="#reference-corpus">The reference corpus</a></li>
           <li><a href="#limitations">Known limitations</a></li>
           <li><a href="#glossary">Glossary</a></li>
@@ -50,7 +50,7 @@ import SiteFooter from '../components/SiteFooter.astro';
             <div class="track-card track-a">
               <p class="track-label">Track A</p>
               <p class="track-name">Blind fingerprint</p>
-              <p>The model examines photographs only. It does not know the culture, date, institution, or any other contextual information. It scores the object against 27 visual principles and produces a Pass 1 observation — a structured description of what is physically present in the image.</p>
+              <p>The model examines photographs only. It does not know the culture, date, institution, or any other contextual information. It scores the object against 29 visual principles and produces a Pass 1 observation — a structured description of what is physically present in the image.</p>
               <p>This blindness is the point. Confirmation bias can corrupt visual observation when an observer already knows what the object is supposed to be. Track A prevents that.</p>
             </div>
             <div class="track-card track-b">
@@ -77,7 +77,7 @@ import SiteFooter from '../components/SiteFooter.astro';
                 <p class="step-title">Catalog the object</p>
                 <p>Go to <a href="/catalog">Catalog</a>. Upload one to six views of the object (JPEG, PNG, or WebP). Paste the raw catalog record exactly as it appears from the source — field names, values, and all. Leave the documentation field empty to catalog on fingerprint alone.</p>
                 <p>If the object is an authenticated piece from an excavated, well-documented context, check "Mark as a reference piece" and select its ceramic tradition. Reference pieces build the statistical baseline used for future comparisons.</p>
-                <p>Click <strong>Catalog object</strong>. The system runs Track A: normalizes your images, runs Pass 1 (blind observation), scores the 27 principles, and stores the fingerprint vector. Track B documentation is extracted and stored in three layers: raw, structured, and canonical.</p>
+                <p>Click <strong>Catalog object</strong>. The system runs Track A: normalizes your images, runs Pass 1 (blind observation), scores the 29 principles, and stores the fingerprint vector. Track B documentation is extracted and stored in three layers: raw, structured, and canonical.</p>
               </div>
             </div>
 
@@ -99,7 +99,7 @@ import SiteFooter from '../components/SiteFooter.astro';
               <div class="step-num">3</div>
               <div class="step-body">
                 <p class="step-title">Review the analysis</p>
-                <p>The analysis page shows all four passes. Read them in order: observation first, then synthesis, then flags. The fingerprint chart shows the 27 principle scores from Pass 1. Provenance flags and contradiction flags appear after Pass 3.</p>
+                <p>The analysis page shows all four passes. Read them in order: observation first, then synthesis, then flags. The fingerprint chart shows the 29 principle scores from Pass 1. Provenance flags and contradiction flags appear after Pass 3.</p>
               </div>
             </div>
 
@@ -144,13 +144,13 @@ import SiteFooter from '../components/SiteFooter.astro';
               <div class="pass-badge pass-4">Pass 4</div>
               <div class="pass-desc">
                 <p class="pass-title">Fingerprint scoring + authenticity passes</p>
-                <p>The 27-principle vector is computed from Pass 1. Simultaneously, a provenance integrity check and a contradiction detector run in parallel. Results from all three appear below Pass 3 on the analysis page.</p>
+                <p>The 29-principle vector is computed from Pass 1. Simultaneously, a provenance integrity check and a contradiction detector run in parallel. Results from all three appear below Pass 3 on the analysis page.</p>
               </div>
             </div>
           </div>
 
           <div class="guide-note">
-            <strong>On the fingerprint flag.</strong> The fingerprint chart shows 27 principle scores on a 0–3 scale derived entirely from Pass 1. The "provisional" label on the chart means no validated reference corpus exists yet to compare against. Once the reference corpus reaches threshold (30+ authenticated pieces per tradition), the chart will show z-scores relative to the tradition mean rather than raw scores. Until then, treat the chart as a structured observation record, not a verdict.
+            <strong>On the fingerprint flag.</strong> The fingerprint chart shows 29 principle scores on a 0–3 scale derived entirely from Pass 1. The "provisional" label on the chart means no validated reference corpus exists yet to compare against. Once the reference corpus reaches threshold (30+ authenticated pieces per tradition), the chart will show z-scores relative to the tradition mean rather than raw scores. Until then, treat the chart as a structured observation record, not a verdict.
           </div>
         </section>
 
@@ -179,10 +179,10 @@ import SiteFooter from '../components/SiteFooter.astro';
           </div>
         </section>
 
-        <!-- ── The 27 principles ──────────────────────────────────────── -->
+        <!-- ── The 29 principles ──────────────────────────────────────── -->
         <section id="principles" class="guide-section">
-          <h2>The 27 principles</h2>
-          <p>The perceptual fingerprint is computed from 27 principles drawn from two domains:</p>
+          <h2>The 29 principles</h2>
+          <p>The perceptual fingerprint is computed from 29 principles drawn from two domains:</p>
 
           <div class="principles-domains">
             <div class="domain-block">
@@ -191,9 +191,9 @@ import SiteFooter from '../components/SiteFooter.astro';
               <a href="/principles#artifact" class="domain-link">View all 15 artifact principles →</a>
             </div>
             <div class="domain-block">
-              <p class="domain-label domain-ta">12 Tier A visual principles (TA)</p>
+              <p class="domain-label domain-ta">14 Tier A visual principles (TA)</p>
               <p>A subset of general visual perception principles selected because they are diagnostic for hand-made ceramics: edge detection, figure-ground relationships, grouping, simultaneous contrast, and so on. These are domain-general but consistently relevant to ceramic analysis.</p>
-              <a href="/principles#tier-a" class="domain-link">View all 12 Tier A principles →</a>
+              <a href="/principles#tier-a" class="domain-link">View all 14 Tier A principles →</a>
             </div>
           </div>
 
@@ -204,7 +204,7 @@ import SiteFooter from '../components/SiteFooter.astro';
         <!-- ── Reference corpus ───────────────────────────────────────── -->
         <section id="reference-corpus" class="guide-section">
           <h2>The reference corpus</h2>
-          <p>A reference corpus is a set of authenticated objects whose fingerprint vectors have been computed and stored. Once a tradition has enough reference objects (target: 30), the system can compute a mean and standard deviation for each of the 27 principles across that tradition. New objects can then be compared against this distribution — not just as raw scores but as z-scores showing where each principle falls relative to authenticated examples of the same tradition.</p>
+          <p>A reference corpus is a set of authenticated objects whose fingerprint vectors have been computed and stored. Once a tradition has enough reference objects (target: 30), the system can compute a mean and standard deviation for each of the 29 principles across that tradition. New objects can then be compared against this distribution — not just as raw scores but as z-scores showing where each principle falls relative to authenticated examples of the same tradition.</p>
           <p>This is the feature that makes the tool analytically meaningful beyond case-by-case inspection. An object whose <em>Production Trace Reading</em> score is 2.4 standard deviations below the Mimbres Phase III mean is telling you something that qualitative comparison alone could not.</p>
 
           <h3>What qualifies as a reference piece?</h3>
@@ -249,7 +249,7 @@ import SiteFooter from '../components/SiteFooter.astro';
             </div>
             <div class="limitation">
               <p class="limit-title">Single tradition currently active</p>
-              <p>The tool was built with Mimbres ceramic analysis as the primary use case. The 27 principles are broadly applicable to other Southwest traditions, but no tradition-specific reference corpora exist for Hohokam, Ancestral Puebloan, Casas Grandes, or Salado material yet. The infrastructure supports multiple traditions; the corpora need to be built.</p>
+              <p>The tool was built with Mimbres ceramic analysis as the primary use case. The 29 principles are broadly applicable to other Southwest traditions, but no tradition-specific reference corpora exist for Hohokam, Ancestral Puebloan, Casas Grandes, or Salado material yet. The infrastructure supports multiple traditions; the corpora need to be built.</p>
             </div>
           </div>
         </section>
@@ -260,7 +260,7 @@ import SiteFooter from '../components/SiteFooter.astro';
           <dl class="glossary-list">
             <div class="gloss-row">
               <dt>Perceptual fingerprint</dt>
-              <dd>A vector of 27 scores (0–3) derived from blind visual observation of artifact photographs, one score per principle. The fingerprint describes what is visually observable about the object, independent of its documented identity.</dd>
+              <dd>A vector of 29 scores (0–3) derived from blind visual observation of artifact photographs, one score per principle. The fingerprint describes what is visually observable about the object, independent of its documented identity.</dd>
             </div>
             <div class="gloss-row">
               <dt>Track A / Track B</dt>
@@ -268,7 +268,7 @@ import SiteFooter from '../components/SiteFooter.astro';
             </div>
             <div class="gloss-row">
               <dt>Pass 1</dt>
-              <dd>The blind visual observation pass. Scores the 27 principles. Does not see documentation.</dd>
+              <dd>The blind visual observation pass. Scores the 29 principles. Does not see documentation.</dd>
             </div>
             <div class="gloss-row">
               <dt>Pass 2</dt>

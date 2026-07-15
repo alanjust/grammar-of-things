@@ -1,5 +1,6 @@
 import principlesData from '../data/hg-principles.json';
 import artifactPrinciplesData from '../data/artifact-principles.json';
+import { VECTOR_KEY } from '../db/types';
 
 // All Tier A — used in Pass 2 reference list
 export const PRINCIPLE_NAMES: string[] = (principlesData.principles as any[])
@@ -10,7 +11,7 @@ export const PRINCIPLE_NAMES: string[] = (principlesData.principles as any[])
 // Tier A principles applicable to artifact observation (excludes fine-art-specific:
 // Linear Perspective, Atmospheric Perspective, Light Source Logic, Common Fate,
 // Elevation in Picture Plane, Binocular vs. Monocular Depth Cues)
-export const APPLICABLE_TIER_A_IDS = new Set([1, 2, 4, 5, 13, 15, 20, 28, 47, 48, 49, 51]);
+export const APPLICABLE_TIER_A_IDS = new Set([1, 2, 4, 5, 13, 15, 20, 28, 47, 48, 49, 51, 55, 56]);
 
 export const APPLICABLE_TIER_A_NAMES: string[] = (principlesData.principles as any[])
   .filter((p: any) => APPLICABLE_TIER_A_IDS.has(p.id))
@@ -46,6 +47,23 @@ export const VECTOR_KEY_NAMES: Record<string, string> = {
   ),
 };
 
+// Compact labels for space-constrained rendering (radar chart spokes, table
+// columns, markdown exports) — shortened from VECTOR_KEY_NAMES on purpose, e.g.
+// "Gaze Direction" not "Gaze Direction / Social Attention". Single source of
+// truth for what was previously copy-pasted identically across 7 page/API files.
+export const VECTOR_KEY_DISPLAY_NAMES: Record<string, string> = {
+  ap_1: 'Production Trace Reading', ap_2: 'Sequence Inference', ap_3: 'Material Boundary Attention',
+  ap_4: 'Wear Differential', ap_5: 'Absence as Evidence', ap_6: 'Composite Detection',
+  ap_7: 'Anatomical Correspondence', ap_8: 'Symmetry as Evidence', ap_9: 'Proportion as Encoding',
+  ap_10: 'Color Zone Logic', ap_11: 'Investment Gradient', ap_12: 'Attachment Point Reading',
+  ap_13: 'Orientation Dependency', ap_14: 'Completion State', ap_15: 'Reduction vs. Construction',
+  ta_1: 'Edge Detection', ta_2: 'Color Opponent Channels', ta_4: 'Figure-Ground Relationships',
+  ta_5: 'Grouping', ta_13: 'Overlap / Occlusion', ta_15: 'Closure / Negative Space',
+  ta_20: 'Simultaneous Contrast', ta_28: 'Specularity / Reflection',
+  ta_47: 'Face Detection', ta_48: 'Biological Motion', ta_49: 'Gaze Direction', ta_51: 'Visual Pop-out',
+  ta_55: 'Agency Attribution', ta_56: 'Postural Affect',
+};
+
 // principleId (ap_N only — hg-principles.json's ta_* Tier A principles have no
 // grounding tag; that's a separate, not-yet-assessed question) -> VLM grounding
 // assessment for that principle: observationTier/inferenceTier/note. See
@@ -76,7 +94,7 @@ UNIVERSAL VISUAL PRINCIPLES: These apply to all artifact observation regardless 
 
 ${applicableTierANames.join(', ')}
 
-ARTIFACT-DOMAIN APPLICATION OF TIER A PRINCIPLES: When applying Tier A principles alongside the 15 Artifact Perceptual Principles, do not use studioTool framing — do not ask what an artist did to a viewer. Ask what the mechanism reveals about the object. Edge Detection reads line quality as production evidence; Figure-Ground reads positive-negative design strategy; Color Opponent Channels reads zone organization logic; Closure reads whether negative space is designed or residual; and so on for each active principle.`;
+ARTIFACT-DOMAIN APPLICATION OF TIER A PRINCIPLES: When applying Tier A principles alongside the 15 Artifact Perceptual Principles, do not use studioTool framing — do not ask what an artist did to a viewer. Ask what the mechanism reveals about the object. Edge Detection reads line quality as production evidence; Figure-Ground reads positive-negative design strategy; Color Opponent Channels reads zone organization logic; Closure reads whether negative space is designed or residual; Agency Attribution reads whether depicted forms are configured as agents in relation — one oriented toward, blocking, or pursuing another — as designed narrative content rather than repeating pattern; Postural Affect reads emotional or social charge from the configuration of a depicted body — the set of shoulders, spine, or limbs — including when the figure has no legible face; and so on for each active principle.`;
 
 export const PASS1_PROMPT_MULTI = (count: number, artifactPrincipleNames: string[], applicableTierANames: string[]) =>
   `You have examined ${count} views of the same artifact. Report what the examination found, view by view, using the image label as a header.
@@ -93,14 +111,24 @@ UNIVERSAL VISUAL PRINCIPLES: These apply to all artifact observation regardless 
 
 ${applicableTierANames.join(', ')}
 
-ARTIFACT-DOMAIN APPLICATION OF TIER A PRINCIPLES: When applying Tier A principles alongside the 15 Artifact Perceptual Principles, do not use studioTool framing — do not ask what an artist did to a viewer. Ask what the mechanism reveals about the object. Edge Detection reads line quality as production evidence; Figure-Ground reads positive-negative design strategy; Color Opponent Channels reads zone organization logic; Closure reads whether negative space is designed or residual; and so on for each active principle.`;
+ARTIFACT-DOMAIN APPLICATION OF TIER A PRINCIPLES: When applying Tier A principles alongside the 15 Artifact Perceptual Principles, do not use studioTool framing — do not ask what an artist did to a viewer. Ask what the mechanism reveals about the object. Edge Detection reads line quality as production evidence; Figure-Ground reads positive-negative design strategy; Color Opponent Channels reads zone organization logic; Closure reads whether negative space is designed or residual; Agency Attribution reads whether depicted forms are configured as agents in relation — one oriented toward, blocking, or pursuing another — as designed narrative content rather than repeating pattern; Postural Affect reads emotional or social charge from the configuration of a depicted body — the set of shoulders, spine, or limbs — including when the figure has no legible face; and so on for each active principle.`;
 
 // ---------------------------------------------------------------------------
 // Vector scoring prompt
 // ---------------------------------------------------------------------------
 
+const AP_SCORING_LINES = VECTOR_KEY
+  .filter(k => k.startsWith('ap_'))
+  .map(k => `${k}: ${VECTOR_KEY_NAMES[k]}`)
+  .join('\n');
+
+const TA_SCORING_LINES = VECTOR_KEY
+  .filter(k => k.startsWith('ta_'))
+  .map(k => `${k}: ${VECTOR_KEY_NAMES[k]}`)
+  .join('\n');
+
 export const VECTOR_SCORING_PROMPT = (pass1: string): string =>
-  `Score each of the 27 perceptual principles below using ONLY the Pass 1 observation text provided. Output ONLY a flat JSON object with exactly 27 integer keys. No markdown, no commentary, no extra text.
+  `Score each of the ${VECTOR_KEY.length} perceptual principles below using ONLY the Pass 1 observation text provided. Output ONLY a flat JSON object with exactly ${VECTOR_KEY.length} integer keys. No markdown, no commentary, no extra text.
 
 Scale:
 0 = not present — the principle has no physical basis in this artifact
@@ -114,32 +142,7 @@ PASS 1 OBSERVATION:
 ${pass1}
 
 ARTIFACT PRINCIPLES (score from pass1 only):
-ap_1: Production Trace Reading
-ap_2: Sequence Inference
-ap_3: Material Boundary Attention
-ap_4: Wear Differential
-ap_5: Absence as Evidence
-ap_6: Composite Detection
-ap_7: Anatomical Correspondence
-ap_8: Symmetry as Evidence
-ap_9: Proportion as Encoding
-ap_10: Color Zone Logic
-ap_11: Investment Gradient
-ap_12: Attachment Point Reading
-ap_13: Orientation Dependency
-ap_14: Completion State
-ap_15: Reduction vs. Construction
+${AP_SCORING_LINES}
 
 TIER A UNIVERSAL PRINCIPLES (score from pass1 only):
-ta_1: Edge Detection
-ta_2: Color Opponent Channels
-ta_4: Figure-Ground Relationships
-ta_5: Grouping
-ta_13: Overlap/Occlusion
-ta_15: Closure/Negative Space
-ta_20: Simultaneous Contrast
-ta_28: Specularity/Surface Reflection
-ta_47: Face Detection
-ta_48: Biological Motion Detection
-ta_49: Gaze Direction/Social Attention
-ta_51: Visual Pop-out/Pre-attentive Features`;
+${TA_SCORING_LINES}`;

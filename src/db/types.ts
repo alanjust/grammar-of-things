@@ -10,10 +10,11 @@ export const VECTOR_KEY = [
   'ap_1', 'ap_2', 'ap_3', 'ap_4', 'ap_5',
   'ap_6', 'ap_7', 'ap_8', 'ap_9', 'ap_10',
   'ap_11', 'ap_12', 'ap_13', 'ap_14', 'ap_15',
-  // 12 Tier A universal principles (applicable subset)
+  // 14 Tier A universal principles (applicable subset)
   'ta_1', 'ta_2', 'ta_4', 'ta_5',
   'ta_13', 'ta_15', 'ta_20', 'ta_28',
   'ta_47', 'ta_48', 'ta_49', 'ta_51',
+  'ta_55', 'ta_56',
 ] as const;
 
 export type VectorKey = (typeof VECTOR_KEY)[number];
@@ -67,7 +68,7 @@ export interface DbObject {
   image_spec:         string | null;
 
   // Blind fingerprint
-  fingerprint_vector:     string | null;  // JSON array, 27 ints
+  fingerprint_vector:     string | null;  // JSON array, 29 ints
   fingerprint_model:      string | null;
   fingerprint_pass1_text: string | null;
   fingerprinted_at:       string | null;  // ISO 8601
@@ -97,7 +98,7 @@ export interface DbAnalysis {
 
   // Pass 4 outputs
   extraction_json: string | null;  // full JSON
-  analysis_vector: string | null;  // JSON array, 27 ints
+  analysis_vector: string | null;  // JSON array, 29 ints
 
   // Promoted extraction fields
   object_class:            string | null;

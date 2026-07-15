@@ -31,7 +31,7 @@ export interface NormalizeResult {
 }
 
 // Encode ArrayBuffer to base64 in chunks to avoid stack overflow on large images.
-function bufferToBase64(buffer: ArrayBuffer): string {
+export function bufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let binary = '';
   const chunk = 8192;
@@ -99,4 +99,20 @@ export function dataUrlToBlob(dataUrl: string): { bytes: Uint8Array; contentType
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return { bytes, contentType, ext };
+}
+
+// Fetch a previously-stored analysis image back out of R2 as a data URL, for
+// re-sending to a model (e.g. re-fingerprinting an existing object).
+export async function loadImageFromR2(r2: any, key: string): Promise<string | null> {
+  try {
+    const obj = await r2.get(key);
+    if (!obj) return null;
+    const buffer = await obj.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    const declared: string = obj.httpMetadata?.contentType ?? 'image/jpeg';
+    const contentType = detectMimeFromBytes(bytes) ?? declared;
+    return `data:${contentType};base64,${bufferToBase64(buffer)}`;
+  } catch {
+    return null;
+  }
 }

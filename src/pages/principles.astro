@@ -4,22 +4,19 @@ import SiteNav from '../components/SiteNav.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import artifactPrinciplesData from '../data/artifact-principles.json';
 import hgPrinciplesData from '../data/hg-principles.json';
-
-const APPLICABLE_TA_IDS = new Set([1, 2, 4, 5, 13, 15, 20, 28, 47, 48, 49, 51]);
+import { APPLICABLE_TIER_A_IDS } from '../lib/principles';
 
 const artifactPrinciples = (artifactPrinciplesData as any).principles as any[];
 const visualPrinciples = ((hgPrinciplesData as any).principles as any[])
-  .filter((p: any) => APPLICABLE_TA_IDS.has(p.id));
+  .filter((p: any) => APPLICABLE_TIER_A_IDS.has(p.id));
 
 // Code key in vector order, matching VECTOR_KEY in analysis pages
 const AP_CODES: Record<number, string> = Object.fromEntries(
   artifactPrinciples.map((p: any, i: number) => [p.id, `ap_${i + 1}`])
 );
-const TA_CODES: Record<number, string> = {
-  1: 'ta_1', 2: 'ta_2', 4: 'ta_4', 5: 'ta_5',
-  13: 'ta_13', 15: 'ta_15', 20: 'ta_20', 28: 'ta_28',
-  47: 'ta_47', 48: 'ta_48', 49: 'ta_49', 51: 'ta_51',
-};
+const TA_CODES: Record<number, string> = Object.fromEntries(
+  [...APPLICABLE_TIER_A_IDS].map((id) => [id, `ta_${id}`])
+);
 
 const SCORE_LEVELS = [
   { score: 0, label: 'Not detected', description: 'The principle is not present or not applicable to this object.' },
@@ -37,8 +34,8 @@ function scoreColor(s: number) {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="The 27 perceptual principles used to compute a visual fingerprint for archaeological objects — what they are, how they're scored, and what each one looks for." />
-  <title>The 27 Principles — The Grammar of Things</title>
+  <meta name="description" content="The 29 perceptual principles used to compute a visual fingerprint for archaeological objects — what they are, how they're scored, and what each one looks for." />
+  <title>The 29 Principles — The Grammar of Things</title>
   <style is:global>
     @import url('/src/styles/base.css');
   </style>
@@ -52,12 +49,12 @@ function scoreColor(s: number) {
       <!-- ── Page header ── -->
       <header class="page-header">
         <p class="eyebrow">Reference</p>
-        <h1>The 27 Principles</h1>
+        <h1>The 29 Principles</h1>
         <p class="intro">
-          Every object analyzed by this system is scored against 27 perceptual principles — what the image actually shows, independent of what the documentation claims. The result is a fingerprint: a vector that represents how the object performs across each principle. That fingerprint is computed before any cultural attribution is consulted, then compared against it.
+          Every object analyzed by this system is scored against 29 perceptual principles — what the image actually shows, independent of what the documentation claims. The result is a fingerprint: a vector that represents how the object performs across each principle. That fingerprint is computed before any cultural attribution is consulted, then compared against it.
         </p>
         <p class="intro">
-          The 27 principles come from two distinct domains. The first 15 are artifact-specific — perceptual habits developed for reading archaeological and anthropological objects: production traces, wear patterns, material boundaries, construction evidence. The remaining 12 are universal visual principles drawn from perceptual science: how the human visual system processes edges, groupings, figure-ground relationships, and surface properties. Both domains apply simultaneously to every object.
+          The 29 principles come from two distinct domains. The first 15 are artifact-specific — perceptual habits developed for reading archaeological and anthropological objects: production traces, wear patterns, material boundaries, construction evidence. The remaining 14 are universal visual principles drawn from perceptual science: how the human visual system processes edges, groupings, figure-ground relationships, and surface properties. Both domains apply simultaneously to every object.
         </p>
       </header>
 
