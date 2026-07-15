@@ -665,7 +665,7 @@ Artifact observation principles: ${artifactPrincipleNames.join(', ')}
 
 ---
 
-OUTPUT FORMAT: Format each major section (one per Step above) as a Markdown H2 heading ("##"), e.g. "## Step 2 — Object Class and Tradition Identification". Use H3 ("###") for named sub-boxes within a section — theory callouts, checklists, and similar. Do not use H1 ("#") anywhere in your response.`;
+OUTPUT FORMAT: The Steps above are instructions for how to think, not labels for what to write. Apply all of them — including Step 1's framework suppression — silently; never reproduce a step name, number, or heading like "Step 1", "Displacement", "Redirect", or "Vocabulary calibration" anywhere in your response. Begin your visible response with tradition and object-class identification, then move directly into the analysis. Give every H2 heading ("##") a title that describes what that section actually contains — e.g. "## Tradition Identification", "## Construction and Surface Evidence", "## Iconographic Program" — never a process label. Use H3 ("###") for named sub-boxes within a section — theory callouts, checklists, and similar. Do not use H1 ("#") anywhere in your response.`;
 };
 
 export const COMPETENCY_PROMPT = (pass1: string, pass2: string, audience: string): string => {
