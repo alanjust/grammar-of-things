@@ -116,8 +116,8 @@ function renderGrid() {
     const culture = esc(obj.attribution_culture ?? '—');
     const displayId = esc(obj.catalog_number ?? `#${obj.id}`);
     const hasFingerprint = !!obj.fingerprinted_at;
-    const date = obj.created_at
-      ? new Date(obj.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles', timeZoneName: 'short' })
+    const date = obj.fingerprinted_at
+      ? new Date(obj.fingerprinted_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles', timeZoneName: 'short' })
       : '';
     const isSelected = selectedIds.has(obj.id);
     const refBadge = obj.is_reference ? `<span class="card-ref">REF</span>` : '';
