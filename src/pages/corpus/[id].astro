@@ -579,6 +579,13 @@ document.getElementById('runBtn')?.addEventListener('click', async () => {
   const addStatus = (msg, isError = false) => {
     const p = document.createElement('p');
     p.className = 'status-line' + (isError ? ' status-error' : '');
+    // Astro's scoped-style attribute is only stamped onto elements written in
+    // the template, not ones created at runtime — the .status-line/.status-error
+    // stylesheet rules silently never match this <p>, so every property they
+    // were meant to set is applied inline instead.
+    p.style.cssText = `font-family:var(--font-mono);font-size:var(--text-xs);` +
+      `line-height:var(--leading-relaxed);max-width:none;` +
+      `color:${isError ? 'var(--color-error-soft)' : 'var(--text-invert)'}`;
     p.textContent = msg;
     statusLog.appendChild(p);
     statusLog.scrollTop = statusLog.scrollHeight;
