@@ -20,9 +20,9 @@ const TA_CODES: Record<number, string> = Object.fromEntries(
 
 const SCORE_LEVELS = [
   { score: 0, label: 'Not detected', description: 'The principle is not present or not applicable to this object.' },
-  { score: 1, label: 'Weakly present', description: 'The principle is present but faint — low evidence, requires inference.' },
+  { score: 1, label: 'Weakly present', description: 'The principle is present but faint: low evidence, requires inference.' },
   { score: 2, label: 'Clearly present', description: 'The principle is evident and directly readable from the image.' },
-  { score: 3, label: 'Strongly present', description: 'The principle is a dominant feature — high evidence, clearly intentional.' },
+  { score: 3, label: 'Strongly present', description: 'The principle is a dominant feature: high evidence, clearly intentional.' },
 ];
 
 function scoreColor(s: number) {
@@ -34,7 +34,7 @@ function scoreColor(s: number) {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="The 29 perceptual principles used to compute a visual fingerprint for archaeological objects — what they are, how they're scored, and what each one looks for." />
+  <meta name="description" content="The 29 perceptual principles used to compute a visual fingerprint for archaeological objects: what they are, how they're scored, and what each one looks for." />
   <title>The 29 Principles — The Grammar of Things</title>
   <style is:global>
     @import url('/src/styles/base.css');
@@ -51,17 +51,17 @@ function scoreColor(s: number) {
         <p class="eyebrow">Reference</p>
         <h1>The 29 Principles</h1>
         <p class="intro">
-          Every object analyzed by this system is scored against 29 perceptual principles — what the image actually shows, independent of what the documentation claims. The result is a fingerprint: a vector that represents how the object performs across each principle. That fingerprint is computed before any cultural attribution is consulted, then compared against it.
+          Every object analyzed by this system is scored against 29 perceptual principles: what the image actually shows, independent of what the documentation claims. The result is a fingerprint: a vector that represents how the object performs across each principle. That fingerprint is computed before any cultural attribution is consulted, then compared against it.
         </p>
         <p class="intro">
-          The 29 principles come from two distinct domains. The first 15 are artifact-specific — perceptual habits developed for reading archaeological and anthropological objects: production traces, wear patterns, material boundaries, construction evidence. The remaining 14 are universal visual principles drawn from perceptual science: how the human visual system processes edges, groupings, figure-ground relationships, and surface properties. Both domains apply simultaneously to every object.
+          The 29 principles come from two distinct domains. The first 15 are artifact-specific, perceptual habits developed for reading archaeological and anthropological objects: production traces, wear patterns, material boundaries, construction evidence. The remaining 14 are universal visual principles drawn from perceptual science: how the human visual system processes edges, groupings, figure-ground relationships, and surface properties. Both domains apply simultaneously to every object.
         </p>
       </header>
 
       <!-- ── Score scale ── -->
       <section class="score-section">
         <h2>How scoring works</h2>
-        <p class="section-sub">Each principle receives a score from 0 to 3, assigned during Pass 1 — the blind read. The score reflects how strongly that principle is present in the image, not how important it is.</p>
+        <p class="section-sub">Each principle receives a score from 0 to 3, assigned during Pass 1, the blind read. The score reflects how strongly that principle is present in the image, not how important it is.</p>
         <div class="score-grid">
           {SCORE_LEVELS.map(level => (
             <div class="score-row">
@@ -84,7 +84,7 @@ function scoreColor(s: number) {
           <span class="section-count">15 principles · ap_1 – ap_15</span>
         </div>
         <p class="section-sub">
-          Perceptual habits developed specifically for reading archaeological objects. These direct attention toward production evidence, use history, and material relationships — the observational moves that make an artifact legible as a made thing with a history.
+          Perceptual habits developed specifically for reading archaeological objects. These direct attention toward production evidence, use history, and material relationships: the observational moves that make an artifact legible as a made thing with a history.
         </p>
 
         <div class="principles-list">
@@ -119,7 +119,7 @@ function scoreColor(s: number) {
           <span class="section-count">12 principles · ta_* subset</span>
         </div>
         <p class="section-sub">
-          Perceptual mechanisms shared across all visual analysis — how the human visual system processes edges, groupings, figure-ground relationships, color, and surface properties. These apply to artifact observation regardless of object type or cultural domain. Six additional Tier A principles (linear perspective, atmospheric perspective, light source logic, common fate, elevation in picture plane, binocular depth cues) were excluded as fine-art-specific and not applicable to artifact reading.
+          Perceptual mechanisms shared across all visual analysis: how the human visual system processes edges, groupings, figure-ground relationships, color, and surface properties. These apply to artifact observation regardless of object type or cultural domain. Six additional Tier A principles (linear perspective, atmospheric perspective, light source logic, common fate, elevation in picture plane, binocular depth cues) were excluded as fine-art-specific and not applicable to artifact reading.
         </p>
 
         <div class="principles-list">

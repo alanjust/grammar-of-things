@@ -19,7 +19,7 @@ export const hero: HeroContent = {
   subhead:
     'The Grammar of Things builds an evidence-based visual record for collections '
     + 'where attribution claims outrun documentation. It reads what the object itself '
-    + 'shows — separate from what the paperwork says.',
+    + 'shows, separate from what the paperwork says.',
   note:
     'Developed for IMLS National Leadership Grants for Museums. '
     + 'Designed to be built and transferred to a museum or consortium for long-term '

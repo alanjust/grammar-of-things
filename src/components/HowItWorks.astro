@@ -4,29 +4,29 @@ const passes = [
     num: '01',
     name: 'Observe',
     tag: 'Blind fingerprint',
-    body: 'The tool reads the image as pure physical evidence: surface marks, color zones, construction traces, wear patterns. No cultural assumption enters at this stage. The documentation is deliberately excluded. This is the blind fingerprint — what the object shows before the paperwork is consulted.',
+    body: 'The tool reads the image as pure physical evidence: surface marks, color zones, construction traces, wear patterns. No cultural assumption enters at this stage. The documentation is deliberately excluded. This is the blind fingerprint: what the object shows before the paperwork is consulted.',
     note: 'Output: 29-principle perceptual vector stored against the object record.',
   },
   {
     num: '02',
     name: 'Interpret',
     tag: 'Analysis with context',
-    body: 'With documentation now available, the tool applies Southwest archaeological frameworks — Brody on Mimbres iconography, Shafer on production sequence, Hegmon on social organization — to name what the evidence means. Interpretive claims require two independent observations. Claims with fewer are labeled hypotheses, not readings.',
+    body: 'With documentation now available, the tool applies Southwest archaeological frameworks: Brody on Mimbres iconography, Shafer on production sequence, Hegmon on social organization, to name what the evidence means. Interpretive claims require two independent observations. Claims with fewer are labeled hypotheses, not readings.',
     note: 'Epistemic labels [OBS] [INTERP] [CONS] [THEORY] mark every claim throughout.',
   },
   {
     num: '03',
     name: 'Take forward',
     tag: 'Competency transfer',
-    body: 'What did this analysis make visible? What habits of looking did it demonstrate? This pass translates the analytical moves into a form that applies to the next object encountered — not this object specifically, but the class of things this object taught you to see.',
+    body: 'What did this analysis make visible? What habits of looking did it demonstrate? This pass translates the analytical moves into a form that applies to the next object encountered, not this object specifically, but the class of things this object taught you to see.',
     note: 'Written for the person who received the analysis, not for the object.',
   },
   {
     num: '04',
     name: 'Extract',
     tag: 'Structured record',
-    body: 'Three things happen in parallel. The fingerprint from Pass 1 is compared against the documented attribution claim — a significant mismatch is surfaced as a research flag, not a conclusion. The documentation is assessed for structural integrity: eleven named gap patterns (no institutional anchor, no excavation record, private collection terminus, acquisition chain anomalies, and others). And documentation claims are cross-referenced against the blind Pass 1 observations — explicit contradictions are flagged with severity.',
-    note: 'Output: tradition identification, confidence level, RAP flags, full scored vector, provenance flag array, contradiction flag array — all stored to the object record.',
+    body: 'Three things happen in parallel. The fingerprint from Pass 1 is compared against the documented attribution claim: a significant mismatch is surfaced as a research flag, not a conclusion. The documentation is assessed for structural integrity: eleven named gap patterns (no institutional anchor, no excavation record, private collection terminus, acquisition chain anomalies, and others). And documentation claims are cross-referenced against the blind Pass 1 observations: explicit contradictions are flagged with severity.',
+    note: 'Output: tradition identification, confidence level, RAP flags, full scored vector, provenance flag array, contradiction flag array, all stored to the object record.',
   },
 ];
 
@@ -43,9 +43,9 @@ const canDetermine = [
 const cannotDetermine = [
   'Actual dimensions (no scale reference)',
   'Wall thickness or temper type (requires laboratory analysis)',
-  'Paint chemistry — mineral vs. carbon (requires physical examination)',
+  'Paint chemistry: mineral vs. carbon (requires physical examination)',
   'Absolute age (requires radiocarbon or thermoluminescence dating)',
-  'Residue identity — what the vessel held (requires organic residue analysis)',
+  'Residue identity: what the vessel held (requires organic residue analysis)',
   'Site association or provenience (requires documentation)',
   'Associated assemblage (requires documentation)',
 ];
@@ -97,7 +97,7 @@ const cannotDetermine = [
         </div>
       </div>
       <p class="limits-close">
-        When analysis reaches the ceiling, the tool says: <em>"Visible evidence suggests X. Confirmation would require physical examination / laboratory analysis / provenience documentation."</em> It does not hedge everything — it marks the specific limits where they exist.
+        When analysis reaches the ceiling, the tool says: <em>"Visible evidence suggests X. Confirmation would require physical examination / laboratory analysis / provenience documentation."</em> It does not hedge everything. It marks the specific limits where they exist.
       </p>
     </div>
   </div>

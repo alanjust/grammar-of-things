@@ -13,6 +13,7 @@ import {
   resolveModelConfig, streamModel, callModel,
 } from '../../lib/model-router';
 import { VECTOR_KEY } from '../../db/types';
+import { AI_TELL_GUARDRAIL, auditText } from '../../lib/anti-slop';
 
 export const prerender = false;
 
@@ -886,10 +887,12 @@ export type CachedBlock = { type: 'text'; text: string; cache_control?: { type: 
 export const PASS2_SYSTEM_ARTIFACT: CachedBlock[] = [
   { type: 'text', text: PASS2_ROLE_ARTIFACT },
   { type: 'text', text: ARTIFACT_STATIC_BODY, cache_control: { type: 'ephemeral' } },
+  { type: 'text', text: AI_TELL_GUARDRAIL },
 ];
 export const PASS2_SYSTEM_CONNECTIONS: CachedBlock[] = [
   { type: 'text', text: PASS2_ROLE_CONNECTIONS },
   { type: 'text', text: CONNECTIONS_STATIC_BODY, cache_control: { type: 'ephemeral' } },
+  { type: 'text', text: AI_TELL_GUARDRAIL },
 ];
 
 // Dynamic preamble builders — only what actually varies between requests.
@@ -988,7 +991,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         const pass1MsgParams = {
           max_tokens: 8000,
-          system: 'You have completed a close examination of this artifact. Report what you found.',
+          system: 'You have completed a close examination of this artifact. Report what you found.\n\n' + AI_TELL_GUARDRAIL,
           messages: [{
             role: 'user' as const,
             content: [
@@ -1130,6 +1133,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
           .map((b: any) => b.text)
           .join('\n\n');
 
+        const pass2SlopHits = auditText(pass2Text);
+        if (pass2SlopHits.words.length || pass2SlopHits.phrases.length) {
+          console.warn(`[slop-audit] pass2 (mode=${isConnections ? 'connections' : 'artifact'}) flagged:`, pass2SlopHits);
+        }
+
         send({ type: 'status', message: 'Pass 3 — what to take forward…' });
 
         const pass3PromptText = isConnections
@@ -1138,7 +1146,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         const pass3Msg = await callModel(modelConfig.pass3, {
           max_tokens: 8000,
-          system: 'You are an educator writing for someone curious and smart who wants to understand how to look at artifacts. Write the way Ira Glass tells a story: open with something concrete and recognizable, move toward the insight, land it plainly. If you use a technical term, follow it immediately with plain English. The goal is to leave the reader thinking "I can do that next time." Do not use fine art vocabulary: no aesthetic, painterly, compositional tension, formal innovation, artistic achievement, or language from museum wall text or gallery criticism. Do not frame the object as made for contemplation or visual pleasure. Takeaways must be grounded in what the material evidence showed — what the production traces revealed, what the design system did, what the cultural context made legible. The habits you identify should be habits of looking at physical evidence, not habits of aesthetic appreciation.',
+          system: 'You are an educator writing for someone curious and smart who wants to understand how to look at artifacts. Write the way Ira Glass tells a story: open with something concrete and recognizable, move toward the insight, land it plainly. If you use a technical term, follow it immediately with plain English. The goal is to leave the reader thinking "I can do that next time." Do not use fine art vocabulary: no aesthetic, painterly, compositional tension, formal innovation, artistic achievement, or language from museum wall text or gallery criticism. Do not frame the object as made for contemplation or visual pleasure. Takeaways must be grounded in what the material evidence showed, what the production traces revealed, what the design system did, what the cultural context made legible. The habits you identify should be habits of looking at physical evidence, not habits of aesthetic appreciation.\n\n' + AI_TELL_GUARDRAIL,
           messages: [{
             role: 'user',
             content: [
@@ -1153,6 +1161,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
           .filter((b: any) => b.type === 'text')
           .map((b: any) => b.text)
           .join('\n\n');
+
+        const pass3SlopHits = auditText(pass3Text);
+        if (pass3SlopHits.words.length || pass3SlopHits.phrases.length) {
+          console.warn(`[slop-audit] pass3 (mode=${isConnections ? 'connections' : 'artifact'}) flagged:`, pass3SlopHits);
+        }
 
         // Pass 4 — structured extraction + vector scoring (parallel)
         send({ type: 'status', message: 'Pass 4 — structured extraction…' });

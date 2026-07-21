@@ -25,7 +25,7 @@ import AdminGate from '../components/AdminGate.astro';
 
       <div class="page-head">
         <h1>Reference Library</h1>
-        <p class="page-sub">Scholarly sources indexed for retrieval during Pass 2 analysis. Upload a PDF or paste extracted text — the system chunks and indexes it automatically.</p>
+        <p class="page-sub">Scholarly sources indexed for retrieval during Pass 2 analysis. Upload a PDF or paste extracted text: the system chunks and indexes it automatically.</p>
       </div>
 
       <div class="admin-locked-note locked-panel">
@@ -41,7 +41,7 @@ import AdminGate from '../components/AdminGate.astro';
           <input type="file" id="fileInput" accept=".pdf,.txt,.md" hidden />
           <p class="drop-icon">↑</p>
           <p class="drop-text">Click to upload a PDF or text file</p>
-          <p class="drop-hint">PDF text is extracted in your browser — the original is stored in R2 if available</p>
+          <p class="drop-hint">PDF text is extracted in your browser. The original is stored in R2 if available</p>
         </div>
 
         <div id="extractProgress" class="extract-progress" style="display:none">
@@ -80,7 +80,7 @@ import AdminGate from '../components/AdminGate.astro';
             <div class="field">
               <label for="fPageStart">First page no.</label>
               <input type="number" id="fPageStart" placeholder="1" min="1"
-                title="Starting page number — used to build page references like p.127" />
+                title="Starting page number: used to build page references like p.127" />
             </div>
             <div class="field field-wide">
               <label for="fSection">Section / chapter label</label>
@@ -219,7 +219,7 @@ async function processFile(file) {
       fileBase64 = btoa(binary);
 
       if (!pdfjsLib) {
-        extractMsg.textContent = 'PDF.js unavailable — paste text manually below.';
+        extractMsg.textContent = 'PDF.js unavailable, paste text manually below.';
         showForm('');
         return;
       }
@@ -236,17 +236,17 @@ async function processFile(file) {
         if (i % 10 === 0) extractMsg.textContent = `Extracted ${i}/${pdf.numPages} pages…`;
       }
       extractedText = text;
-      extractMsg.textContent = `Done — ${pdf.numPages} pages, ~${Math.round(text.length / 5)} words`;
+      extractMsg.textContent = `Done, ${pdf.numPages} pages, ~${Math.round(text.length / 5)} words`;
     } else {
       // Plain text / markdown
       extractedText = await file.text();
       fileBase64 = '';
-      extractMsg.textContent = `Text file loaded — ~${Math.round(extractedText.length / 5)} words`;
+      extractMsg.textContent = `Text file loaded, ~${Math.round(extractedText.length / 5)} words`;
     }
 
     showForm(extractedText);
   } catch (err) {
-    extractMsg.textContent = `Error: ${err.message} — paste text manually below.`;
+    extractMsg.textContent = `Error: ${err.message}, paste text manually below.`;
     showForm('');
   }
 }
@@ -316,7 +316,7 @@ uploadForm.addEventListener('submit', async e => {
     if (!res.ok) throw new Error(data.error ?? `${res.status}`);
 
     uploadStatus.style.display = '';
-    uploadStatus.innerHTML = `<p class="status-ok">✓ Indexed <strong>${data.citation_key}</strong> — ${data.chunk_count} passages</p>`;
+    uploadStatus.innerHTML = `<p class="status-ok">✓ Indexed <strong>${data.citation_key}</strong>, ${data.chunk_count} passages</p>`;
     uploadForm.style.display = 'none';
     dropZone.style.display = '';
     extractedText = ''; fileBase64 = ''; fileName = '';
@@ -405,7 +405,7 @@ async function runSearch() {
 
       const source = document.createElement('p');
       source.className = 'sr-source';
-      source.append(`${r.author ?? ''}${r.year ? ', ' + r.year : ''} — `, mkEm(r.title));
+      source.append(`${r.author ?? ''}${r.year ? ', ' + r.year : ''}, `, mkEm(r.title));
 
       item.append(cite, snippet, source);
       list.appendChild(item);

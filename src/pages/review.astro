@@ -61,7 +61,7 @@ if (admin && db) {
         </div>
       )}
 
-      {admin && dbError && <p class="db-error">DB binding unavailable — configure the D1 binding.</p>}
+      {admin && dbError && <p class="db-error">DB binding unavailable, configure the D1 binding.</p>}
 
       {admin && !dbError && pending.length === 0 && (
         <p class="empty">No records pending review.</p>
@@ -100,10 +100,10 @@ if (admin && db) {
 
                 <div class="card-actions">
                   <button class="approve-btn" data-id={row.id}>
-                    ✓ Approve — ingest this record
+                    ✓ Approve: ingest this record
                   </button>
                   <button class="reject-btn" data-id={row.id}>
-                    ✗ Reject — do not ingest
+                    ✗ Reject: do not ingest
                   </button>
                 </div>
                 <div class="card-result" id={`result-${row.id}`}></div>
@@ -144,8 +144,8 @@ document.querySelectorAll('.approve-btn, .reject-btn').forEach(btn => {
         card.style.opacity = '0.4';
         card.style.pointerEvents = 'none';
         resultEl.textContent = action === 'approve'
-          ? `✓ Approved — ingesting as object #${data.object_id ?? '?'}`
-          : '✗ Rejected — record will not be ingested.';
+          ? `✓ Approved, ingesting as object #${data.object_id ?? '?'}`
+          : '✗ Rejected, record will not be ingested.';
         resultEl.style.color = action === 'approve' ? 'var(--cons)' : 'var(--color-error)';
       }
     } catch (err) {

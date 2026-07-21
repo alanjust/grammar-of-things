@@ -5,6 +5,7 @@ import { requireAdmin } from '../../../lib/auth';
 import { resolveModelConfig } from '../../../lib/model-router';
 import { VECTOR_KEY } from '../../../db/types';
 import { VECTOR_KEY_DISPLAY_NAMES as PRINCIPLE_NAMES } from '../../../lib/principles';
+import { AI_TELL_GUARDRAIL, auditText } from '../../../lib/anti-slop';
 
 export const prerender = false;
 
@@ -84,7 +85,9 @@ When comparing perceptual fingerprints:
 - Score patterns reveal production method, visual organization strategy, and material investment — not iconographic meaning directly.
 - When fingerprint patterns diverge from documented attributions, surface this as a research flag, not a conclusion.
 - Be evidence-grounded. Cite specific principle scores that anchor claims. State uncertainty explicitly.
-- Do not use fine art vocabulary. Do not assert misattribution. Do not over-read single-principle divergences.`;
+- Do not use fine art vocabulary. Do not assert misattribution. Do not over-read single-principle divergences.
+
+${AI_TELL_GUARDRAIL}`;
 
   const userPrompt = `A researcher has selected ${objects.length} objects for comparative analysis.
 
@@ -117,6 +120,12 @@ Address the research question directly. Compare across all ${objects.length} obj
           }
         }
         const msg = await msgStream.finalMessage();
+        const fullText = msg.content
+          .filter((b: any) => b.type === 'text').map((b: any) => b.text).join('');
+        const slopHits = auditText(fullText);
+        if (slopHits.words.length || slopHits.phrases.length) {
+          console.warn('[slop-audit] compare/synthesize flagged:', slopHits);
+        }
         send({ type: 'complete', model: msg.model,
           input_tokens: msg.usage.input_tokens, output_tokens: msg.usage.output_tokens });
       } catch (err) {

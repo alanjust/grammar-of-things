@@ -22,6 +22,7 @@ import {
   PASS1_PROMPT_SINGLE, VECTOR_SCORING_PROMPT,
 } from '../../lib/principles';
 import { serializeVector } from '../../db/types';
+import { AI_TELL_GUARDRAIL } from '../../lib/anti-slop';
 
 // Minimal ObjectRecord shape — mirrors the MCP contract without cross-package import
 interface McpObjectRecord {
@@ -46,7 +47,7 @@ interface McpObjectRecord {
 
 export const prerender = false;
 
-const PASS1_SYSTEM = 'You are a trained artifact observer. Report only what is directly present and physically observable. Read surface features as production evidence. No interpretation, no cultural attribution, no quality judgments.';
+const PASS1_SYSTEM = 'You are a trained artifact observer. Report only what is directly present and physically observable. Read surface features as production evidence. No interpretation, no cultural attribution, no quality judgments.\n\n' + AI_TELL_GUARDRAIL;
 
 // ── MCP HTTP client ──────────────────────────────────────────────────────────
 

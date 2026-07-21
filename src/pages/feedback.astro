@@ -37,7 +37,7 @@ if (admin && db) {
 
       <header class="page-header">
         <h1>Feedback</h1>
-        <p class="page-sub">Suggest an addition, flag a problem, or ask a question. Submissions go directly to the research team — not published.</p>
+        <p class="page-sub">Suggest an addition, flag a problem, or ask a question. Submissions go directly to the research team, not published.</p>
       </header>
 
       <!-- Public submission form -->
@@ -130,7 +130,7 @@ form?.addEventListener('submit', async (e) => {
     });
     if (res.ok) {
       form.reset();
-      formStatus.textContent = 'Thank you — received.';
+      formStatus.textContent = 'Thank you. Received.';
       formStatus.className = 'form-status form-success';
     } else {
       const err = await res.json().catch(() => ({}));

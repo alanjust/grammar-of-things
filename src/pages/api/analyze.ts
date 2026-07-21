@@ -8,6 +8,7 @@ import { VECTOR_SCORING_PROMPT, VECTOR_KEY_NAMES, ARTIFACT_GROUNDING } from '../
 import { resolveModelConfig, streamModel, callModel } from '../../lib/model-router';
 import { VECTOR_KEY, serializeVector, type DocCanonical } from '../../db/types';
 import { buildSearchQuery, retrievePassages, formatReferences } from '../../lib/retrieval';
+import { AI_TELL_GUARDRAIL, auditText } from '../../lib/anti-slop';
 import {
   EXTRACTION_PROMPT, COMPETENCY_PROMPT, CONNECTIONS_COMPETENCY_PROMPT,
   PASS2_SYSTEM_ARTIFACT, PASS2_SYSTEM_CONNECTIONS,
@@ -300,6 +301,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
         const pass2Truncated = pass2Msg.stop_reason === 'max_tokens' ? 1 : 0;
         if (pass2Truncated) send({ type: 'status', message: '⚠ Pass 2 reached token limit — analysis may be incomplete' });
 
+        const pass2SlopHits = auditText(pass2Text);
+        if (pass2SlopHits.words.length || pass2SlopHits.phrases.length) {
+          console.warn(`[slop-audit] pass2 (mode=${mode}) flagged:`, pass2SlopHits);
+        }
+
         // Verification caveats — deterministic, generated in code from the object's
         // stored fingerprint data, never passed to Pass 2/3/4 as input. Appended only
         // to what gets stored/streamed to the researcher, so downstream passes keep
@@ -324,13 +330,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
         const pass3Msg = await callModel(modelConfig.pass3, {
           max_tokens: 8000,
-          system: 'You are an educator writing for someone curious and smart who wants to understand how to look at artifacts. Write the way Ira Glass tells a story: open with something concrete and recognizable, move toward the insight, land it plainly. If you use a technical term, follow it immediately with plain English. The goal is to leave the reader thinking "I can do that next time." Do not use fine art vocabulary: no aesthetic, painterly, compositional tension, formal innovation, artistic achievement, or language from museum wall text or gallery criticism. Do not frame the object as made for contemplation or visual pleasure. Takeaways must be grounded in what the material evidence showed — what the production traces revealed, what the design system did, what the cultural context made legible. The habits you identify should be habits of looking at physical evidence, not habits of aesthetic appreciation.',
+          system: 'You are an educator writing for someone curious and smart who wants to understand how to look at artifacts. Write the way Ira Glass tells a story: open with something concrete and recognizable, move toward the insight, land it plainly. If you use a technical term, follow it immediately with plain English. The goal is to leave the reader thinking "I can do that next time." Do not use fine art vocabulary: no aesthetic, painterly, compositional tension, formal innovation, artistic achievement, or language from museum wall text or gallery criticism. Do not frame the object as made for contemplation or visual pleasure. Takeaways must be grounded in what the material evidence showed, what the production traces revealed, what the design system did, what the cultural context made legible. The habits you identify should be habits of looking at physical evidence, not habits of aesthetic appreciation.\n\n' + AI_TELL_GUARDRAIL,
           messages: [{ role: 'user', content: [...imageBlocks, { type: 'text', text: pass3PromptText }] }],
         }, anthropic);
 
         const pass3Text = pass3Msg.content
           .filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n\n');
         const pass3Truncated = pass3Msg.stop_reason === 'max_tokens' ? 1 : 0;
+
+        const pass3SlopHits = auditText(pass3Text);
+        if (pass3SlopHits.words.length || pass3SlopHits.phrases.length) {
+          console.warn(`[slop-audit] pass3 (mode=${mode}) flagged:`, pass3SlopHits);
+        }
         if (pass3Truncated) send({ type: 'status', message: '⚠ Pass 3 reached token limit — takeaway may be incomplete' });
 
         // ----------------------------------------------------------------
@@ -360,12 +371,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
             }, anthropic),
             callModel(modelConfig.extraction, {
               max_tokens: 8000,
-              system: 'You are a provenance analyst. Output ONLY a valid JSON array. No markdown, no commentary. Begin with [ and end with ].',
+              system: 'You are a provenance analyst. Output ONLY a valid JSON array. No markdown, no commentary. Begin with [ and end with ].\n\n' + AI_TELL_GUARDRAIL,
               messages: [{ role: 'user', content: [{ type: 'text', text: PROVENANCE_INTEGRITY_PROMPT(object.attribution_culture as string | null, object.doc_canonical as string | null, object.doc_structured as string | null) }] }],
             }, anthropic),
             callModel(modelConfig.extraction, {
               max_tokens: 8000,
-              system: 'You are a research analyst. Output ONLY a valid JSON array. No markdown, no commentary. Begin with [ and end with ].',
+              system: 'You are a research analyst. Output ONLY a valid JSON array. No markdown, no commentary. Begin with [ and end with ].\n\n' + AI_TELL_GUARDRAIL,
               messages: [{ role: 'user', content: [{ type: 'text', text: CONTRADICTION_DETECTION_PROMPT(object.attribution_culture as string | null, object.doc_canonical as string | null, pass1Text) }] }],
             }, anthropic),
           ]);
@@ -446,7 +457,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           try {
             const flagMsg = await callModel(modelConfig.extraction, {
               max_tokens: 8000,
-              system: 'You are a research analyst. Output ONLY valid JSON. No markdown, no commentary. Begin with { and end with }.',
+              system: 'You are a research analyst. Output ONLY valid JSON. No markdown, no commentary. Begin with { and end with }.\n\n' + AI_TELL_GUARDRAIL,
               messages: [{ role: 'user', content: [{ type: 'text', text: FINGERPRINT_COMPARISON_PROMPT(fingerprint, culture, confidence ?? '') }] }],
             }, anthropic);
             let flagText = flagMsg.content

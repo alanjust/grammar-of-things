@@ -24,7 +24,7 @@ import AdminGate from '../components/AdminGate.astro';
       <div class="page-head">
         <h1>Fingerprint comparison</h1>
         <p class="page-sub">Select an object to see how its perceptual fingerprint compares against the rest of the corpus. Objects with similar fingerprints but different attributed traditions are surfaced as research flags.</p>
-        <p class="proto-note">Prototype instrument — comparisons are computed across the current corpus only. Findings are flagged for closer examination, not asserted as conclusions.</p>
+        <p class="proto-note">Prototype instrument: comparisons are computed across the current corpus only. Findings are flagged for closer examination, not asserted as conclusions.</p>
       </div>
 
       <div id="loading" class="cmp-loading">Loading corpus fingerprints…</div>
@@ -72,7 +72,7 @@ import AdminGate from '../components/AdminGate.astro';
             <button class="preset-btn" data-q="Which of these objects show the most consistent iconographic or design vocabulary, and which are outliers?">Iconographic patterns</button>
             <button class="preset-btn" data-q="Are any of these objects' perceptual fingerprints inconsistent with their documented cultural attribution? Flag any cases worth closer examination.">Tradition verification</button>
             <button class="preset-btn" data-q="Which objects in this set are most likely to be contemporaneous based on their perceptual fingerprints?">Contemporaneity</button>
-            <button class="preset-btn" data-q="What does the investment gradient across these objects suggest about production context — household, specialist, or ceremonial?">Production context</button>
+            <button class="preset-btn" data-q="What does the investment gradient across these objects suggest about production context: household, specialist, or ceremonial?">Production context</button>
           </div>
         </div>
 
@@ -94,7 +94,7 @@ import AdminGate from '../components/AdminGate.astro';
       <!-- Object selector -->
       <div id="selectorSection" class="selector-section" style="display:none">
         <h2 id="selectorHeading">Select an anchor object</h2>
-        <p class="selector-sub">Pick one object as the anchor — the others will be ranked by fingerprint similarity to it.</p>
+        <p class="selector-sub">Pick one object as the anchor. The others will be ranked by fingerprint similarity to it.</p>
         <div id="objectGrid" class="object-grid"></div>
       </div>
 
@@ -511,7 +511,7 @@ function renderMatches(matches) {
         ${tradMismatch ? `
           <div class="mismatch-flag">
             <span class="flag-badge">⚠ Attribution differs</span>
-            <span class="flag-text">Fingerprint similarity ${pct}% — documented traditions differ (${esc(TRAD_LABELS[selectedTrad] ?? selectedTrad)} vs. ${tradLabel}). Warrants closer examination.</span>
+            <span class="flag-text">Fingerprint similarity ${pct}%, documented traditions differ (${esc(TRAD_LABELS[selectedTrad] ?? selectedTrad)} vs. ${tradLabel}). Warrants closer examination.</span>
           </div>` : ''}
 
         ${bigDiffs.length > 0 ? `

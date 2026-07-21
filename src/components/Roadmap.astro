@@ -2,18 +2,18 @@
 const today = [
   { label: 'Single-object analysis', body: 'Upload an image, paste the documentation record, run Passes 1–4. The fingerprint is computed blind and compared against the attribution claim.' },
   { label: 'Epistemic labeling', body: 'Every claim in the analysis is marked [OBS], [INTERP], [CONS], or [THEORY]. Interpretive claims require two independent observations.' },
-  { label: 'RAP Protocol', body: 'The Rigorous Attribution Protocol flags claims with insufficient anchors as hypotheses. It cannot be turned off — it is structural.' },
+  { label: 'RAP Protocol', body: 'The Rigorous Attribution Protocol flags claims with insufficient anchors as hypotheses. It cannot be turned off. It is structural.' },
   { label: 'Three-layer documentation', body: 'Raw paste → AI-structured JSON → canonical mapped fields. EZID/ARK, catalog number, accession number, and culture attribution are promoted to first-class fields.' },
   { label: '29-principle fingerprint vector', body: 'Stored per object in canonical order. Ready for vector similarity search when the reference corpus exists.' },
   { label: 'Provenance integrity assessment', body: 'Eleven named structural gap patterns applied to the documentation record on every analysis run: no institutional anchor, no excavation record, private collection terminus, acquisition chain anomalies, and others. Severity-coded HIGH / MEDIUM / LOW.' },
   { label: 'Contradiction detection', body: 'Documentation claims are cross-referenced against the blind Pass 1 observations. When what the catalog says about construction, condition, or iconography conflicts with what the object shows, the tension is flagged explicitly.' },
-  { label: 'Reference corpus infrastructure', body: 'Database schema, distribution API, catalog UI, and Reference Corpus page are complete. The corpus itself needs populating — authenticated, well-documented objects from institutional collections. That is the open data work.' },
+  { label: 'Reference corpus infrastructure', body: 'Database schema, distribution API, catalog UI, and Reference Corpus page are complete. The corpus itself needs populating: authenticated, well-documented objects from institutional collections. That is the open data work.' },
 ];
 
 const funded = [
   {
     label: 'Reference corpus — data collection',
-    body: 'The infrastructure is built. What the grant funds is the corpus itself: authenticated, well-documented objects from excavated contexts — Swarts Ruin, NAN Ranch, Pueblo Bonito. Objects with known provenience, primary-source-supported tradition attribution, and physical analysis data. Thirty objects per tradition is the target for statistically meaningful comparison.',
+    body: 'The infrastructure is built. What the grant funds is the corpus itself: authenticated, well-documented objects from excavated contexts, Swarts Ruin, NAN Ranch, Pueblo Bonito. Objects with known provenience, primary-source-supported tradition attribution, and physical analysis data. Thirty objects per tradition is the target for statistically meaningful comparison.',
     priority: 'critical',
   },
   {
@@ -23,7 +23,7 @@ const funded = [
   },
   {
     label: 'Outlier detection',
-    body: 'Flag objects whose perceptual fingerprint diverges significantly from the fingerprint distribution of their documented tradition. Candidates for closer physical examination. The embryonic misattribution instrument — presented as a research flag, not a conclusion.',
+    body: 'Flag objects whose perceptual fingerprint diverges significantly from the fingerprint distribution of their documented tradition. Candidates for closer physical examination. The embryonic misattribution instrument. Presented as a research flag, not a conclusion.',
     priority: 'high',
   },
   {
@@ -83,7 +83,7 @@ const funded = [
     <div class="disclaimer">
       <p>
         The misattribution instrument is not presented as working today.
-        It is presented as the rigorous path from a proof of concept to a validated instrument —
+        It is presented as the rigorous path from a proof of concept to a validated instrument,
         one that requires a documented reference corpus before it can make meaningful comparisons.
         That corpus is what the grant builds.
       </p>

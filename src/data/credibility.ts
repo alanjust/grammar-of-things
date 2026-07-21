@@ -18,7 +18,7 @@ export const credibility: CredibilityContent = {
       title: 'Southwest archaeology expertise',
       body:
         'The analytical frameworks draw on J.J. Brody, Harry Shafer, Michelle Hegmon, '
-        + 'and Polly Schaafsma — the primary-source scholarship that defines how '
+        + 'and Polly Schaafsma: the primary-source scholarship that defines how '
         + 'Mimbres, Ancestral Puebloan, Hohokam, and Casas Grandes material is evaluated.',
     },
     {
@@ -31,7 +31,7 @@ export const credibility: CredibilityContent = {
     {
       title: 'Independent from the market',
       body:
-        'Analysis is grounded in excavated, documented reference assemblages — '
+        'Analysis is grounded in excavated, documented reference assemblages, '
         + 'not unprovenanced market examples. The fingerprint corpus is built '
         + 'only from objects with known provenience.',
     },

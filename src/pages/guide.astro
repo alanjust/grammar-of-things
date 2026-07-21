@@ -22,7 +22,7 @@ import SiteFooter from '../components/SiteFooter.astro';
       <div class="guide-hero">
         <p class="guide-overline">Researcher's Guide</p>
         <h1>How to Use This Tool</h1>
-        <p class="guide-lede">The Grammar of Things is a visual analysis system for Southwest archaeological ceramics. It applies a structured perceptual framework to artifact photographs and compares visual evidence against catalog documentation — surfacing gaps, contradictions, and consistency measures that are difficult to track manually at scale.</p>
+        <p class="guide-lede">The Grammar of Things is a visual analysis system for Southwest archaeological ceramics. It applies a structured perceptual framework to artifact photographs and compares visual evidence against catalog documentation, surfacing gaps, contradictions, and consistency measures that are difficult to track manually at scale.</p>
       </div>
 
       <nav class="guide-toc" aria-label="Contents">
@@ -50,7 +50,7 @@ import SiteFooter from '../components/SiteFooter.astro';
             <div class="track-card track-a">
               <p class="track-label">Track A</p>
               <p class="track-name">Blind fingerprint</p>
-              <p>The model examines photographs only. It does not know the culture, date, institution, or any other contextual information. It scores the object against 29 visual principles and produces a Pass 1 observation — a structured description of what is physically present in the image.</p>
+              <p>The model examines photographs only. It does not know the culture, date, institution, or any other contextual information. It scores the object against 29 visual principles and produces a Pass 1 observation: a structured description of what is physically present in the image.</p>
               <p>This blindness is the point. Confirmation bias can corrupt visual observation when an observer already knows what the object is supposed to be. Track A prevents that.</p>
             </div>
             <div class="track-card track-b">
@@ -75,7 +75,7 @@ import SiteFooter from '../components/SiteFooter.astro';
               <div class="step-num">1</div>
               <div class="step-body">
                 <p class="step-title">Catalog the object</p>
-                <p>Go to <a href="/catalog">Catalog</a>. Upload one to six views of the object (JPEG, PNG, or WebP). Paste the raw catalog record exactly as it appears from the source — field names, values, and all. Leave the documentation field empty to catalog on fingerprint alone.</p>
+                <p>Go to <a href="/catalog">Catalog</a>. Upload one to six views of the object (JPEG, PNG, or WebP). Paste the raw catalog record exactly as it appears from the source: field names, values, and all. Leave the documentation field empty to catalog on fingerprint alone.</p>
                 <p>If the object is an authenticated piece from an excavated, well-documented context, check "Mark as a reference piece" and select its ceramic tradition. Reference pieces build the statistical baseline used for future comparisons.</p>
                 <p>Click <strong>Catalog object</strong>. The system runs Track A: normalizes your images, runs Pass 1 (blind observation), scores the 29 principles, and stores the fingerprint vector. Track B documentation is extracted and stored in three layers: raw, structured, and canonical.</p>
               </div>
@@ -87,9 +87,9 @@ import SiteFooter from '../components/SiteFooter.astro';
                 <p class="step-title">Run the analysis</p>
                 <p>Go to <a href="/corpus">Corpus</a> and click the object. On the object page, click <strong>Run analysis</strong>. Choose an audience:</p>
                 <ul>
-                  <li><strong>Researcher</strong> — full technical detail, principle-by-principle breakdown, explicit confidence flags</li>
-                  <li><strong>Conservator</strong> — emphasis on material condition, production method, and physical evidence</li>
-                  <li><strong>General</strong> — accessible language for non-specialist audiences</li>
+                  <li><strong>Researcher</strong>: full technical detail, principle-by-principle breakdown, explicit confidence flags</li>
+                  <li><strong>Conservator</strong>: emphasis on material condition, production method, and physical evidence</li>
+                  <li><strong>General</strong>: accessible language for non-specialist audiences</li>
                 </ul>
                 <p>The system runs Passes 2, 3, and 4 in sequence. Pass 4 includes a provenance integrity check and a contradiction detector, both running in parallel with the fingerprint scoring.</p>
               </div>
@@ -108,7 +108,7 @@ import SiteFooter from '../components/SiteFooter.astro';
               <div class="step-body">
                 <p class="step-title">Compare objects (optional)</p>
                 <p>From the Corpus page, click <strong>Select to compare</strong> and choose two or three objects. The <a href="/compare">Compare</a> page shows their fingerprint vectors side by side, with a difference overlay and a per-principle breakdown. This is most useful for comparing an object under scrutiny against a known reference.</p>
-                <p>Note: the Compare page works best for targeted comparisons of two or three specific objects. It is not designed for bulk browsing — use the <a href="/corpus">Artifact Collection</a> page and its filter tools for that.</p>
+                <p>Note: the Compare page works best for targeted comparisons of two or three specific objects. It is not designed for bulk browsing. Use the <a href="/corpus">Artifact Collection</a> page and its filter tools for that.</p>
               </div>
             </div>
           </div>
@@ -137,7 +137,7 @@ import SiteFooter from '../components/SiteFooter.astro';
               <div class="pass-badge pass-3">Pass 3</div>
               <div class="pass-desc">
                 <p class="pass-title">Takeaway</p>
-                <p>A plain-language synthesis: what can be concluded, what remains uncertain, and what questions the analysis raises that warrant further investigation. The confidence flags shown here (High / Moderate / Low / Provisional) reflect the model's self-assessment of evidence quality — they are not judgments about authenticity.</p>
+                <p>A plain-language synthesis: what can be concluded, what remains uncertain, and what questions the analysis raises that warrant further investigation. The confidence flags shown here (High / Moderate / Low / Provisional) reflect the model's self-assessment of evidence quality. They are not judgments about authenticity.</p>
               </div>
             </div>
             <div class="pass-row">
@@ -162,12 +162,12 @@ import SiteFooter from '../components/SiteFooter.astro';
           <h3>Provenance integrity flags</h3>
           <p>These check the structure of the documentation for patterns associated with problematic provenance chains. Flags are severity-coded:</p>
           <ul>
-            <li><strong class="sev-high">High</strong> — A structural gap or anomaly that is a known marker of falsified or laundered provenance</li>
-            <li><strong class="sev-medium">Medium</strong> — An inconsistency that warrants attention but has plausible legitimate explanations</li>
-            <li><strong class="sev-low">Low</strong> — A minor gap or missing field that is common in legitimate collections</li>
+            <li><strong class="sev-high">High</strong>: a structural gap or anomaly that is a known marker of falsified or laundered provenance</li>
+            <li><strong class="sev-medium">Medium</strong>: an inconsistency that warrants attention but has plausible legitimate explanations</li>
+            <li><strong class="sev-low">Low</strong>: a minor gap or missing field that is common in legitimate collections</li>
           </ul>
           <p>Flag codes include: <code>CHAIN_GAP</code> (missing ownership steps), <code>PRIVATE_CHAIN</code> (entirely private sale history with no institutional anchor), <code>DATE_VAGUE</code> (undated collection events), <code>ETHNOGRAPHIC_CLAIM</code> (living-collection claim for funerary ware), and others. See the flag code legend on any analysis page.</p>
-          <p>These flags are generated from the canonical documentation fields. An object with no documentation will receive no provenance flags — absence of flags does not mean the provenance is clean, only that there is no documentation to check.</p>
+          <p>These flags are generated from the canonical documentation fields. An object with no documentation will receive no provenance flags. Absence of flags does not mean the provenance is clean, only that there is no documentation to check.</p>
 
           <h3>Contradiction flags</h3>
           <p>These check for direct conflicts between what the documentation claims and what Pass 1 observed. A contradiction flag is only raised when there is a specific, testable claim in the documentation that is inconsistent with the visual record.</p>
@@ -175,7 +175,7 @@ import SiteFooter from '../components/SiteFooter.astro';
           <p>Contradiction flags are filtered to exclude placeholder responses. An object with no contradictions may simply have no specific testable claims in its documentation.</p>
 
           <div class="guide-note guide-note-caution">
-            <strong>These flags do not determine authenticity.</strong> They identify patterns that warrant further investigation. A high-severity provenance flag means the provenance documentation has a structural problem — it does not mean the object is fake. Many objects in major institutional collections have documented provenance gaps from decades of pre-NAGPRA collecting practices. Flags are starting points for inquiry, not conclusions.
+            <strong>These flags do not determine authenticity.</strong> They identify patterns that warrant further investigation. A high-severity provenance flag means the provenance documentation has a structural problem. It does not mean the object is fake. Many objects in major institutional collections have documented provenance gaps from decades of pre-NAGPRA collecting practices. Flags are starting points for inquiry, not conclusions.
           </div>
         </section>
 
@@ -204,7 +204,7 @@ import SiteFooter from '../components/SiteFooter.astro';
         <!-- ── Reference corpus ───────────────────────────────────────── -->
         <section id="reference-corpus" class="guide-section">
           <h2>The reference corpus</h2>
-          <p>A reference corpus is a set of authenticated objects whose fingerprint vectors have been computed and stored. Once a tradition has enough reference objects (target: 30), the system can compute a mean and standard deviation for each of the 29 principles across that tradition. New objects can then be compared against this distribution — not just as raw scores but as z-scores showing where each principle falls relative to authenticated examples of the same tradition.</p>
+          <p>A reference corpus is a set of authenticated objects whose fingerprint vectors have been computed and stored. Once a tradition has enough reference objects (target: 30), the system can compute a mean and standard deviation for each of the 29 principles across that tradition. New objects can then be compared against this distribution: not just as raw scores but as z-scores showing where each principle falls relative to authenticated examples of the same tradition.</p>
           <p>This is the feature that makes the tool analytically meaningful beyond case-by-case inspection. An object whose <em>Production Trace Reading</em> score is 2.4 standard deviations below the Mimbres Phase III mean is telling you something that qualitative comparison alone could not.</p>
 
           <h3>What qualifies as a reference piece?</h3>
@@ -215,7 +215,7 @@ import SiteFooter from '../components/SiteFooter.astro';
             <li>Attribution to tradition and period is well-supported by multiple independent lines of evidence</li>
             <li>Not currently under any authenticity review or NAGPRA claim</li>
           </ul>
-          <p>Do not mark objects as reference pieces if their authenticity is the question being evaluated. The reference corpus is the baseline — contaminating it with unverified objects degrades every future comparison.</p>
+          <p>Do not mark objects as reference pieces if their authenticity is the question being evaluated. The reference corpus is the baseline. Contaminating it with unverified objects degrades every future comparison.</p>
 
           <h3>How to add reference pieces</h3>
           <p>When cataloging an object that meets the criteria above, check <strong>Mark as a reference piece</strong> on the Catalog page and select the ceramic tradition. The object will be fingerprinted and its vector will be included in the tradition's distribution statistics once the minimum threshold is met.</p>
@@ -229,7 +229,7 @@ import SiteFooter from '../components/SiteFooter.astro';
           <div class="limitation-list">
             <div class="limitation">
               <p class="limit-title">No reference corpus yet</p>
-              <p>The statistical comparison layer is built but not yet populated. All fingerprint scores are currently provisional — they describe the object but cannot be compared against a validated distribution. The reference corpus is being built now.</p>
+              <p>The statistical comparison layer is built but not yet populated. All fingerprint scores are currently provisional. They describe the object but cannot be compared against a validated distribution. The reference corpus is being built now.</p>
             </div>
             <div class="limitation">
               <p class="limit-title">General vision model, not a ceramics specialist</p>
@@ -241,7 +241,7 @@ import SiteFooter from '../components/SiteFooter.astro';
             </div>
             <div class="limitation">
               <p class="limit-title">Compare page scales with corpus size</p>
-              <p>The Compare page works well for two or three objects but becomes difficult to navigate when the corpus is large. The current interface is not designed for bulk browsing — use the <a href="/corpus">Artifact Collection</a> page for that. Future development includes a search-based retrieval interface (see the engineering roadmap for planned architecture).</p>
+              <p>The Compare page works well for two or three objects but becomes difficult to navigate when the corpus is large. The current interface is not designed for bulk browsing. Use the <a href="/corpus">Artifact Collection</a> page for that. Future development includes a search-based retrieval interface (see the engineering roadmap for planned architecture).</p>
             </div>
             <div class="limitation">
               <p class="limit-title">Image quality affects score reliability</p>
@@ -288,7 +288,7 @@ import SiteFooter from '../components/SiteFooter.astro';
             </div>
             <div class="gloss-row">
               <dt>Contradiction flag</dt>
-              <dd>A direct conflict between a specific, testable claim in the documentation and what Pass 1 observed visually. Requires both a documentary claim and a conflicting observation — it is not raised when documentation is absent.</dd>
+              <dd>A direct conflict between a specific, testable claim in the documentation and what Pass 1 observed visually. Requires both a documentary claim and a conflicting observation. It is not raised when documentation is absent.</dd>
             </div>
             <div class="gloss-row">
               <dt>Reference corpus</dt>
@@ -300,7 +300,7 @@ import SiteFooter from '../components/SiteFooter.astro';
             </div>
             <div class="gloss-row">
               <dt>Z-score comparison</dt>
-              <dd>A statistical measure of how many standard deviations a score falls from the reference mean. Enables statements like "this vessel's symmetry score is 2.1 SD below the Mimbres Phase III mean" rather than just "the score is 1." Not yet available — requires a populated reference corpus.</dd>
+              <dd>A statistical measure of how many standard deviations a score falls from the reference mean. Enables statements like "this vessel's symmetry score is 2.1 SD below the Mimbres Phase III mean" rather than just "the score is 1." Not yet available. Requires a populated reference corpus.</dd>
             </div>
           </dl>
         </section>

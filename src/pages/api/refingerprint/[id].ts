@@ -14,10 +14,11 @@ import {
   type NeutralRequest,
 } from '../../../lib/model-router';
 import { VECTOR_KEY, serializeVector } from '../../../db/types';
+import { AI_TELL_GUARDRAIL } from '../../../lib/anti-slop';
 
 export const prerender = false;
 
-const PASS1_SYSTEM = 'You have completed a close examination of this artifact. Report what you found.';
+const PASS1_SYSTEM = 'You have completed a close examination of this artifact. Report what you found.\n\n' + AI_TELL_GUARDRAIL;
 
 type SynthesisTier = 'stable' | 'thin' | 'contradicted' | 'unclassified';
 type SynthesisEntry = { tier: SynthesisTier; evidence: string };
@@ -277,7 +278,7 @@ export const POST: APIRoute = async ({ params, request }) => {
       try {
         const synthesisMsg = await callModel(modelConfig.pass1, {
           max_tokens: 16000,
-          system: 'You are classifying multiple independent visual observations. Output ONLY the JSON array requested. Report only what the observations contain — do not add your own visual readings.',
+          system: 'You are classifying multiple independent visual observations. Output ONLY the JSON array requested. Report only what the observations contain, do not add your own visual readings.\n\n' + AI_TELL_GUARDRAIL,
           messages: [{ role: 'user', content: [{ type: 'text', text: buildSynthesisClassificationPrompt(labeledRuns, stabilityPasses) }] }],
         }, anthropic);
 

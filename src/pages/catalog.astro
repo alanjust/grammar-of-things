@@ -40,7 +40,7 @@ import AdminGate from '../components/AdminGate.astro';
         <section class="form-section">
           <div class="section-label-row">
             <p class="form-label">Images <span class="required">required</span></p>
-            <p class="form-hint">Up to 6 views. Label each view — the label appears in the Pass 1 observation.</p>
+            <p class="form-hint">Up to 6 views. Label each view: the label appears in the Pass 1 observation.</p>
           </div>
 
           <div id="dropZone" class="drop-zone">
@@ -57,7 +57,7 @@ import AdminGate from '../components/AdminGate.astro';
         <section class="form-section">
           <div class="section-label-row">
             <p class="form-label">Raw catalog record <span class="optional">optional</span></p>
-            <p class="form-hint">Paste exactly what the source shows — field names and values verbatim. Leave empty to catalog on fingerprint alone.</p>
+            <p class="form-hint">Paste exactly what the source shows: field names and values verbatim. Leave empty to catalog on fingerprint alone.</p>
           </div>
           <textarea id="docRaw" class="doc-textarea" placeholder="Catalog Number:    A326247-0&#10;Culture:    Mimbres&#10;Country:    United States&#10;Collector(s):    Fewkes, J. W.&#10;…" rows="10"></textarea>
         </section>
@@ -147,7 +147,7 @@ import AdminGate from '../components/AdminGate.astro';
             </div>
 
             <div id="noDocNote" class="no-doc-note" style="display:none">
-              No documentation provided — object cataloged on fingerprint alone.
+              No documentation provided. Object cataloged on fingerprint alone.
             </div>
           </div>
 
@@ -330,7 +330,7 @@ form.addEventListener('submit', async e => {
     });
 
     if (!res.ok || !res.body) {
-      addStatus(`Error ${res.status} — check console`, true);
+      addStatus(`Error ${res.status}, check console`, true);
       submitBtn.disabled = false;
       submitBtn.textContent = 'Catalog object';
       return;
@@ -396,7 +396,7 @@ function renderResults(data) {
   if (idLine) {
     idLine.textContent = data.object_id
       ? `Object ID: ${data.object_id}`
-      : 'Saved (DB binding not configured — object_id unavailable)';
+      : 'Saved (DB binding not configured, object_id unavailable)';
   }
 
   // Reference badge
