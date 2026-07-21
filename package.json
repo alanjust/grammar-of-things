@@ -20,7 +20,7 @@
     "@google/generative-ai": "^0.24.1",
     "astro": "^6.4.3",
     "marked": "^18.0.5",
-    "openai": "^6.45.0",
+    "openai": "^6.46.0",
     "wrangler": "^4.97.0"
   },
   "overrides": {
